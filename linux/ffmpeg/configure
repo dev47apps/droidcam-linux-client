@@ -1,0 +1,6 @@
+./configure \
+ --enable-memalign-hack --enable-version3  \
+ --disable-ffmpeg --disable-ffserver --disable-ffplay  --disable-doc --disable-debug \
+ --disable-everything --enable-decoder=mjpeg --enable-decoder=h263 \
+ --enable-libopencore_amrnb --enable-decoder=libopencore_amrnb \
+ --disable-shared --enable-static \

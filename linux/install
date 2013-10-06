@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# Usage: ./install [640 480]
+# Dev47Apps.com
+#
+set -e
+INSTALL=" -- INSTALL: "
+V4L2_LOOPBACK_DIR="v4l2loopback";
+V4L2_LOOPBACK_DC="v4l2loopback-dc";
+V4L2_LOOPBACK_KO="v4l2loopback-dc.ko";
+DRIVER_LOCATION="/lib/modules/`uname -r`/kernel/drivers/media/video/";
+
+WIDTH="320"
+HEIGHT="240"
+
+if [ "$1" != "" ]
+then
+	WIDTH=$1
+	HEIGHT=$2
+fi
+
+if [[ ! $(echo "$WIDTH" | grep -E "^[0-9]+$") || ! $(echo "$HEIGHT" | grep -E "^[0-9]+$") ]]
+then
+	echo "Inavlid parameters: '$WIDTH' and '$HEIGHT'"
+	exit 1
+fi
+
+if [[ $WIDTH < 240 || $HEIGHT < 160 ]]
+then
+	echo "Parameters too low: '$WIDTH' and '$HEIGHT'"
+	exit 1
+fi
+
+echo "$INSTALL Webcam parameters: '$WIDTH' and '$HEIGHT'"
+
+echo "$INSTALL Building $V4L2_LOOPBACK_KO"
+cd $V4L2_LOOPBACK_DIR && make && cd ..
+
+if [ ! -e "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" ]
+then
+	echo "$INSTALL $V4L2_LOOPBACK_KO not built.. Failure"
+	exit 1;
+fi
+
+echo "$INSTALL Moving driver and executable to system folders.."
+
+if [ ! -e $DRIVER_LOCATION ]
+then
+    mkdir $DRIVER_LOCATION
+fi
+
+cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
+cp droidcam /usr/bin/
+
+echo "$INSTALL Registering webcam device"
+modprobe videodev
+insmod $DRIVER_LOCATION$V4L2_LOOPBACK_KO width=$WIDTH height=$HEIGHT
+
+echo "$INSTALL adding driver to /etc/modules";
+echo "videodev
+$V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT
+" >> /etc/modules
+
+echo "$INSTALL Running depmod"
+depmod -a
+
+echo "$INSTALL Creating ~/.droidcam"
+if [ ! -e "~/.droidcam/" ]
+then 
+ mkdir ~/.droidcam/
+fi
+
+cp icon.png ~/.droidcam/
+cp README ~/.droidcam/
+echo "$WIDTH-$HEIGHT
+IP_ADDRESS
+4747" > ~/.droidcam/settings
+chmod a+rw ~/.droidcam/settings
+cd $V4L2_LOOPBACK_DIR && make clean && cd ..
+echo "$INSTALL Done! You can make sure $V4L2_LOOPBACK_DC is loaded using 'lsmod'"
+

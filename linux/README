@@ -1,0 +1,57 @@
+# DroidCam & DroidCamX Linux Client (C) 2010-
+# Author: Aram G. (dev47@dev47apps.com)
+
+NOTICE 
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+USE AT YOUR OWN RISK.
+
+You may redistribute and/or modify any part of this program,
+provided this notice and all disclaimers remain intact and preserved, 
+crediting the original author(s).
+
+REMOVAL
+
+To remove the DroidCam client (or existing old version):
+
+1. Close any running programs. Open the command line.
+2. Unload the V4L driver: sudo rmmod v4l2loopback-dc
+3. Delete the driver file and the client executable:
+sudo rm -f /usr/bin/droidcam
+sudo rm -f /lib/modules/`uname -r`/kernel/drivers/media/video/v4l2loopback-dc.ko
+
+4. Get rid of droidcam and ‘videodev’ in /etc/modules using your favorite text editor. 
+(sudo gedit /etc/modules)
+
+5. Delete ~/.droidcam/ folder
+
+
+** Missing Audio Support
+
+- On Windows, an audio device driver simulates a virtual microphone
+
+- Seems Linux will need an ALSA driver as well, however given the amount of
+ time already spent on this project this is left pending
+
+- JACK (http://jackaudio.org/) is another option, however few chat applications support it
+
+- ALSA plug-ins might also be an option
+ - The 'file' plugin seemed promising
+ - Could create a "pipe" and have the plugin read from it, and the app writing to it
+
+ - The following [simple plugin] doesn't work though (VLC/Audacity = segfault)
+
+  pcm.testing {
+    type file
+    slave {
+       pcm {
+         type hw
+         card 0
+         device 0
+       }
+    }
+    infile "/dev/urandom"
+    format "raw"
+  }
