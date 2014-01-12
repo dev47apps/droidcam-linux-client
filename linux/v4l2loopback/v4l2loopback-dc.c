@@ -860,23 +860,6 @@ vidioc_g_fmt_out    (struct file *file,
    * or whether we have to always provide a valid format
    */
 
-  if (0 == dev->ready_for_capture) {
-    /* we are not fixated yet, so return a default format */
-    const struct v4l2l_format *     defaultfmt=&formats[0];
-
-    dev->pix_format.width=0; /* V4L2LOOPBACK_SIZE_DEFAULT_WIDTH; */
-    dev->pix_format.height=0; /* V4L2LOOPBACK_SIZE_DEFAULT_HEIGHT; */
-    dev->pix_format.pixelformat=defaultfmt->fourcc;
-    dev->pix_format.colorspace=V4L2_COLORSPACE_SRGB; /* do we need to set this ? */
-    dev->pix_format.field=V4L2_FIELD_NONE;
-
-    pix_format_set_size(&fmt->fmt.pix, defaultfmt,
-                        dev->pix_format.width, dev->pix_format.height);
-
-    dev->buffer_size = PAGE_ALIGN(dev->pix_format.sizeimage);
-    dprintk("buffer_size = %ld (=%d)", dev->buffer_size, dev->pix_format.sizeimage);
-    allocate_buffers(dev);
-  }
   fmt->fmt.pix = dev->pix_format;
   return 0;
 }
@@ -1623,6 +1606,7 @@ vidioc_dqbuf        (struct file *file,
     dprintkrw("output DQBUF index: %d\n", b->buffer.index);
     unset_flags(b);
     *buf = b->buffer;
+    buf->type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
     return 0;
   default:
     return -EINVAL;
@@ -2128,8 +2112,13 @@ init_vdev           (struct video_device *vdev)
 {
   MARK();
   strlcpy(vdev->name, "Loopback video device", sizeof(vdev->name));
+
+#if 0
+  //todo: remove V4L2_STD stuff (gone in kenrel 3.11?)
   vdev->tvnorms      = V4L2_STD_ALL;
   vdev->current_norm = V4L2_STD_ALL;
+#endif
+
   vdev->vfl_type     = VFL_TYPE_GRABBER;
   vdev->fops         = &v4l2_loopback_fops;
   vdev->ioctl_ops    = &v4l2_loopback_ioctl_ops;
@@ -2254,6 +2243,18 @@ v4l2_loopback_init  (struct v4l2_loopback_device *dev,
   dev->timeout_happened = 0;
 
   /* FIXME set buffers to 0 */
+
+  /* Set initial format */
+
+  dev->pix_format.width = 0; /* V4L2LOOPBACK_SIZE_DEFAULT_WIDTH; */
+  dev->pix_format.height = 0; /* V4L2LOOPBACK_SIZE_DEFAULT_HEIGHT; */
+  dev->pix_format.pixelformat = formats[0].fourcc;
+  dev->pix_format.colorspace = V4L2_COLORSPACE_SRGB; /* do we need to set this ? */
+  dev->pix_format.field = V4L2_FIELD_NONE;
+  dev->buffer_size = PAGE_ALIGN(dev->pix_format.sizeimage);
+
+  dprintk("buffer_size = %ld (=%d)\n", dev->buffer_size, dev->pix_format.sizeimage);
+  allocate_buffers(dev);
 
   init_waitqueue_head(&dev->read_event);
 
