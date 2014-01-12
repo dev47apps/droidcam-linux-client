@@ -19,6 +19,7 @@
 #include "common.h"
 #include "connection.h"
 #include "decoder.h"
+#include "icon.h"
 
 enum callbacks {
 	CB_BUTTON = 0,
@@ -112,6 +113,42 @@ static void LoadSaveSettings(int load)
 	}
 	fclose(fp);
 }
+
+/* Audio Thread */
+#if 0
+void * AudioThreadProc(void * args)
+{
+	char stream_buf[AUDIO_INBUF_SZ + 16]; // padded so libavcodec detects the end
+	SOCKET audioSocket = (SOCKET)lpParam;
+	dbgprint("Audio Thread Started\n");
+	a_running = true;
+	..
+	// Send HTTP request
+	strcpy(stream_buf, AUDIO_REQ);
+	if ( SendRecv(1, stream_buf, sizeof(AUDIO_REQ), audioSocket) <= 0){
+		MSG_ERROR("Connection lost! (Audio)");
+		goto _out;
+	}
+	// Recieve headers
+	memset(stream_buf, 0, 8);
+	if ( SendRecv(0, stream_buf, 5, audioSocket) <= 0 ){
+		MSG_ERROR("Connection reset (audio)!\nDroidCam is probably busy with another client.");
+		goto _out;
+	}
+	..
+	dbgprint("Starting audio stream .. \n");
+	memset(stream_buf, 0, sizeof(stream_buf));
+	while (a_running) {
+		if ( SendRecv(0, stream_buf, AUDIO_INBUF_SZ, audioSocket) == FALSE 
+			|| DecodeAudio(stream_buf, AUDIO_INBUF_SZ) == FALSE) 
+			break;
+	}
+_out:
+	//cleanup
+	dbgprint("Audio Thread Exiting\n");
+	return TRUE;
+}
+#endif
 
 /* Video Thread */
 void * VideoThreadProc(void * args)
@@ -339,9 +376,6 @@ int main(int argc, char *argv[])
 	GtkWidget *hbox, *hbox2;
 	GtkWidget *vbox;
 	GtkWidget *widget; // generic stuff
-	char buf[PATH_MAX];
-
-	snprintf(buf, sizeof(buf), "%s/.droidcam/icon.png", getenv("HOME"));
 
 	// init threads
 	g_thread_init(NULL);
@@ -355,7 +389,7 @@ int main(int argc, char *argv[])
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_NONE);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 //	gtk_widget_set_size_request(window, 250, 120);
-	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_file(buf, NULL));
+	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_inline(-1, icon_inline, FALSE, NULL));
 
  {
 	GtkAccelGroup *gtk_accel = gtk_accel_group_new ();

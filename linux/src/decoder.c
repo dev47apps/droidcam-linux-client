@@ -404,7 +404,14 @@ int DecodeVideo(char * data, int length)
     return TRUE;
 }
 
+// audio comes in Androids AMR-NB encoding
 int DecodeAudio(char * data, int length){
+	// todo
+	// len = avcodec_decode_audio3(a_context, (short *)(m_audioDecodeBuf + m_audioDecodeBufSize), &in_out, &a_packet);
+	// if (len < 0 || a_context->sample_fmt != SAMPLE_FMT_S16){
+	//		dbgprint("AUDIO DECODE ERROR len=%d fmt=%d\n", len, a_context->sample_fmt);
+	//		return FALSE;
+	//	}
     return FALSE;
 }
 

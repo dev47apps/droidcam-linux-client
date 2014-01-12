@@ -25,5 +25,6 @@ extern void ShowError();
 #define RGB_BUFFER_SZ(w,h) (w*h*3)
 
 #define VIDEO_INBUF_SZ 4096
+#define AUDIO_INBUF_SZ 32
 
 #endif

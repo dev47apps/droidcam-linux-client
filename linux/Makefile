@@ -7,7 +7,7 @@
 # Use at your own risk. See README file for more details.
 
 GTK  = `pkg-config --libs --cflags gtk+-2.0`
-LIBS = -lbluetooth  -Lffmpeg/ -lavcodec  -lavcore  -lavutil  -lswscale -lopencore-amrnb
+LIBS =  -lgthread-2.0 -lbluetooth  -Lffmpeg/ -lavcodec  -lavcore  -lavutil  -lswscale -lopencore-amrnb
 SRC  = src/droidcam.c src/connection.c src/decoder.c
 
 all:

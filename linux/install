@@ -46,7 +46,7 @@ echo "$INSTALL Moving driver and executable to system folders.."
 
 if [ ! -e $DRIVER_LOCATION ]
 then
-    mkdir $DRIVER_LOCATION
+    mkdir -p $DRIVER_LOCATION
 fi
 
 cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
@@ -70,7 +70,6 @@ then
  mkdir ~/.droidcam/
 fi
 
-cp icon.png ~/.droidcam/
 cp README ~/.droidcam/
 echo "$WIDTH-$HEIGHT
 IP_ADDRESS
