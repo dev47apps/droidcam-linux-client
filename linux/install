@@ -51,6 +51,7 @@ fi
 
 cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
 cp droidcam /usr/bin/
+cp droidcam-cli /usr/bin/
 
 echo "$INSTALL Registering webcam device"
 modprobe videodev

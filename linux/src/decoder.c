@@ -10,7 +10,6 @@
 #undef HAVE_AV_CONFIG_H
 #endif
 
-#include <gtk/gtk.h>
 #include <fcntl.h>
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
@@ -44,7 +43,7 @@ static int m_videoStreamFrameLen;
 static uint8_t * m_shareFrameBuf = NULL; // buffer for the webcam
 static int m_shareFrameBufSize;
 
-static GThread* hDisplayThread = NULL;
+// static GThread* hDisplayThread = NULL;
 static unsigned m_DecodeSeqNum, m_DisplaySeqNum; // Used in H263 for thread sync
 
 static AVPacket        v_packet;
@@ -108,6 +107,7 @@ static int find_droidcam_v4l(){
     return 0;
 }
 
+#if 0
 void * DisplayThreadProc(void * args){
 
     while (m_DecodeSeqNum < 1 && m_videoStreamBuf != NULL) // Wait for at least one frame
@@ -136,6 +136,7 @@ void * DisplayThreadProc(void * args){
     dbgprint("Video Display Thread End\n");
     return NULL;
 }
+#endif
 
 int  decoder_init(int w, int h){
     int ret = 0;
@@ -197,11 +198,9 @@ int decoder_prepare_video(char * header)
         goto _error_out;
     }
     m_format = (int) header[4];
-    dbgprint("W=%d H=%d Fmt=%d\n", m_width, m_height, m_format);
-
-    // ignore phone app version
     m_format = m_format % 3;
     if (m_format == 0) m_format = 3;
+    dbgprint("W=%d H=%d Fmt=%d (%d)\n", m_width, m_height, m_format, (int) header[4]);
 
     decode_frame = avcodec_alloc_frame();
 
@@ -231,6 +230,7 @@ int decoder_prepare_video(char * header)
                                  SWS_FAST_BILINEAR /* flags */, NULL, NULL, NULL);
 
         if (m_format == VIDEO_FMT_H263){
+            #if 0
             v_context->flags |= CODEC_FLAG_TRUNCATED;
             v_context->flags |= CODEC_FLAG_LOW_DELAY;
 
@@ -255,6 +255,9 @@ int decoder_prepare_video(char * header)
             m_DecodeSeqNum = m_DisplaySeqNum = 0;
             hDisplayThread = g_thread_create(DisplayThreadProc, NULL, TRUE, NULL);
             dbgprint("Allocated h263 buffer %p (len=%d)\n", m_videoStreamBuf, m_videoStreamBufSize);
+            #else
+             goto _error_out;
+            #endif
         }
         else {
             if (avcodec_open(v_context, v_codec_c) < 0) {
@@ -292,7 +295,7 @@ void decoder_cleanup()
     FREE_OBJECT(scan_frame, av_free);
     FREE_OBJECT(swc, sws_freeContext);
 
-    FREE_OBJECT(hDisplayThread, g_thread_join);
+    /// FREE_OBJECT(hDisplayThread, g_thread_join);
 }
 
 
@@ -372,6 +375,7 @@ int DecodeVideo(char * data, int length)
         }
     }
     else { // H263
+    #if 0
         v_packet.data = (uint8_t*)data;
         v_packet.size = length;
 
@@ -400,6 +404,9 @@ int DecodeVideo(char * data, int length)
             v_packet.size -= len;
             v_packet.data += len;
         }
+    #else
+        return FALSE;
+    #endif
     }
     return TRUE;
 }

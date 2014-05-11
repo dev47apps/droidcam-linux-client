@@ -18,13 +18,22 @@ extern void ShowError();
 #define VIDEO_REQ "COMMAND /videre %dx%d" 
 #define AUDIO_REQ "COMMAND /audire"
 
-//#define dbgprint(...) printf(__VA_ARGS__); fflush(stdout);
-#define dbgprint(...) 
+#define errprint(...) fprintf(stderr, __VA_ARGS__)
+// #define dbgprint      errprint
+#define dbgprint(...) /* NIL */
 
 #define YUV_BUFFER_SZ(w,h) (w*h*3/2)
 #define RGB_BUFFER_SZ(w,h) (w*h*3)
 
 #define VIDEO_INBUF_SZ 4096
 #define AUDIO_INBUF_SZ 32
+
+#ifndef FALSE
+# define FALSE 0
+#endif
+
+#ifndef TRUE
+# define TRUE  1
+#endif
 
 #endif

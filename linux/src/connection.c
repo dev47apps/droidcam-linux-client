@@ -31,12 +31,10 @@ SOCKET connectDroidCam(char * ip, int port)
 	struct sockaddr_in sin;
 	SOCKET sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	
-	if(sock == INVALID_SOCKET)
-	{
+	if(sock == INVALID_SOCKET) {
 		MSG_LASTERROR("Error");
 	}
-	else 
-	{
+	else  {
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = inet_addr(ip);
 		sin.sin_port = htons(port);
@@ -61,7 +59,7 @@ int SendRecv(int doSend, char * buffer, int bytes, SOCKET s)
 {
 	int retCode;
 	char * ptr = buffer;
-	
+
 	while (bytes > 0) 
 	{
 		retCode = (doSend) ? send(s, ptr, bytes, 0) : recv(s, ptr, bytes, 0);
@@ -221,19 +219,19 @@ static int StartInetServer(int port)
 
 	if(bind(wifiServerSocket, (struct sockaddr*)&sin, sizeof(sin)) < 0)
 	{
-		printf("bind( .. ) Failed (Error %d: %s) \n", errno, strerror(errno));
+		MSG_LASTERROR("Error: bind");
 		goto _error_out;
 	}
 	if(listen(wifiServerSocket, 1) < 0)
 	{
-		printf("listen( .. ) Failed (Error %d: %s) \n", errno, strerror(errno));
+		MSG_LASTERROR("Error: listen");
 		goto _error_out;
 	}
 
 	flags = fcntl(wifiServerSocket, F_GETFL, NULL);
 	if(flags < 0)
 	{
-		printf("fcntl( .. ) Failed (Error %d: %s) \n", errno, strerror(errno));
+		MSG_LASTERROR("Error: fcntl");
 		goto _error_out;
 	}
 	flags |= O_NONBLOCK;
@@ -252,24 +250,23 @@ _exitOk:
 	return ret;
 }
 
-void connection_cleanup(){
-	if (btServerSocket != INVALID_SOCKET){
+void connection_cleanup() {
+	if (btServerSocket != INVALID_SOCKET) {
 		close(btServerSocket);
 		btServerSocket = INVALID_SOCKET;
 	}
-	 if(sdpRecord != NULL)
-	{
+	 if(sdpRecord != NULL) {
 		sdp_record_unregister(sdpSession, sdpRecord);
 		sdpRecord = NULL;
 	}
-	if(sdpSession != NULL)
-	{
+	if(sdpSession != NULL) {
 		sdp_close(sdpSession);
 		sdpSession = NULL;
 	}
-	
-	if (wifiServerSocket != INVALID_SOCKET)
+	if (wifiServerSocket != INVALID_SOCKET) {
 		close(wifiServerSocket);
+		wifiServerSocket = INVALID_SOCKET;
+	}
 }
 
 SOCKET accept_bth_connection()
@@ -311,7 +308,7 @@ SOCKET accept_inet_connection(int port)
 	if (wifiServerSocket == INVALID_SOCKET && !StartInetServer(port)) 
 		goto _error_out;
 
-	dbgprint("waiting on port %d..", port);
+	errprint("waiting on port %d..", port);
 	while(v_running && (client = accept(wifiServerSocket, NULL, NULL)) == INVALID_SOCKET)
 	{
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR){
@@ -321,6 +318,7 @@ SOCKET accept_inet_connection(int port)
 		MSG_LASTERROR("Accept Failed");
 		break;
 	}
+	errprint("got socket %d\n", client);
 
 	if (client != INVALID_SOCKET) {// Blocking..
 		flags = fcntl(wifiServerSocket, F_GETFL, NULL);

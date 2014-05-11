@@ -73,6 +73,57 @@ void ShowError(const char * title, const char * msg)
 		gdk_threads_leave();
 }
 
+static int CheckAdbDevices(int port){
+	char buf[256];
+	int haveDevice = 0;
+
+	system("adb start-server");
+	FILE* pipe = popen("adb devices", "r");
+	if (!pipe) {
+		goto _exit;
+	}
+
+	while (!feof(pipe)) {
+		dbgprint("->");
+		if (fgets(buf, sizeof(buf), pipe) == NULL) break;
+		dbgprint("Got line: %s", buf);
+
+		if (strstr(buf, "List of") != NULL){
+			haveDevice = 2;
+			continue;
+		}
+		if (haveDevice == 2) {
+			if (strstr(buf, "offline") != NULL){
+				haveDevice = 4;
+				break;
+			}
+			if (strstr(buf, "device") != NULL && strstr(buf, "??") == NULL){
+				haveDevice = 8;
+				break;
+			}
+		}
+	}
+	pclose(pipe);
+	#define TAIL "Please refer to the website for manual adb setup info."
+	if (haveDevice == 0 || haveDevice == 1) {
+		MSG_ERROR("adb.exe not detected. " TAIL);
+	}
+	else if (haveDevice == 2) {
+		MSG_ERROR("No devices detected. " TAIL);
+	}
+	else if (haveDevice == 4) {
+		system("adb kill-server");
+		MSG_ERROR("Device is offline. Try re-attaching device.");
+	}
+	else if (haveDevice == 8) {
+		sprintf(buf, "adb forward tcp:%d tcp:%d", port, port);
+		system(buf);
+	}
+_exit:
+	dbgprint("haveDevice = %d\n", haveDevice);
+	return haveDevice;
+}
+
 static void LoadSaveSettings(int load)
 {
 	char buf[PATH_MAX];
@@ -89,7 +140,7 @@ static void LoadSaveSettings(int load)
 		g_settings.height = 240;
 	}
 	if (!fp){
-		printf("settings error (%s): %d '%s'\n", buf, errno, strerror(errno));
+		MSG_LASTERROR("settings error");
 		return;
 	}
 
@@ -155,12 +206,11 @@ void * VideoThreadProc(void * args)
 {
 	char stream_buf[VIDEO_INBUF_SZ + 16]; // padded so libavcodec detects the end
 	SOCKET videoSocket = (SOCKET) args;
-	int keep_waiting = 0, no_errors;
+	int keep_waiting = 0;
 	dbgprint("Video Thread Started s=%d\n", videoSocket);
 	v_running = 1;
 
 _wait:
-	no_errors = 0;
 	// We are the server
 	if (videoSocket == INVALID_SOCKET)
 	{
@@ -173,7 +223,7 @@ _wait:
 
 		keep_waiting = 1;
 	}
-	else
+
 	{
 		int L = sprintf(stream_buf, VIDEO_REQ, g_settings.width, g_settings.height);
 		if ( SendRecv(1, stream_buf, L, videoSocket) <= 0 ){
@@ -202,17 +252,13 @@ _wait:
 			break;
 	}
 
-	if (v_running && keep_waiting){
-		no_errors = 1;
-	}
-
 _out:
 
 	dbgprint("disconnect\n");
 	disconnect(videoSocket);
 	decoder_cleanup();
 
-	if (no_errors && v_running && keep_waiting){
+	if (v_running && keep_waiting){
 		videoSocket = INVALID_SOCKET;
 		goto _wait;
 	}
@@ -289,11 +335,12 @@ _up:
 				int port = atoi(gtk_entry_get_text(g_settings.portEntry));
 				LoadSaveSettings(0); // Save
 
-				if (g_settings.connection == CB_RADIO_ADB)
+				if (g_settings.connection == CB_RADIO_ADB) {
+					if (CheckAdbDevices(port) != 8) return;
 					ip = "127.0.0.1";
-
-				else if (g_settings.connection == CB_RADIO_WIFI && wifi_srvr_mode == 0)
+				} else if (g_settings.connection == CB_RADIO_WIFI && wifi_srvr_mode == 0) {
 					ip = gtk_entry_get_text(g_settings.ipEntry);
+				}
 
 				if (ip != NULL) // Not Bluetooth or "Server Mode", so connect first
 				{
@@ -444,10 +491,13 @@ int main(int argc, char *argv[])
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(widget), TRUE);
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_WIFI);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
+	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Wifi Server Mode");
+	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
+	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Bluetooth");
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_BTH);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "ADB");
+	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "USB (over adb)");
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 
@@ -457,13 +507,9 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 5);
 	*/
 
-	widget = gtk_check_button_new_with_label("WiFi Server Mode");
-	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 5);
-
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	widget = gtk_button_new_with_label("...");
-	gtk_widget_set_size_request(widget, 40, 30);
+	gtk_widget_set_size_request(widget, 40, 28);
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), CB_BTN_OTR);
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, FALSE, FALSE, 0);
