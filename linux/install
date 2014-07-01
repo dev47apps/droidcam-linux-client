@@ -5,13 +5,14 @@
 #
 set -e
 INSTALL=" -- INSTALL: "
+HOME_DIR="/home/`logname`/.droidcam"
 V4L2_LOOPBACK_DIR="v4l2loopback";
 V4L2_LOOPBACK_DC="v4l2loopback-dc";
 V4L2_LOOPBACK_KO="v4l2loopback-dc.ko";
 DRIVER_LOCATION="/lib/modules/`uname -r`/kernel/drivers/media/video/";
 
-WIDTH="320"
-HEIGHT="240"
+WIDTH="640"
+HEIGHT="480"
 
 if [ "$1" != "" ]
 then
@@ -32,6 +33,7 @@ then
 fi
 
 echo "$INSTALL Webcam parameters: '$WIDTH' and '$HEIGHT'"
+echo "$INSTALL Home directory: $HOME_DIR"
 
 echo "$INSTALL Building $V4L2_LOOPBACK_KO"
 cd $V4L2_LOOPBACK_DIR && make && cd ..
@@ -58,24 +60,30 @@ modprobe videodev
 insmod $DRIVER_LOCATION$V4L2_LOOPBACK_KO width=$WIDTH height=$HEIGHT
 
 echo "$INSTALL adding driver to /etc/modules";
-echo "videodev
-$V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT
-" >> /etc/modules
+cp /etc/modules /etc/modules.bak
+prevperm=`stat -c %a /etc/modules`
+chmod 666 /etc/modules
+echo "videodev" >> /etc/modules
+echo "$V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" >> /etc/modules
+chmod $prevperm /etc/modules
 
 echo "$INSTALL Running depmod"
 depmod -a
 
-echo "$INSTALL Creating ~/.droidcam"
-if [ ! -e "~/.droidcam/" ]
+echo "$INSTALL Creating $HOME_DIR"
+if [ ! -e $HOME_DIR ]
 then 
- mkdir ~/.droidcam/
+ mkdir $HOME_DIR
 fi
 
-cp README ~/.droidcam/
-echo "$WIDTH-$HEIGHT
-IP_ADDRESS
-4747" > ~/.droidcam/settings
-chmod a+rw ~/.droidcam/settings
+cp README $HOME_DIR
+cp uninstall $HOME_DIR
+echo "$WIDTH-$HEIGHT" > "$HOME_DIR/settings"
+echo "IP_ADDRESS"    >> "$HOME_DIR/settings"
+echo "4747"          >> "$HOME_DIR/settings"
+chmod a+rw "$HOME_DIR"
+chmod a+rw "$HOME_DIR/settings"
+
 cd $V4L2_LOOPBACK_DIR && make clean && cd ..
 echo "$INSTALL Done! You can make sure $V4L2_LOOPBACK_DC is loaded using 'lsmod'"
 

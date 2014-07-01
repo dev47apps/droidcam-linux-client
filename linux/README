@@ -16,27 +16,14 @@ REMOVAL
 
 To remove the DroidCam client (or existing old version):
 
-1. Close any running programs. Open the command line.
-2. Unload the V4L driver: sudo rmmod v4l2loopback-dc
-3. Delete the driver file and the client executable:
-sudo rm -f /usr/bin/droidcam
-sudo rm -f /lib/modules/`uname -r`/kernel/drivers/media/video/v4l2loopback-dc.ko
-
-4. Get rid of droidcam and ‘videodev’ in /etc/modules using your favorite text editor. 
-(sudo gedit /etc/modules)
-
-5. Delete ~/.droidcam/ folder
-
+Close any running programs.
+Run `uninstall' found in /home/`logname`/.droidcam/.
 
 ** Missing Audio Support
 
 - On Windows, an audio device driver simulates a virtual microphone
-
-- Seems Linux will need an ALSA driver as well, however given the amount of
- time already spent on this project this is left pending
-
+- Seems Linux will need a driver as well.
 - JACK (http://jackaudio.org/) is another option, however few chat applications support it
-
 - ALSA plug-ins might also be an option
  - The 'file' plugin seemed promising
  - Could create a "pipe" and have the plugin read from it, and the app writing to it

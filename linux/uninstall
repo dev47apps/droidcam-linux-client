@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+
+# Remove droidcam files
+sudo rmmod v4l2loopback-dc
+sudo rm -f /usr/bin/droidcam*
+sudo rm -f /lib/modules/`uname -r`/kernel/drivers/media/video/v4l2loopback-dc.ko
+
+# Remove droidcam reference in /etc/modules
+cat /etc/modules | egrep -v "(videodev|v4l2loopback-dc)" > /tmp/etc.modules
+prevperm=`stat -c %a /etc/modules`
+sudo mv /tmp/etc.modules /etc/modules
+sudo chmod $prevperm /etc/modules
+
+echo "Done, remove me as well via:"
+echo "rm -rf /home/`logname`/.droidcam/"
