@@ -42,6 +42,10 @@
 # include <media/v4l2-device.h>
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,6,1)
+ # define kstrtoul strict_strtoul
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,37)
 void * v4l2l_vzalloc (unsigned long size) {
  void*data=vmalloc(size);
@@ -453,14 +457,8 @@ static ssize_t attr_store_maxopeners(struct device* cd,
   struct v4l2_loopback_device *dev = NULL;
   unsigned long curr=0;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
   if (kstrtoul(buf, 0, &curr))
     return -EINVAL;
-#else
-  if (strict_strtoul(buf, 0, &curr))
-    return -EINVAL;
-
-#endif
 
   dev = v4l2loopback_cd2dev(cd);
 
@@ -593,9 +591,21 @@ vidioc_querycap     (struct file *file,
 
   cap->version = V4L2LOOPBACK_VERSION_CODE;
   cap->capabilities =
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
+    V4L2_CAP_DEVICE_CAPS |
+#endif
     V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_VIDEO_OUTPUT |
     V4L2_CAP_STREAMING |
     V4L2_CAP_READWRITE;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
+	cap->device_caps = (cap->capabilities & ~V4L2_CAP_DEVICE_CAPS);
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 3, 0)
+	cap->device_caps = cap->capabilities;
+	cap->capabilities |= V4L2_CAP_DEVICE_CAPS;
+#endif
 
   memset(cap->reserved, 0, sizeof(cap->reserved));
 
@@ -2131,7 +2141,11 @@ init_vdev           (struct video_device *vdev)
   vdev->release      = &video_device_release;
   vdev->minor        = -1;
 #if DEBUG
-    vdev->debug = V4L2_DEBUG_IOCTL | V4L2_DEBUG_IOCTL_ARG;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 20, 0)
+   vdev->debug = V4L2_DEBUG_IOCTL | V4L2_DEBUG_IOCTL_ARG;
+#else
+   vdev->dev_debug = V4L2_DEV_DEBUG_IOCTL | V4L2_DEV_DEBUG_IOCTL_ARG;
+#endif
 #endif
   MARK();
 }
