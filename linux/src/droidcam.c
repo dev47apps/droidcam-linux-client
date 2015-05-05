@@ -1,5 +1,5 @@
 /* DroidCam & DroidCamX (C) 2010-
- * Author: Aram G. (dev47@dev47apps.com)
+ * Author: Aram G. (dev47apps.com)
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -106,7 +106,7 @@ static int CheckAdbDevices(int port){
 	pclose(pipe);
 	#define TAIL "Please refer to the website for manual adb setup info."
 	if (haveDevice == 0 || haveDevice == 1) {
-		MSG_ERROR("adb.exe not detected. " TAIL);
+		MSG_ERROR("adb program not detected. " TAIL);
 	}
 	else if (haveDevice == 2) {
 		MSG_ERROR("No devices detected. " TAIL);
@@ -165,102 +165,69 @@ static void LoadSaveSettings(int load)
 	fclose(fp);
 }
 
-/* Audio Thread */
-#if 0
-void * AudioThreadProc(void * args)
-{
-	char stream_buf[AUDIO_INBUF_SZ + 16]; // padded so libavcodec detects the end
-	SOCKET audioSocket = (SOCKET)lpParam;
-	dbgprint("Audio Thread Started\n");
-	a_running = true;
-	..
-	// Send HTTP request
-	strcpy(stream_buf, AUDIO_REQ);
-	if ( SendRecv(1, stream_buf, sizeof(AUDIO_REQ), audioSocket) <= 0){
-		MSG_ERROR("Connection lost! (Audio)");
-		goto _out;
-	}
-	// Recieve headers
-	memset(stream_buf, 0, 8);
-	if ( SendRecv(0, stream_buf, 5, audioSocket) <= 0 ){
-		MSG_ERROR("Connection reset (audio)!\nDroidCam is probably busy with another client.");
-		goto _out;
-	}
-	..
-	dbgprint("Starting audio stream .. \n");
-	memset(stream_buf, 0, sizeof(stream_buf));
-	while (a_running) {
-		if ( SendRecv(0, stream_buf, AUDIO_INBUF_SZ, audioSocket) == FALSE 
-			|| DecodeAudio(stream_buf, AUDIO_INBUF_SZ) == FALSE) 
-			break;
-	}
-_out:
-	//cleanup
-	dbgprint("Audio Thread Exiting\n");
-	return TRUE;
-}
-#endif
-
 /* Video Thread */
 void * VideoThreadProc(void * args)
 {
-	char stream_buf[VIDEO_INBUF_SZ + 16]; // padded so libavcodec detects the end
+	char buf[32];
 	SOCKET videoSocket = (SOCKET) args;
 	int keep_waiting = 0;
 	dbgprint("Video Thread Started s=%d\n", videoSocket);
 	v_running = 1;
 
-_wait:
-	// We are the server
-	if (videoSocket == INVALID_SOCKET)
-	{
-		videoSocket = (g_settings.connection == CB_RADIO_BTH)
-			? accept_bth_connection()
-			: accept_inet_connection(atoi(gtk_entry_get_text(g_settings.portEntry)));
-
-		if (videoSocket == INVALID_SOCKET)
-			goto _out;
-
+server_wait:
+	if (videoSocket == INVALID_SOCKET) {
+		videoSocket = accept_connection(atoi(gtk_entry_get_text(g_settings.portEntry)));
+		if (videoSocket == INVALID_SOCKET) { goto early_out; }
 		keep_waiting = 1;
 	}
 
 	{
-		int L = sprintf(stream_buf, VIDEO_REQ, g_settings.width, g_settings.height);
-		if ( SendRecv(1, stream_buf, L, videoSocket) <= 0 ){
-			MSG_ERROR("Connection lost!");
-			goto _out;
+		int len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
+		if (SendRecv(1, buf, len, videoSocket) <= 0){
+			MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
+			goto early_out;
 		}
-		dbgprint("Sent request, ");
-	}
-	memset(stream_buf, 0, sizeof(stream_buf));
-
-	if ( SendRecv(0, stream_buf, 5, videoSocket) <= 0 ){
-		MSG_ERROR("Connection reset!\nDroidCam is probably busy with another client");
-		goto _out;
 	}
 
-	if ( decoder_prepare_video(stream_buf) == FALSE )
-		goto _out;
+	memset(buf, 0, sizeof(buf));
+	if (SendRecv(0, buf, 5, videoSocket) <= 0 ){
+		MSG_ERROR("Connection reset by app!\nDroidCam is probably busy with another client");
+		goto early_out;
+	}
+
+	if (decoder_prepare_video(buf) == FALSE) {
+		goto early_out;
+	}
 
 	while (v_running != 0){
 		if (thread_cmd != 0) {
-			int L = sprintf(stream_buf, OTHER_REQ, thread_cmd);
-			SendRecv(1, stream_buf, L, videoSocket);
+			int len = sprintf(buf, OTHER_REQ, thread_cmd);
+			SendRecv(1, buf, len, videoSocket);
 			thread_cmd = 0;
 		}
-		if ( SendRecv(0, stream_buf, VIDEO_INBUF_SZ, videoSocket) == FALSE || DecodeVideo(stream_buf, VIDEO_INBUF_SZ) == FALSE)
-			break;
+
+		int frameLen;
+		struct jpg_frame_s *f = decoder_get_next_frame();
+		if (SendRecv(0, buf, 4, videoSocket) == FALSE) break;
+		make_int4(frameLen, buf[0], buf[1], buf[2], buf[3]);
+		f->length = frameLen;
+		char *p = (char*)f->data;
+		while (frameLen > 4096) {
+			if (SendRecv(0, p, 4096, videoSocket) == FALSE) goto early_out;
+			frameLen -= 4096;
+			p += 4096;
+		}
+		if (SendRecv(0, p, frameLen, videoSocket) == FALSE) break;
 	}
 
-_out:
-
+early_out:
 	dbgprint("disconnect\n");
 	disconnect(videoSocket);
 	decoder_cleanup();
 
 	if (v_running && keep_waiting){
 		videoSocket = INVALID_SOCKET;
-		goto _wait;
+		goto server_wait;
 	}
 
 	connection_cleanup();
@@ -305,9 +272,10 @@ accel_callback( GtkAccelGroup  *group,
 		  GdkModifierType mod,
 		  gpointer		user_data)
 {
-	if(v_running == 1 && thread_cmd ==0 && m_format != VIDEO_FMT_H263){
+	if(v_running == 1 && thread_cmd ==0){
 		thread_cmd = (int) user_data;
 	}
+	return TRUE;
 }
 
 
@@ -339,7 +307,7 @@ _up:
 					if (CheckAdbDevices(port) != 8) return;
 					ip = "127.0.0.1";
 				} else if (g_settings.connection == CB_RADIO_WIFI && wifi_srvr_mode == 0) {
-					ip = gtk_entry_get_text(g_settings.ipEntry);
+					ip = (char*)gtk_entry_get_text(g_settings.ipEntry);
 				}
 
 				if (ip != NULL) // Not Bluetooth or "Server Mode", so connect first
@@ -349,7 +317,7 @@ _up:
 						break;
 					}
 					gtk_button_set_label(g_settings.button, "Please wait");
-					s = connectDroidCam(ip, port);
+					s = connect_droidcam(ip, port);
 
 					if (s == INVALID_SOCKET)
 					{
@@ -394,13 +362,13 @@ _up:
 			ipEdit = FALSE;
 		break;
 		case CB_BTN_OTR:
-			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, NULL);
+			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, 0);
 		break;
 		case CB_CONTROL_ZIN  :
 		case CB_CONTROL_ZOUT :
 		case CB_CONTROL_AF   :
 		case CB_CONTROL_LED  :
-		if(v_running == 1 && thread_cmd ==0 && m_format != VIDEO_FMT_H263){
+		if(v_running == 1 && thread_cmd ==0){
 			thread_cmd =  cb - 10;
 		}
 		break;
@@ -493,9 +461,9 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Wifi Server Mode");
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Bluetooth");
-	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_BTH);
+	// gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
+	// widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Bluetooth");
+	// g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_BTH);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "USB (over adb)");
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
@@ -510,7 +478,7 @@ int main(int argc, char *argv[])
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	widget = gtk_button_new_with_label("...");
 	gtk_widget_set_size_request(widget, 40, 28);
-	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), CB_BTN_OTR);
+	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_OTR);
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, FALSE, FALSE, 0);
 

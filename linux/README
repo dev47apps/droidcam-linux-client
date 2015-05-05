@@ -1,5 +1,5 @@
 # DroidCam & DroidCamX Linux Client (C) 2010-
-# Author: Aram G. (dev47@dev47apps.com)
+# Author: Aram G. (dev47apps.com)
 
 NOTICE 
 
@@ -23,22 +23,5 @@ Run `uninstall' found in /home/`logname`/.droidcam/.
 
 - On Windows, an audio device driver simulates a virtual microphone
 - Seems Linux will need a driver as well.
-- JACK (http://jackaudio.org/) is another option, however few chat applications support it
-- ALSA plug-ins might also be an option
- - The 'file' plugin seemed promising
- - Could create a "pipe" and have the plugin read from it, and the app writing to it
 
- - The following [simple plugin] doesn't work though (VLC/Audacity = segfault)
-
-  pcm.testing {
-    type file
-    slave {
-       pcm {
-         type hw
-         card 0
-         device 0
-       }
-    }
-    infile "/dev/urandom"
-    format "raw"
-  }
+https://github.com/aramg/alsa-minivosc-src

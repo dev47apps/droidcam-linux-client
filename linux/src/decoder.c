@@ -1,5 +1,5 @@
 /* DroidCam & DroidCamX (C) 2010-
- * Author: Aram G. (dev47@dev47apps.com)
+ * Author: Aram G. (dev47apps.com)
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -10,51 +10,130 @@
 #undef HAVE_AV_CONFIG_H
 #endif
 
+#include <unistd.h>
 #include <fcntl.h>
-#include <linux/videodev2.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
+#include <linux/videodev2.h>
+#include <linux/limits.h>
+
+#include "jpeglib.h"
+#if 0
+#include "speex/speex.h"
+#endif
 
 #include "common.h"
 #include "decoder.h"
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
 
-#define VIDEO_BUF_FRAMES   16 // H.263 Frames to Buffer
-#define VIDEO_BUF_SLEEP_MS 40 // 25fps (MediaRecoder seems to ignore the specified fps)
 
-#define FREE_OBJECT(obj, free_func) if(obj){dbgprint(" " #obj " %p\n", obj); free_func(obj); obj=NULL;}
-#define SHARE_FRAME(ptr, len) \
-    if(write(droidcam_device_fd,ptr,len) == -1 && errno != EAGAIN) \
-        printf("WARN: Failed to write frame (err#%d='%s')\n", errno, strerror(errno))
+struct spx_decoder_s {
+ void *state;
+#if 0
+ SpeexBits bits;
+#endif
+ int audioBoostPerc;
+ int frame_size;
+};
 
+struct jpg_dec_ctx_s {
+ struct jpeg_decompress_struct dinfo;
+ struct jpeg_error_mgr jerr;
+ int init;
+ int subsamp;
+ int m_width, m_height;
+ int m_YuvSize, m_ySize;
+ int m_NextFrame, m_NextSlot, m_BufferLimit, m_BufferedFrames;
+ BYTE *m_rawBuf,*m_jpgBuf;
+
+ /* these should be alloced for each frame but sunce the stream
+  * from the app will be consistent, we'll optimize by only allocing
+  * once */
+ int cw[MAX_COMPONENTS], ch[MAX_COMPONENTS], iw[MAX_COMPONENTS], th[MAX_COMPONENTS];
+ JSAMPROW *outbuf[MAX_COMPONENTS];
+
+ int bc_lut_used;
+ int save_next_frame;
+
+ BYTE bc_lut[256];
+ char save_file_name[PATH_MAX];
+
+ int transform, rescale, doMirror;
+ float scaleX, scaleY;
+ float moveX , moveY;
+ float rot;
+};
+
+#define JPG_BACKBUF_MAX 10
+struct jpg_frame_s    jpg_frames[JPG_BACKBUF_MAX];
+struct jpg_dec_ctx_s  jpg_decoder;
+struct spx_decoder_s  spx_decoder;
+
+static int WEBCAM_W, WEBCAM_H;
 static int droidcam_device_fd;
 
-int m_width, m_height, m_format; // stream params (sent from phone)
-int share_w, share_h;            // webcam params (from settings file)
 
-static uint8_t * m_videoStreamBuf = NULL;// buffer for incoming stream
-static int m_videoStreamBufSize;
-static int m_videoStreamFrameLen;
+#define MAX_COMPONENTS  10
+#define TJ_NUMSAMP 5
+#define NUMSUBOPT TJ_NUMSAMP
 
-static uint8_t * m_shareFrameBuf = NULL; // buffer for the webcam
-static int m_shareFrameBufSize;
+/**
+ * MCU block width (in pixels) for a given level of chrominance subsampling.
+ * MCU block sizes:
+ * - 8x8 for no subsampling or grayscale
+ * - 16x8 for 4:2:2
+ * - 8x16 for 4:4:0
+ * - 16x16 for 4:2:0
+ */
+static const int tjMCUWidth[TJ_NUMSAMP]  = {8, 16, 16, 8, 8};
 
-// static GThread* hDisplayThread = NULL;
-static unsigned m_DecodeSeqNum, m_DisplaySeqNum; // Used in H263 for thread sync
+/**
+ * MCU block height (in pixels) for a given level of chrominance subsampling.
+ * MCU block sizes:
+ * - 8x8 for no subsampling or grayscale
+ * - 16x8 for 4:2:2
+ * - 8x16 for 4:4:0
+ * - 16x16 for 4:2:0
+ */
+static const int tjMCUHeight[TJ_NUMSAMP] = {8, 8, 16, 8, 16};
 
-static AVPacket        v_packet;
-static AVCodec        *v_codec_b, *v_codec_c;
-static AVCodecContext *v_context = NULL;
-struct SwsContext     *swc  = NULL;
-static AVFrame        *decode_frame = NULL; // decoded frames
-static AVFrame        *share_frame  = NULL; // resized frames (mapped to m_shareFrameBuf)
+static const int pixelsize[TJ_NUMSAMP]={3, 3, 3, 1, 3};
 
-static AVFrame * scan_frame = NULL;// used for H263 to resize into back-buffer
-static uint8_t * scan_ptr   = NULL;// scans back-buffer (m_videoStreamBuf)
+#define PAD(v, p) ((v+(p)-1)&(~((p)-1)))
+
+enum TJSAMP {
+  TJSAMP_444=0,
+  TJSAMP_422,
+  TJSAMP_420,
+  TJSAMP_GRAY,
+  TJSAMP_440,
+  TJSAMP_UNK,
+  TJSAMP_NIL
+};
+
+
+static int fatal_error = 0;
+
+void jpeg_mem_dest_tj(j_compress_ptr, unsigned char **, unsigned long *, boolean);
+void jpeg_mem_src_tj(j_decompress_ptr, unsigned char *, unsigned long);
+
+void joutput_message(j_common_ptr cinfo) {
+    char buffer[JMSG_LENGTH_MAX];
+    (*cinfo->err->format_message) (cinfo, buffer);
+    dbgprint("JERR: %s", buffer);
+}
+
+void jerror_exit(j_common_ptr cinfo) {
+    dbgprint("jerror_exit(), fatal error");
+    fatal_error = 1;
+    (*cinfo->err->output_message) (cinfo);
+}
+
+#define FREE_OBJECT(obj, free_func) if(obj){dbgprint(" " #obj " %p\n", obj); free_func(obj); obj=NULL;}
 
 static int xioctl(int fd, int request, void *arg){
     int r;
@@ -63,14 +142,15 @@ static int xioctl(int fd, int request, void *arg){
     return r;
 }
 
+static inline int clip(int v){ return ((v < 0) ? 0 : ((v >= 256) ? 255 : v)); }
+
 static int find_droidcam_v4l(){
     int crt_video_dev = 0;
     char device[12];
     struct stat st;
     struct v4l2_capability v4l2cap;
 
-    // look at the first 10 video devices
-    for(crt_video_dev = 0; crt_video_dev < 9; crt_video_dev++)
+    for(crt_video_dev = 0; crt_video_dev < 99; crt_video_dev++)
     {
         droidcam_device_fd = -1;
         sprintf(device, "/dev/video%d", crt_video_dev);
@@ -103,328 +183,270 @@ static int find_droidcam_v4l(){
         close(droidcam_device_fd); // not DroidCam .. keep going
         continue;
     }
-    MSG_ERROR("Device not found (/dev/video[0-9]).\nDid you install it? \n");
+    MSG_ERROR("Device not found (/dev/video[0-9]).\nDid you install it?\n");
     return 0;
 }
 
-#if 0
-void * DisplayThreadProc(void * args){
 
-    while (m_DecodeSeqNum < 1 && m_videoStreamBuf != NULL) // Wait for at least one frame
-        usleep(1000);
-
-    uint8_t * ptrRead = m_videoStreamBuf;
-    uint8_t * buf_end = m_videoStreamBuf + m_videoStreamBufSize;
-
-    dbgprint("Video Display Thread avast!\n");
-
-    while (m_videoStreamBuf != NULL)
-    {
-        if (m_DisplaySeqNum < m_DecodeSeqNum)
-        {
-            SHARE_FRAME(ptrRead, m_videoStreamFrameLen);
-            m_DisplaySeqNum ++;
-
-            ptrRead += m_videoStreamFrameLen;
-            if (ptrRead >= buf_end) ptrRead = m_videoStreamBuf;
-            usleep(VIDEO_BUF_SLEEP_MS * 1000);
-        } else {
-            g_thread_yield ();
-        }
-    }
-
-    dbgprint("Video Display Thread End\n");
-    return NULL;
+void decoder_set_video_delay(unsigned v) {
+    if (v > JPG_BACKBUF_MAX) v = JPG_BACKBUF_MAX;
+    else if (v < 1) v = 1;
+    jpg_decoder.m_BufferLimit = v;
+    dbgprint("buffer %d frames\n", jpg_decoder.m_BufferLimit);
 }
-#endif
 
-int  decoder_init(int w, int h){
+int  decoder_init(int webcam_w, int webcam_h) {
     int ret = 0;
-    if (!find_droidcam_v4l())
-        goto _error_out;
-
-    share_w = w;
-    share_h = h;
-    m_shareFrameBufSize = YUV_BUFFER_SZ(w, h); //avpicture_get_size(PIX_FMT_YUV420P,w,h);
-
-    if (m_shareFrameBufSize < VIDEO_INBUF_SZ){
+    WEBCAM_W = webcam_w;
+    WEBCAM_H = webcam_h;
+    dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
+    if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
         MSG_ERROR("Invalid webcam resolution in settings");
         goto _error_out;
     }
 
-    avcodec_init();
-    avcodec_register_all();
+    find_droidcam_v4l();
 
-    share_frame = avcodec_alloc_frame();
-    m_shareFrameBuf = (uint8_t*)av_malloc( m_shareFrameBufSize * sizeof(uint8_t));
-    avpicture_fill((AVPicture *)share_frame, m_shareFrameBuf, PIX_FMT_YUV420P, share_w, share_h);
-    SHARE_FRAME(m_shareFrameBuf, m_shareFrameBufSize);
+    fatal_error = 0;
+    jpg_decoder.dinfo.err = jpeg_std_error(&jpg_decoder.jerr);
+    jpg_decoder.jerr.output_message = joutput_message;
+    jpg_decoder.jerr.error_exit = jerror_exit;
+    jpeg_create_decompress(&jpg_decoder.dinfo);
+    if (fatal_error) goto _error_out;
+    jpg_decoder.init = 1;
+    jpg_decoder.subsamp = TJSAMP_NIL;
 
-    av_init_packet(&v_packet);
-    //av_init_packet(&a_packet);
-
-    v_codec_b = avcodec_find_decoder(CODEC_ID_H263);
-    v_codec_c = avcodec_find_decoder(CODEC_ID_MJPEG);
-    //a_codec = avcodec_find_decoder(CODEC_ID_AMR_NB);
-
-    if (!v_codec_b || !v_codec_c ){//|| !a_codec) {
-        MSG_ERROR("Decoder Error (1)");
-        goto _error_out;
-    }
+#if 0
+    speex_bits_init(&spx_decoder.bits);
+    spx_decoder.state = speex_decoder_init(speex_lib_get_mode(SPEEX_MODEID_WB));
+    speex_decoder_ctl(spx_decoder.state, SPEEX_GET_FRAME_SIZE, &spx_decoder.frame_size);
+    dbgprint("spx_decoder.state=%p\n", spx_decoder.state);
+#endif
+    // FIXME -- GDI+ replacement? How to resize and flip ...?
 
     ret = 1;
 _error_out:
     return ret;
 }
 
-void decoder_fini()
-{
+void decoder_fini() {
     if (droidcam_device_fd) close(droidcam_device_fd);
-    FREE_OBJECT(m_shareFrameBuf, av_free);
-    FREE_OBJECT(share_frame, av_free);
+    dbgprint("spx_decoder.state=%p\n", spx_decoder.state);
+    if (spx_decoder.state != NULL) {
+#if 0
+        speex_bits_destroy(&spx_decoder.bits);
+        speex_decoder_destroy(spx_decoder.state);
+#endif
+        spx_decoder.state = NULL;
+    }
+    fatal_error = 0;
+    if (jpg_decoder.init != 0) {
+        jpeg_destroy_decompress(&jpg_decoder.dinfo);
+        jpg_decoder.init = 0;
+    }
 }
 
-int decoder_prepare_video(char * header)
-{
-    int ret = FALSE;
+int decoder_prepare_video(char * header) {
+    jpg_decoder.save_next_frame = 0;
 
-    #define make_int(num, b1, b2)   num = 0; num |=(b1&0xFF); num <<= 8; num |= (b2&0xFF);
+    make_int(jpg_decoder.m_width,  header[0], header[1]);
+    make_int(jpg_decoder.m_height, header[2], header[3]);
 
-    make_int(m_width,  header[0], header[1]);
-    make_int(m_height, header[2], header[3]);
-
-    if (m_width <= 0 || m_height <= 0) {
+    if (jpg_decoder.m_width <= 0 || jpg_decoder.m_height <= 0) {
         MSG_ERROR("Invalid data stream!");
-        goto _error_out;
-    }
-    m_format = (int) header[4];
-    m_format = m_format % 3;
-    if (m_format == 0) m_format = 3;
-    dbgprint("W=%d H=%d Fmt=%d (%d)\n", m_width, m_height, m_format, (int) header[4]);
-
-    decode_frame = avcodec_alloc_frame();
-
-    if (m_format == VIDEO_FMT_YUV) {
-        m_videoStreamBufSize = 0;
-        m_videoStreamFrameLen = YUV_BUFFER_SZ(m_width, m_height);
-        m_videoStreamBuf = (uint8_t*)av_malloc((m_videoStreamFrameLen + VIDEO_INBUF_SZ) * sizeof(uint8_t));
-
-        swc = sws_getContext(m_width, m_height, PIX_FMT_NV21, /* src */
-                             share_w, share_h , PIX_FMT_YUV420P, /* dst */
-                             SWS_FAST_BILINEAR /* flags */, NULL, NULL, NULL);
-        dbgprint("yuv buffer %p\n", m_videoStreamBuf);
-    } else {
-        v_context = avcodec_alloc_context();
-
-        if (!v_context || !decode_frame){
-            MSG_ERROR("Decoder Error (2)");
-            goto _error_out;
-        }
-
-        v_context->width   = m_width;
-        v_context->height  = m_height;
-        dbgprint("v_context ... w=%d, h=%d \n", m_width, m_height);
-
-        swc = sws_getContext(m_width, m_height, PIX_FMT_YUV420P, /* src */
-                                 share_w, share_h , PIX_FMT_YUV420P, /* dst */
-                                 SWS_FAST_BILINEAR /* flags */, NULL, NULL, NULL);
-
-        if (m_format == VIDEO_FMT_H263){
-            #if 0
-            v_context->flags |= CODEC_FLAG_TRUNCATED;
-            v_context->flags |= CODEC_FLAG_LOW_DELAY;
-
-            if (avcodec_open(v_context, v_codec_b) < 0) {
-                MSG_ERROR("Decoder Error (3)");
-                goto _error_out;
-            }
-
-            // H.263 frames are decoded in 'batches' resulting in bursts
-            // We have to buffer the frames and play them smoothly
-            // in a seperate thread (hDisplayThread).
-            // Frames will be decoded then resized INTO m_videoStreamBuf
-            // via scan_ptr and scan_frame.
-
-            m_videoStreamFrameLen = YUV_BUFFER_SZ(share_w, share_h);
-            m_videoStreamBufSize  = m_videoStreamFrameLen * VIDEO_BUF_FRAMES;
-            m_videoStreamBuf = (uint8_t*)av_malloc(m_videoStreamBufSize * sizeof(uint8_t));
-
-            scan_frame = avcodec_alloc_frame();
-            scan_ptr   = m_videoStreamBuf;
-
-            m_DecodeSeqNum = m_DisplaySeqNum = 0;
-            hDisplayThread = g_thread_create(DisplayThreadProc, NULL, TRUE, NULL);
-            dbgprint("Allocated h263 buffer %p (len=%d)\n", m_videoStreamBuf, m_videoStreamBufSize);
-            #else
-             goto _error_out;
-            #endif
-        }
-        else {
-            if (avcodec_open(v_context, v_codec_c) < 0) {
-                MSG_ERROR("Decoder Error (4)");
-                goto _error_out;
-            }
-
-            m_videoStreamBufSize = 0;
-            m_videoStreamFrameLen = YUV_BUFFER_SZ(m_width, m_height);
-            m_videoStreamBuf = (uint8_t*)av_malloc((m_videoStreamFrameLen) * sizeof(uint8_t));
-
-            // Uncompressed jpeg is yuv420p size
-            // We would need to scan the incoming buffer for EOI marker
-            // But instead we just fill the buffer a bit and consume
-            m_videoStreamFrameLen /= 4;
-
-            dbgprint("Allocated jpeg buffer %p (limit = %d)\n", m_videoStreamBuf, m_videoStreamFrameLen);
-        }
-
-    }
-    ret = TRUE;
-
-_error_out:
-    return ret;
-}
-void decoder_cleanup()
-{
-    dbgprint("Cleanup\n");
-
-    if (v_context) avcodec_close(v_context);
-    FREE_OBJECT(v_context, av_free);
-
-    FREE_OBJECT(m_videoStreamBuf, av_free);
-    FREE_OBJECT(decode_frame, av_free);
-    FREE_OBJECT(scan_frame, av_free);
-    FREE_OBJECT(swc, sws_freeContext);
-
-    /// FREE_OBJECT(hDisplayThread, g_thread_join);
-}
-
-
-int DecodeVideo(char * data, int length)
-{
-    if (m_format == VIDEO_FMT_YUV){
-        memcpy(m_videoStreamBuf + m_videoStreamBufSize, data, length);
-        m_videoStreamBufSize += length;
-
-        if ( m_videoStreamBufSize >= m_videoStreamFrameLen ) // Have a complete YUV frame
-        {
-            avpicture_fill((AVPicture *)decode_frame, m_videoStreamBuf, PIX_FMT_NV21, m_width, m_height);
-            sws_scale(swc, decode_frame->data, decode_frame->linesize, 0, m_height, share_frame->data, share_frame->linesize);
-            SHARE_FRAME(m_shareFrameBuf, m_shareFrameBufSize);
-
-            m_videoStreamBufSize -= m_videoStreamFrameLen; // shift back
-            memmove(m_videoStreamBuf, m_videoStreamBuf + m_videoStreamFrameLen, m_videoStreamBufSize);
-            #if 0
-            int i, area = m_width * m_height;
-            memcpy(m_videoDecodeBuf, m_videoBackBuf, area); // y
-            uint8_t * pbb = m_videoBackBuf + area; // Andoird NV21: "YYY..VUVU.."
-            uint8_t * pu = m_videoDecodeBuf + area;
-            uint8_t * pv = m_videoDecodeBuf + area;
-            area = area >> 2;
-            pv += area;
-            for (i = 0; i < area; i++)
-            {
-                *pv++ = *pbb++;
-                *pu++ = *pbb++;
-            }
-            #endif
-        }
-    }
-    else if(m_format == VIDEO_FMT_JPEG)
-    {
-        memcpy(m_videoStreamBuf + m_videoStreamBufSize, data, length);
-        m_videoStreamBufSize += length;
-
-        while ( m_videoStreamBufSize >= m_videoStreamFrameLen )
-        {
-            v_packet.data = m_videoStreamBuf;
-            v_packet.size = m_videoStreamBufSize;
-
-            int len, have_frame = 0;
-            if ((len = avcodec_decode_video2(v_context, decode_frame, &have_frame, &v_packet)) < 0){
-                printf("VIDEO DECODE ERROR (%d)\n", have_frame);
-                return FALSE;
-            }
-            sws_scale(swc, decode_frame->data, decode_frame->linesize, 0, m_height, share_frame->data, share_frame->linesize);
-            SHARE_FRAME(m_shareFrameBuf, m_shareFrameBufSize);
-
-            m_videoStreamBufSize -= len; // shift back
-            memmove(m_videoStreamBuf, m_videoStreamBuf + len, m_videoStreamBufSize);
-            #if 0
-            uint8_t * pbuf = m_shareFrameBuf;
-            uint8_t * pyuv = frame->data[0]; // y
-            int i;
-            for (i =0; i < share_h; i++) {
-                memcpy(pbuf, pyuv, share_w);
-                pbuf += share_w;
-                pyuv += frame->linesize[0];
-            }
-
-            pyuv = frame->data[1]; // u
-            for (i =0; i < share_h/2; i++) {
-                memcpy(pbuf, pyuv, share_w/2);
-                pbuf += share_w/2;
-                pyuv += frame->linesize[1];
-            }
-            pyuv = frame->data[2]; // v
-            for (i =0; i < share_h/2; i++) {
-                memcpy(pbuf, pyuv, share_w/2);
-                pbuf += share_w/2;
-                pyuv += frame->linesize[2];
-            }
-            #endif
-        }
-    }
-    else { // H263
-    #if 0
-        v_packet.data = (uint8_t*)data;
-        v_packet.size = length;
-
-        uint8_t * buf_end = m_videoStreamBuf + m_videoStreamBufSize;
-        int len=0, have_frame=0;
-        while (v_packet.size > 0)
-        {
-            len = avcodec_decode_video2(v_context, decode_frame, &have_frame, &v_packet);
-            if (len < 0 ){
-                printf("VIDEO DECODE ERROR len=%d fmt=%d\n", len, v_context->pix_fmt);
-                return FALSE;
-            }
-            if (have_frame)
-            {
-                avpicture_fill((AVPicture *)scan_frame, scan_ptr, PIX_FMT_YUV420P, share_w, share_h);
-                sws_scale(swc, decode_frame->data, decode_frame->linesize, 0, m_height, scan_frame->data, scan_frame->linesize);
-                m_DecodeSeqNum ++;
-
-                scan_ptr += m_videoStreamFrameLen;
-                if (scan_ptr >= buf_end) scan_ptr = m_videoStreamBuf;
-
-                while ((m_DecodeSeqNum - m_DisplaySeqNum) >= VIDEO_BUF_FRAMES){
-                    g_thread_yield ();
-                }
-            }
-            v_packet.size -= len;
-            v_packet.data += len;
-        }
-    #else
         return FALSE;
-    #endif
     }
+
+    dbgprint("Stream W=%d H=%d\n", jpg_decoder.m_width, jpg_decoder.m_height);
+
+    jpg_decoder.m_ySize   = jpg_decoder.m_width * jpg_decoder.m_height;
+    jpg_decoder.m_YuvSize = jpg_decoder.m_ySize * 3;
+    int jpegMaxlen = jpg_decoder.m_YuvSize/2;
+    jpg_decoder.m_rawBuf = (BYTE*)malloc(jpg_decoder.m_YuvSize * sizeof(BYTE));
+    jpg_decoder.m_jpgBuf = (BYTE*)malloc((jpegMaxlen * JPG_BACKBUF_MAX + 4096) * sizeof(BYTE));
+    dbgprint("jpg: raw buf: %p\n", jpg_decoder.m_rawBuf);
+    dbgprint("jpg: jpg buf: %p\n", jpg_decoder.m_jpgBuf);
+    int i;
+    for (i = 0; i < JPG_BACKBUF_MAX; i++) {
+        jpg_frames[i].data = &jpg_decoder.m_jpgBuf[i*jpegMaxlen];
+        jpg_frames[i].length = 0;
+        dbgprint("jpg: jpg_frames[%d]: %p\n", i, jpg_frames[i].data);
+    }
+
+    jpg_decoder.m_BufferedFrames  = jpg_decoder.m_NextFrame = jpg_decoder.m_NextSlot = 0;
+    decoder_set_video_delay(0);
+
+    for(i=0; i<MAX_COMPONENTS; i++){
+        jpg_decoder.outbuf[i]=NULL;
+    }
+
     return TRUE;
 }
 
-// audio comes in Androids AMR-NB encoding
-int DecodeAudio(char * data, int length){
-	// todo
-	// len = avcodec_decode_audio3(a_context, (short *)(m_audioDecodeBuf + m_audioDecodeBufSize), &in_out, &a_packet);
-	// if (len < 0 || a_context->sample_fmt != SAMPLE_FMT_S16){
-	//		dbgprint("AUDIO DECODE ERROR len=%d fmt=%d\n", len, a_context->sample_fmt);
-	//		return FALSE;
-	//	}
-    return FALSE;
+void decoder_cleanup() {
+    int i;
+    dbgprint("Cleanup\n");
+    for(i=0; i<MAX_COMPONENTS; i++){
+        FREE_OBJECT(jpg_decoder.outbuf[i], free);
+    }
+    FREE_OBJECT(jpg_decoder.m_jpgBuf, free);
+    FREE_OBJECT(jpg_decoder.m_rawBuf, free);
 }
 
-int GetVideoWidth(){
-    return m_width;
+static void decode_next_jpg_frame() {
+    struct jpeg_decompress_struct *dinfo = &jpg_decoder.dinfo;
+    BYTE *p = jpg_frames[jpg_decoder.m_NextFrame].data;
+    unsigned long len = (unsigned long)jpg_frames[jpg_decoder.m_NextFrame].length;
+
+    int i,k, row, usetmpbuf=0;
+    JSAMPLE *ptr=jpg_decoder.m_rawBuf;
+
+    //dbgprint("frame #%2d: @%p len:%d\n", jpg_decoder.m_NextFrame, p, (int)len);
+    jpeg_mem_src_tj(dinfo, p, len);
+    jpeg_read_header(dinfo, TRUE);
+    if (fatal_error) return;
+    dinfo->raw_data_out=TRUE;
+    dinfo->do_fancy_upsampling=FALSE;
+    dinfo->dct_method=JDCT_FASTEST;
+    dinfo->out_color_space=JCS_YCbCr;
+
+    if (jpg_decoder.subsamp == TJSAMP_NIL) {
+        int retval=TJSAMP_NIL;
+        for(i=0; i<NUMSUBOPT; i++) {
+            if(dinfo->num_components==pixelsize[i]){
+                if(dinfo->comp_info[0].h_samp_factor==tjMCUWidth[i]/8
+                    && dinfo->comp_info[0].v_samp_factor==tjMCUHeight[i]/8) {
+                    int match=0;
+                    for(k=1; k<dinfo->num_components; k++) {
+                        if(dinfo->comp_info[k].h_samp_factor==1
+                            && dinfo->comp_info[k].v_samp_factor==1)
+                            match++;
+                    }
+                    if(match==dinfo->num_components-1) {
+                        retval=i;  break;
+                    }
+                }
+            }
+        }
+        dbgprint("subsampling=%d\n", retval);
+        if (retval >= 0 && retval < TJSAMP_NIL) {
+            jpg_decoder.subsamp = retval;
+        } else {
+            jpg_decoder.subsamp = TJSAMP_UNK;
+        }
+    }
+
+    if (jpg_decoder.subsamp != TJSAMP_420) {
+        fprintf(stderr, "Error: Unexpected video image stream subsampling\n");
+        jpeg_abort_decompress(dinfo);
+        return;
+    }
+
+    if (jpg_decoder.outbuf[i] == NULL) {
+        int ih;
+        int *cw = jpg_decoder.cw;
+        int *ch = jpg_decoder.ch;
+        int *iw = jpg_decoder.iw;
+        int *th = jpg_decoder.th;
+        JSAMPROW **outbuf = jpg_decoder.outbuf;
+        for(i=0; i<dinfo->num_components; i++) {
+            jpeg_component_info *compptr=&dinfo->comp_info[i];
+            iw[i]=compptr->width_in_blocks*DCTSIZE;
+            ih=compptr->height_in_blocks*DCTSIZE;
+            cw[i]=PAD(dinfo->image_width, dinfo->max_h_samp_factor)*compptr->h_samp_factor/dinfo->max_h_samp_factor;
+            ch[i]=PAD(dinfo->image_height, dinfo->max_v_samp_factor)*compptr->v_samp_factor/dinfo->max_v_samp_factor;
+            if(iw[i]!=cw[i] || ih!=ch[i]) {
+                usetmpbuf=1;
+                fprintf(stderr, "error: need a temp buffer, this shouldnt happen!\n");
+                jpg_decoder.subsamp = TJSAMP_UNK;
+            }
+            th[i]=compptr->v_samp_factor*DCTSIZE;
+
+            fprintf(stderr, "alloc: %d\n", (int)(sizeof(JSAMPROW)*ch[i]));
+            if((outbuf[i]=(JSAMPROW *)malloc(sizeof(JSAMPROW)*ch[i]))==NULL) {
+                fprintf(stderr, "error: malloc failure\n");
+                jpeg_abort_decompress(dinfo);
+                return;
+            }
+            for(row=0; row<ch[i]; row++){
+                outbuf[i][row]=ptr;
+                ptr+=PAD(cw[i], 4);
+            }
+        }
+    }
+
+    if(usetmpbuf) {
+        fprintf(stderr, "error: Unexpected video image dimensions\n");
+        jpeg_abort_decompress(dinfo);
+        return;
+    }
+
+    jpeg_start_decompress(dinfo);
+    if (fatal_error) {
+        jpeg_abort_decompress(dinfo);
+        return;
+    }
+
+    // fprintf(stderr, "dec_ctx.dinfo.scale_num=%d, dec_ctx.dinfo.scale_denom=%d\n",
+    //   dinfo->scale_num, dinfo->scale_denom);
+    // fprintf(stderr, "output_width=%d output_height=%d out_color_components=%d out_color_space=%d (yuv=%d)\n",
+    //   dinfo->output_width, dinfo->output_height,
+    //   dinfo->out_color_components, dinfo->out_color_space, JCS_YCbCr);
+
+    if ((int)dinfo->output_width != jpg_decoder.m_width || (int)dinfo->output_height != jpg_decoder.m_height) {
+        dbgprint("error: decoder output %dx%d differs from expected %dx%d size\n",
+            dinfo->output_width, dinfo->output_height, jpg_decoder.m_width, jpg_decoder.m_height);
+        jpeg_abort_decompress(&jpg_decoder.dinfo);
+        return;
+    }
+
+    for(row=0; row<(int)dinfo->output_height;row+=dinfo->max_v_samp_factor*DCTSIZE){
+        JSAMPARRAY yuvptr[MAX_COMPONENTS];
+        int crow[MAX_COMPONENTS];
+        for(i=0; i<dinfo->num_components; i++){
+            jpeg_component_info *compptr=&dinfo->comp_info[i];
+            crow[i]=row*compptr->v_samp_factor/dinfo->max_v_samp_factor;
+            yuvptr[i]=&jpg_decoder.outbuf[i][crow[i]];
+        }
+        jpeg_read_raw_data(dinfo, yuvptr, dinfo->max_v_samp_factor*DCTSIZE);
+    }
+    jpeg_finish_decompress(dinfo);
+
+    if(write(droidcam_device_fd, jpg_decoder.m_rawBuf, jpg_decoder.m_YuvSize/2) == -1 && errno != EAGAIN)
+        fprintf(stderr, "WARN: Failed to write frame (err#%d='%s')\n", errno, strerror(errno));
 }
-int GetVideoHeight(){
-    return m_height;
+
+struct jpg_frame_s* decoder_get_next_frame() {
+    while (jpg_decoder.m_BufferedFrames > jpg_decoder.m_BufferLimit) {
+        jpg_decoder.m_BufferedFrames--;
+        jpg_decoder.m_NextFrame = (jpg_decoder.m_NextFrame < (JPG_BACKBUF_MAX-1)) ? (jpg_decoder.m_NextFrame + 1) : 0;
+    }
+    if (jpg_decoder.m_BufferedFrames == jpg_decoder.m_BufferLimit) {
+        // dbgprint("decoding #%2d (have buffered: %d)\n", jpg_decoder.m_NextFrame, jpg_decoder.m_BufferedFrames);
+        decode_next_jpg_frame();
+        jpg_decoder.m_BufferedFrames--;
+        jpg_decoder.m_NextFrame = (jpg_decoder.m_NextFrame < (JPG_BACKBUF_MAX-1)) ? (jpg_decoder.m_NextFrame + 1) : 0;
+    }
+
+    // a call to this function assumes we are about to get a full frame (or exit on failure).
+    // so increment the # of buffered frames. do this after the while() loop above to
+    // take care of the initial case:
+    jpg_decoder.m_BufferedFrames ++;
+
+    int nextSlotSaved = jpg_decoder.m_NextSlot;
+    jpg_decoder.m_NextSlot = (jpg_decoder.m_NextSlot < (JPG_BACKBUF_MAX-1)) ? (jpg_decoder.m_NextSlot + 1) : 0;
+    // dbgprint("next image going to #%2d (have buffered: %d)\n", nextSlotSaved, (jpg_decoder.m_BufferedFrames-1));
+    return &jpg_frames[nextSlotSaved];
+}
+
+int decoder_get_video_width() {
+    return WEBCAM_W;
+}
+
+int decoder_get_video_height(){
+    return WEBCAM_H;
+}
+
+int decoder_get_audio_frame_size(void) {
+    return spx_decoder.frame_size; //20ms for wb speex
 }

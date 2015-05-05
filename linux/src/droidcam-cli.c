@@ -41,52 +41,68 @@ static void load_settings(void) {
 }
 
 void stream_video(void) {
-    char stream_buf[VIDEO_INBUF_SZ + 16]; // padded so libavcodec detects the end
-    SOCKET videoSocket = INVALID_SOCKET;
+    char buf[32];
     int keep_waiting = 0;
+    SOCKET videoSocket = INVALID_SOCKET;
 
     if (g_ip != NULL) {
-        videoSocket = connectDroidCam(g_ip, g_port);
+        videoSocket = connect_droidcam(g_ip, g_port);
         if (videoSocket == INVALID_SOCKET) {
             return;
         }
     }
     v_running  =1;
-_wait:
-    // We are the server
+
+server_wait:
     if (videoSocket == INVALID_SOCKET) {
-        videoSocket = accept_inet_connection(g_port);
-        if (videoSocket == INVALID_SOCKET) { goto _out; }
+        videoSocket = accept_connection(g_port);
+        if (videoSocket == INVALID_SOCKET) { goto early_out; }
         keep_waiting = 1;
     }
+
     {
-        int L = sprintf(stream_buf, VIDEO_REQ, g_webcam_w, g_webcam_h);
-        if ( SendRecv(1, stream_buf, L, videoSocket) <= 0 ){
-            MSG_ERROR("Connection lost!");
-            goto _out;
+        int len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
+        if (SendRecv(1, buf, len, videoSocket) <= 0){
+            MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
+            goto early_out;
         }
-        dbgprint("Sent request, ");
-    }
-    memset(stream_buf, 0, sizeof(stream_buf));
-    if ( SendRecv(0, stream_buf, 5, videoSocket) <= 0 ){
-        MSG_ERROR("Connection reset!\nDroidCam is probably busy with another client");
-        goto _out;
     }
 
-    if (decoder_prepare_video(stream_buf) == FALSE) { goto _out; }
+    memset(buf, 0, sizeof(buf));
+    if (SendRecv(0, buf, 5, videoSocket) <= 0 ){
+        MSG_ERROR("Connection reset by app!\nDroidCam is probably busy with another client");
+        goto early_out;
+    }
+
+    if (decoder_prepare_video(buf) == FALSE) {
+        goto early_out;
+    }
+
     while (1){
-        if (SendRecv(0, stream_buf, VIDEO_INBUF_SZ, videoSocket) == FALSE || DecodeVideo(stream_buf, VIDEO_INBUF_SZ) == FALSE) { break; }
+        int frameLen;
+        struct jpg_frame_s *f = decoder_get_next_frame();
+        if (SendRecv(0, buf, 4, videoSocket) == FALSE) break;
+        make_int4(frameLen, buf[0], buf[1], buf[2], buf[3]);
+        f->length = frameLen;
+        char *p = (char*)f->data;
+        while (frameLen > 4096) {
+            if (SendRecv(0, p, 4096, videoSocket) == FALSE) goto early_out;
+            frameLen -= 4096;
+            p += 4096;
+        }
+        if (SendRecv(0, p, frameLen, videoSocket) == FALSE) break;
     }
 
-_out:
+early_out:
     dbgprint("disconnect\n");
     disconnect(videoSocket);
     decoder_cleanup();
 
     if (keep_waiting){
         videoSocket = INVALID_SOCKET;
-        goto _wait;
+        goto server_wait;
     }
+
     v_running = 0;
     connection_cleanup();
 }

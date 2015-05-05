@@ -12,12 +12,11 @@
 #define INVALID_SOCKET -1
 typedef int SOCKET;
 
-SOCKET connectDroidCam(char * ip, int port);
-void disconnect(SOCKET s);
+SOCKET connect_droidcam(char * ip, int port);
 void connection_cleanup();
+void disconnect(SOCKET s);
 
-SOCKET accept_bth_connection();
-SOCKET accept_inet_connection(int port);
+SOCKET accept_connection(int port);
 
 int SendRecv(int doSend, char * buffer, int bytes, SOCKET s);
 

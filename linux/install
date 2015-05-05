@@ -76,6 +76,7 @@ then
  mkdir $HOME_DIR
 fi
 
+cp icon2.png $HOME_DIR
 cp README $HOME_DIR
 cp uninstall $HOME_DIR
 echo "$WIDTH-$HEIGHT" > "$HOME_DIR/settings"

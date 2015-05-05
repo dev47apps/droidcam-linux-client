@@ -16,7 +16,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * Use at your own risk.
  *
- * Source has been modified for DroidCam. (dev47@dev47apps.com)
+ * Source has been modified for DroidCam (dev47apps.com).
  *
  */
 
@@ -2130,7 +2130,7 @@ init_vdev           (struct video_device *vdev)
   strlcpy(vdev->name, "Loopback video device", sizeof(vdev->name));
 
 #if 0
-  //todo: remove V4L2_STD stuff (gone in kenrel 3.11?)
+  //todo: remove V4L2_STD stuff
   vdev->tvnorms      = V4L2_STD_ALL;
   vdev->current_norm = V4L2_STD_ALL;
 #endif
