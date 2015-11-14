@@ -1,12 +1,12 @@
 /* DroidCam & DroidCamX (C) 2010-
- * Author: Aram Grigorian
  * https://github.com/aramg
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * Use at your own risk. See README file for more details.
  */
+
 #ifndef __DECODR_H__
 #define __DECODR_H__
 
@@ -27,6 +27,8 @@ struct jpg_frame_s* decoder_get_next_frame();
 void decoder_set_video_delay(unsigned v);
 int decoder_get_video_width();
 int decoder_get_video_height();
+void decoder_rotate();
+void decoder_show_test_image();
 
 /* 20ms 16hkz 16 bit */
 #define DROIDCAM_CHUNK_MS_2           20

@@ -1,5 +1,5 @@
 /* DroidCam & DroidCamX (C) 2010-
- * Author: Aram G. (dev47apps.com)
+ * https://github.com/aramg
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -298,6 +298,7 @@ _up:
 			}
 			else // START
 			{
+#if 1
 				char * ip = NULL;
 				SOCKET s = INVALID_SOCKET;
 				int port = atoi(gtk_entry_get_text(g_settings.portEntry));
@@ -333,6 +334,9 @@ _up:
 
 				gtk_widget_set_sensitive(GTK_WIDGET(g_settings.ipEntry), FALSE);
 				gtk_widget_set_sensitive(GTK_WIDGET(g_settings.portEntry), FALSE);
+#else
+				decoder_show_test_image();
+#endif
 			}
 		break;
 		case CB_WIFI_SRVR:

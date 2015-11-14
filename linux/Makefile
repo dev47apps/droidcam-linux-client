@@ -7,17 +7,15 @@
 # Use at your own risk. See README file for more details.
 
 GTK   = `pkg-config --libs --cflags gtk+-2.0`
-WAND  = `pkg-config --cflags --libs MagickWand`
-LIBS     = -lgthread-2.0 /opt/libjpeg-turbo/lib64/libturbojpeg.a
-CC       = 
-SRC      = src/droidcam.c src/connection.c src/decoder.c
-SRC_CLI  = src/droidcam-cli.c src/connection.c src/decoder.c
+LIBS     = -lgthread-2.0 -l:/usr/lib/libswscale.a  -l:/usr/lib/libavutil.a -l:/opt/libjpeg-turbo/lib64/libturbojpeg.a
+CC       =
+SRC      = src/connection.c src/decoder.c
 
 all:
-	gcc -Wall $(CC) $(SRC) $(LIBS) $(GTK) -o droidcam
+	gcc -Wall $(CC) $(SRC) src/droidcam.c $(LIBS) $(GTK) -o droidcam
 
 cli:
-	gcc -Wall $(CC) $(SRC_CLI) $(WAND)  $(LIBS) -lm -o droidcam-cli
+	gcc -Wall $(CC) $(SRC) src/droidcam-cli.c $(LIBS) -lm -o droidcam-cli
 
 clean:
 	rm droidcam || true
