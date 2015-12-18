@@ -1,5 +1,5 @@
 # DroidCam & DroidCamX (C) 2010
-# Author: Aram G. (dev47@dev47apps.com)
+# https://github.com/aramg
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -7,7 +7,7 @@
 # Use at your own risk. See README file for more details.
 
 GTK   = `pkg-config --libs --cflags gtk+-2.0`
-LIBS     = -lgthread-2.0 -l:/usr/lib/libswscale.a  -l:/usr/lib/libavutil.a -l:/opt/libjpeg-turbo/lib64/libturbojpeg.a
+LIBS     = -lgthread-2.0 -l:/usr/lib/libswscale.a  -l:/usr/lib/libavutil.a -l:/opt/libjpeg-turbo/lib`getconf LONG_BIT`/libturbojpeg.a
 CC       =
 SRC      = src/connection.c src/decoder.c
 

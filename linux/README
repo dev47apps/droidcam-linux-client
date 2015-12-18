@@ -1,8 +1,3 @@
-# DroidCam & DroidCamX Linux Client (C) 2010-
-# Author: Aram G. (dev47apps.com)
-
-NOTICE 
-
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -11,17 +6,3 @@ USE AT YOUR OWN RISK.
 You may redistribute and/or modify any part of this program,
 provided this notice and all disclaimers remain intact and preserved, 
 crediting the original author(s).
-
-REMOVAL
-
-To remove the DroidCam client (or existing old version):
-
-Close any running programs.
-Run `uninstall' found in /home/`logname`/.droidcam/.
-
-** Missing Audio Support
-
-- On Windows, an audio device driver simulates a virtual microphone
-- Seems Linux will need a driver as well.
-
-https://github.com/aramg/alsa-minivosc-src

@@ -17,7 +17,7 @@ struct jpg_frame_s {
  unsigned length;
 };
 
-int  decoder_init(int webcam_w, int webcam_h);
+int  decoder_init();
 void decoder_fini();
 
 int  decoder_prepare_video(char * header);

@@ -168,8 +168,7 @@ static int find_droidcam_v4l(){
     struct stat st;
     struct v4l2_capability v4l2cap;
 
-    for(crt_video_dev = 0; crt_video_dev < 99; crt_video_dev++)
-    {
+    for(crt_video_dev = 0; crt_video_dev < 99; crt_video_dev++) {
         droidcam_device_fd = -1;
         sprintf(device, "/dev/video%d", crt_video_dev);
         if(-1 == stat(device, &st)){
@@ -182,19 +181,16 @@ static int find_droidcam_v4l(){
 
         droidcam_device_fd = open(device, O_RDWR | O_NONBLOCK, 0);
 
-        if(-1 == droidcam_device_fd)
-        {
+        if(-1 == droidcam_device_fd) {
             printf("Error opening '%s': %d '%s'\n", device, errno, strerror(errno));
             continue;
         }
-        if(-1 == xioctl(droidcam_device_fd, VIDIOC_QUERYCAP, &v4l2cap))
-        {
+        if(-1 == xioctl(droidcam_device_fd, VIDIOC_QUERYCAP, &v4l2cap)) {
             close(droidcam_device_fd);
             continue;
         }
         printf("Device: %s\n", v4l2cap.card);
-        if(0 == strncmp((const char*) v4l2cap.card, "Droidcam", 8))
-        {
+        if(0 == strncmp((const char*) v4l2cap.card, "Droidcam", 8)) {
             printf("Found driver: %s (fd:%d)\n", device, droidcam_device_fd);
             return 1;
         }
@@ -205,6 +201,37 @@ static int find_droidcam_v4l(){
     return 0;
 }
 
+static void query_droidcam_v4l(void) {
+    struct v4l2_format vid_format = {0};
+    vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+    vid_format.fmt.pix.width = 640;
+    vid_format.fmt.pix.height = 480;
+    vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+    vid_format.fmt.pix.bytesperline = 640;
+
+    if (ioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format) < 0) {
+        fprintf(stderr, "Fatal: Unable to query droidcam video device\n");
+        return;
+    }
+
+    dbgprint("  vid_format->type                =%d\n", vid_format.type );
+    dbgprint("  vid_format->fmt.pix.width       =%d\n", vid_format.fmt.pix.width );
+    dbgprint("  vid_format->fmt.pix.height      =%d\n", vid_format.fmt.pix.height );
+    dbgprint("  vid_format->fmt.pix.pixelformat =%d\n", vid_format.fmt.pix.pixelformat);
+    dbgprint("  vid_format->fmt.pix.sizeimage   =%d\n", vid_format.fmt.pix.sizeimage );
+    dbgprint("  vid_format->fmt.pix.field       =%d\n", vid_format.fmt.pix.field );
+    dbgprint("  vid_format->fmt.pix.bytesperline=%d\n", vid_format.fmt.pix.bytesperline );
+    dbgprint("  vid_format->fmt.pix.colorspace  =%d\n", vid_format.fmt.pix.colorspace );
+    if (vid_format.fmt.pix.pixelformat != V4L2_PIX_FMT_YUV420) {
+        fprintf(stderr, "Fatal: droidcam video device reported pixel format %d, expected %d\n",
+            vid_format.fmt.pix.pixelformat, V4L2_PIX_FMT_YUV420);
+        return;
+    }
+
+    WEBCAM_W = vid_format.fmt.pix.width;
+    WEBCAM_H = vid_format.fmt.pix.height;
+}
+
 void decoder_set_video_delay(unsigned v) {
     if (v > JPG_BACKBUF_MAX) v = JPG_BACKBUF_MAX;
     else if (v < 1) v = 1;
@@ -212,17 +239,18 @@ void decoder_set_video_delay(unsigned v) {
     dbgprint("buffer %d frames\n", jpg_decoder.m_BufferLimit);
 }
 
-int  decoder_init(int webcam_w, int webcam_h) {
-    int ret = 0;
-    WEBCAM_W = webcam_w;
-    WEBCAM_H = webcam_h;
+int decoder_init(void) {
+    WEBCAM_W = 0;
+    WEBCAM_H = 0;
+
+    if (!find_droidcam_v4l())
+        return 0;
+    query_droidcam_v4l();
     dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
     if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
         MSG_ERROR("Invalid webcam resolution in settings");
-        goto _error_out;
+        return 0;
     }
-
-    find_droidcam_v4l();
 
     fatal_error = 0;
     memset(&jpg_decoder, 0, sizeof(struct jpg_dec_ctx_s));
@@ -230,7 +258,7 @@ int  decoder_init(int webcam_w, int webcam_h) {
     jpg_decoder.jerr.output_message = joutput_message;
     jpg_decoder.jerr.error_exit = jerror_exit;
     jpeg_create_decompress(&jpg_decoder.dinfo);
-    if (fatal_error) goto _error_out;
+    if (fatal_error) return 0;
     jpg_decoder.init = 1;
     jpg_decoder.subsamp = TJSAMP_NIL;
     jpg_decoder.m_webcamYuvSize  = WEBCAM_W * WEBCAM_H * 3 / 2;
@@ -246,9 +274,7 @@ int  decoder_init(int webcam_w, int webcam_h) {
     dbgprint("spx_decoder.state=%p\n", spx_decoder.state);
 #endif
 
-    ret = 1;
-_error_out:
-    return ret;
+    return 1;
 }
 
 void decoder_fini() {

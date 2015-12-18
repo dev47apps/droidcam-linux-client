@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <linux/limits.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <gtk/gtk.h>
 
 #include <errno.h>
@@ -42,7 +44,6 @@ struct settings {
 	GtkEntry * ipEntry;
 	GtkEntry * portEntry;
 	GtkButton * button;
-	int width, height;
 	char connection; // Connection type
 	char mirror;
 	char audio;
@@ -124,43 +125,54 @@ _exit:
 	return haveDevice;
 }
 
-static void LoadSaveSettings(int load)
-{
+static void LoadSaveSettings(int load) {
 	char buf[PATH_MAX];
+	struct stat st = {0};
 	FILE * fp;
 
-	snprintf(buf, sizeof(buf), "%s/.droidcam/settings", getenv("HOME"));
-	fp = fopen(buf, (load) ? "r" : "w");
+	int version;
 
-	if (load) { // Set Defaults
+	// Set Defaults
+	if (load) {
+		dbgprint("set defaults...");
 		g_settings.connection = CB_RADIO_WIFI;
 		gtk_entry_set_text(g_settings.ipEntry, "");
 		gtk_entry_set_text(g_settings.portEntry, "4747");
-		g_settings.width = 320;
-		g_settings.height = 240;
-	}
-	if (!fp){
-		MSG_LASTERROR("settings error");
-		return;
 	}
 
-	if (load)
-	{
+	snprintf(buf, sizeof(buf), "%s/.droidcam", getenv("HOME"));
+	if (stat(buf, &st) == -1) {
+		mkdir(buf, 0700);
+	}
+
+	snprintf(buf, sizeof(buf), "%s/.droidcam/settings", getenv("HOME"));
+	fp = fopen(buf, (load) ? "r" : "w");
+	if (!fp) return;
+
+	if (load) {
+		version = 0;
 		if(fgets(buf, sizeof(buf), fp)){
-			sscanf(buf, "%d-%d", &g_settings.width, &g_settings.height);
+			sscanf(buf, "v%d", &version);
 		}
+
+		if (version != 1) {
+			return;
+		}
+
 		if(fgets(buf, sizeof(buf), fp)){
 			buf[strlen(buf)-1] = '\0';
 			gtk_entry_set_text(g_settings.ipEntry, buf);
 		}
 
 		if(fgets(buf, sizeof(buf), fp)) {
+			buf[strlen(buf)-1] = '\0';
 			gtk_entry_set_text(g_settings.portEntry, buf);
 		}
-
 	}
 	else {
-		fprintf(fp, "%d-%d\n%s\n%s", g_settings.width, g_settings.height, gtk_entry_get_text(g_settings.ipEntry), gtk_entry_get_text(g_settings.portEntry));
+		fprintf(fp, "v1\n%s\n%s\n",
+			gtk_entry_get_text(g_settings.ipEntry),
+			gtk_entry_get_text(g_settings.portEntry));
 	}
 	fclose(fp);
 }
@@ -400,6 +412,7 @@ int main(int argc, char *argv[])
 	g_thread_init(NULL);
 	gdk_threads_init();
 	gtk_init(&argc, &argv);
+	memset(&g_settings, 0, sizeof(struct settings));
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "DroidCam Client");
@@ -531,7 +544,7 @@ int main(int argc, char *argv[])
 	gtk_widget_show_all(window);
 
 	LoadSaveSettings(1); // Load
-	if ( decoder_init(g_settings.width, g_settings.height) )
+	if ( decoder_init() )
 	{
 		gdk_threads_enter();
 		gtk_main();
