@@ -4,8 +4,6 @@
 # Dev47Apps.com
 #
 set -e
-INSTALL=" -- INSTALL: "
-HOME_DIR="/home/`logname`/.droidcam"
 V4L2_LOOPBACK_DIR="v4l2loopback";
 V4L2_LOOPBACK_DC="v4l2loopback-dc";
 V4L2_LOOPBACK_KO="v4l2loopback-dc.ko";
@@ -32,20 +30,18 @@ then
 	exit 1
 fi
 
-echo "$INSTALL Webcam parameters: '$WIDTH' and '$HEIGHT'"
-echo "$INSTALL Home directory: $HOME_DIR"
+echo "Webcam parameters: '$WIDTH' and '$HEIGHT'"
 
-echo "$INSTALL Building $V4L2_LOOPBACK_KO"
-cd $V4L2_LOOPBACK_DIR && make && cd ..
+echo "Building $V4L2_LOOPBACK_KO"
+make -C $V4L2_LOOPBACK_DIR
 
 if [ ! -e "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" ]
 then
-	echo "$INSTALL $V4L2_LOOPBACK_KO not built.. Failure"
+	echo "$V4L2_LOOPBACK_KO not built.. Failure"
 	exit 1;
 fi
 
-echo "$INSTALL Moving driver and executable to system folders.."
-
+echo "Moving driver and executable to system folders"
 if [ ! -e $DRIVER_LOCATION ]
 then
     mkdir -p $DRIVER_LOCATION
@@ -55,36 +51,20 @@ cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
 cp droidcam /usr/bin/
 cp droidcam-cli /usr/bin/
 
-echo "$INSTALL Registering webcam device"
+echo "Registering webcam device"
 modprobe videodev
 insmod $DRIVER_LOCATION$V4L2_LOOPBACK_KO width=$WIDTH height=$HEIGHT
 
-echo "$INSTALL adding driver to /etc/modules";
+echo "Adding driver to /etc/modules"
 cp /etc/modules /etc/modules.bak
 prevperm=`stat -c %a /etc/modules`
 chmod 666 /etc/modules
-echo "videodev" >> /etc/modules
-echo "$V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" >> /etc/modules
+[[ ! $(egrep "^videodev$" /etc/modules) ]] && echo "videodev" >> /etc/modules
+[[ ! $(egrep "^$V4L2_LOOPBACK_DC" /etc/modules) ]] && echo "$V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" >> /etc/modules
 chmod $prevperm /etc/modules
 
-echo "$INSTALL Running depmod"
+echo "Running depmod"
 depmod -a
 
-echo "$INSTALL Creating $HOME_DIR"
-if [ ! -e $HOME_DIR ]
-then 
- mkdir $HOME_DIR
-fi
-
-cp icon2.png $HOME_DIR
-cp README $HOME_DIR
-cp uninstall $HOME_DIR
-echo "$WIDTH-$HEIGHT" > "$HOME_DIR/settings"
-echo "IP_ADDRESS"    >> "$HOME_DIR/settings"
-echo "4747"          >> "$HOME_DIR/settings"
-chmod a+rw "$HOME_DIR"
-chmod a+rw "$HOME_DIR/settings"
-
-cd $V4L2_LOOPBACK_DIR && make clean && cd ..
-echo "$INSTALL Done! You can make sure $V4L2_LOOPBACK_DC is loaded using 'lsmod'"
-
+echo "Some cleanup"
+make -C $V4L2_LOOPBACK_DIR clean
