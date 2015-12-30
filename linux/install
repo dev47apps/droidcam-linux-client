@@ -5,7 +5,7 @@
 #
 set -e
 V4L2_LOOPBACK_DIR="v4l2loopback";
-V4L2_LOOPBACK_DC="v4l2loopback-dc";
+V4L2_LOOPBACK_DC="v4l2loopback_dc";
 V4L2_LOOPBACK_KO="v4l2loopback-dc.ko";
 DRIVER_LOCATION="/lib/modules/`uname -r`/kernel/drivers/media/video/";
 
@@ -44,7 +44,7 @@ fi
 echo "Moving driver and executable to system folders"
 if [ ! -e $DRIVER_LOCATION ]
 then
-    mkdir -p $DRIVER_LOCATION
+	mkdir -p $DRIVER_LOCATION
 fi
 
 cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
@@ -55,16 +55,36 @@ echo "Registering webcam device"
 modprobe videodev
 insmod $DRIVER_LOCATION$V4L2_LOOPBACK_KO width=$WIDTH height=$HEIGHT
 
-echo "Adding driver to /etc/modules"
-cp /etc/modules /etc/modules.bak
-prevperm=`stat -c %a /etc/modules`
-chmod 666 /etc/modules
-[[ ! $(egrep "^videodev$" /etc/modules) ]] && echo "videodev" >> /etc/modules
-[[ ! $(egrep "^$V4L2_LOOPBACK_DC" /etc/modules) ]] && echo "$V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" >> /etc/modules
-chmod $prevperm /etc/modules
-
 echo "Running depmod"
 depmod -a
-
-echo "Some cleanup"
 make -C $V4L2_LOOPBACK_DIR clean
+
+etc_modules() {
+	echo "Adding driver to /etc/modules"
+	cp /etc/modules /etc/modules.bak
+	prevperm=`stat -c %a /etc/modules`
+	chmod 666 /etc/modules
+	[[ ! $(egrep "^videodev$" /etc/modules) ]] && echo "videodev" >> /etc/modules
+	[[ ! $(egrep "^$V4L2_LOOPBACK_DC" /etc/modules) ]] && echo "$V4L2_LOOPBACK_DC" >> /etc/modules
+	chmod $prevperm /etc/modules
+}
+
+etc_modules_load_d() {
+	printf "videodev\n$V4L2_LOOPBACK_DC\n" \
+		 > /etc/modules-load.d/droidcam.conf
+
+}
+
+[[ -d "/etc/modprobe.d/" ]] && echo "options $V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" > /etc/modprobe.d/droidcam.conf
+
+if [ -e "/etc/modules" ]
+then
+	etc_modules
+elif [ -d "/etc/modules-load.d" ]
+then
+	etc_modules_load_d
+else
+	echo "Warning: Unknown distro. Webcam module may not load after a reboot :("
+fi
+
+echo "Done"
