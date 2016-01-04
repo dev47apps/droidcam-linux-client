@@ -203,14 +203,11 @@ static int find_droidcam_v4l(){
 
 static void query_droidcam_v4l(void) {
     struct v4l2_format vid_format = {0};
-    vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-    vid_format.fmt.pix.width = 640;
-    vid_format.fmt.pix.height = 480;
-    vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
-    vid_format.fmt.pix.bytesperline = 640;
-
-    if (ioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format) < 0) {
-        fprintf(stderr, "Fatal: Unable to query droidcam video device\n");
+    vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    vid_format.fmt.pix.width = 0;
+    vid_format.fmt.pix.height = 0;
+    if (xioctl(droidcam_device_fd, VIDIOC_G_FMT, &vid_format) < 0) {
+        fprintf(stderr, "Fatal: Unable to query droidcam video device. errno=%d\n", errno);
         return;
     }
 
@@ -225,6 +222,11 @@ static void query_droidcam_v4l(void) {
     if (vid_format.fmt.pix.pixelformat != V4L2_PIX_FMT_YUV420) {
         fprintf(stderr, "Fatal: droidcam video device reported pixel format %d, expected %d\n",
             vid_format.fmt.pix.pixelformat, V4L2_PIX_FMT_YUV420);
+        return;
+    }
+    if (vid_format.fmt.pix.width <= 0 ||  vid_format.fmt.pix.height <= 0) {
+        fprintf(stderr, "Fatal: droidcam video device reported invalid resolution: %dx%d\n",
+            vid_format.fmt.pix.width, vid_format.fmt.pix.height);
         return;
     }
 
@@ -248,7 +250,7 @@ int decoder_init(void) {
     query_droidcam_v4l();
     dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
     if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
-        MSG_ERROR("Invalid webcam resolution in settings");
+        MSG_ERROR("Unable to query droidcam device for parameters");
         return 0;
     }
 

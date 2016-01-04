@@ -1056,6 +1056,7 @@ vidioc_s_parm       (struct file *file,
   return 0;
 }
 
+#ifdef V4L2LOOPBACK_WITH_STD
 /* sets a tv standard, actually we do not need to handle this any special way
  * added to support effecttv
  * called on VIDIOC_S_STD
@@ -1107,6 +1108,7 @@ vidioc_querystd     (struct file *file,
     *norm=V4L2_STD_ALL;
   return 0;
 }
+#endif /* V4L2LOOPBACK_WITH_STD */
 
 
 /* get ctrls info
@@ -1694,32 +1696,6 @@ vidiocgmbuf         (struct file *file,
 }
 #endif
 
-static int
-vidioc_g_audout     (struct file *file,
-                     void *fh,
-                     struct v4l2_audioout *argp) {
-  return -EINVAL;
-}
-static int
-vidioc_s_audout     (struct file *file,
-                     void *fh,
-                     struct v4l2_audioout *argp) {
-  return -EINVAL;
-}
-static int
-vidioc_g_audio     (struct file *file,
-                     void *fh,
-                     struct v4l2_audio *argp) {
-  return -EINVAL;
-}
-static int
-vidioc_s_audio     (struct file *file,
-                     void *fh,
-                     struct v4l2_audio *argp) {
-  return -EINVAL;
-}
-
-
 /* file operations */
 static void
 vm_open             (struct vm_area_struct *vma)
@@ -1857,27 +1833,6 @@ v4l2_loopback_poll  (struct file *file,
   return ret_mask;
 }
 
-void
-apply_droidcam_defaults(void)
-{
-   struct v4l2_format vid_format;
-   MARK();
-   vidioc_g_fmt_out(NULL, NULL, &vid_format);
-
-   vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-   vid_format.fmt.pix.width = width;
-   vid_format.fmt.pix.height = height;
-   vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
-   //vid_format.fmt.pix.sizeimage = 0; autoset
-   //vid_format.fmt.pix.bytesperline = 0;
-   vid_format.fmt.pix.field = V4L2_FIELD_NONE;
-   vid_format.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
-   if (0 != vidioc_s_fmt_out(NULL, NULL, &vid_format))
-     printk("Setting DroidCam default format FAILED!");
-    
-    v4l2loopback_getdevice_internal(0)->ready_for_capture = 1;
-}
-
 /* do not want to limit device opens, it can be as many readers as user want,
  * writers are limited by means of setting writer field */
 static int
@@ -1886,7 +1841,6 @@ v4l2_loopback_open   (struct file *file)
   struct v4l2_loopback_device *dev;
   struct v4l2_loopback_opener *opener;
   MARK();
-  apply_droidcam_defaults();
 
   dev=v4l2loopback_getdevice(file);
 
@@ -1910,6 +1864,22 @@ v4l2_loopback_open   (struct file *file)
     }
   }
   dprintk("opened dev:%p with image:%p", dev, dev?dev->image:NULL);
+  // droidcam:
+  {
+       struct v4l2_format vid_format;
+       vidioc_g_fmt_out(NULL, NULL, &vid_format);
+       vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+       vid_format.fmt.pix.width = width;
+       vid_format.fmt.pix.height = height;
+       vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+       vid_format.fmt.pix.field = V4L2_FIELD_NONE;
+       vid_format.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
+       if (0 != vidioc_s_fmt_out(NULL, NULL, &vid_format))
+        printk("Setting DroidCam default format FAILED!");
+       else
+        dev->ready_for_capture = 1;
+  }
+
   MARK();
   return 0;
 }
@@ -2328,9 +2298,11 @@ static const struct v4l2_ioctl_ops v4l2_loopback_ioctl_ops = {
   .vidioc_g_fmt_vid_overlay= &vidioc_g_fmt_overlay,
 #endif
 
+#ifdef V4L2LOOPBACK_WITH_STD
   .vidioc_s_std            = &vidioc_s_std,
   .vidioc_g_std            = &vidioc_g_std,
   .vidioc_querystd         = &vidioc_querystd,
+#endif
 
   .vidioc_g_parm           = &vidioc_g_parm,
   .vidioc_s_parm           = &vidioc_s_parm,
@@ -2346,11 +2318,6 @@ static const struct v4l2_ioctl_ops v4l2_loopback_ioctl_ops = {
 #ifdef CONFIG_VIDEO_V4L1_COMPAT
   .vidiocgmbuf             = &vidiocgmbuf,
 #endif
-
-  .vidioc_g_audio          = &vidioc_g_audio,
-  .vidioc_s_audio          = &vidioc_s_audio,
-  .vidioc_g_audout         = &vidioc_g_audout,
-  .vidioc_s_audout         = &vidioc_s_audout,
 };
 
 static void

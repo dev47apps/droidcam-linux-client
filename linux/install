@@ -59,6 +59,10 @@ echo "Running depmod"
 depmod -a
 make -C $V4L2_LOOPBACK_DIR clean
 
+echo "Adding uninstall script"
+mkdir -p /opt || true
+cp uninstall /opt/droidcam-uninstall
+
 etc_modules() {
 	echo "Adding driver to /etc/modules"
 	cp /etc/modules /etc/modules.bak

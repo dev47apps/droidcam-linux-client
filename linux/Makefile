@@ -12,7 +12,7 @@ CC       =
 SRC      = src/connection.c src/decoder.c
 
 all:
-	gcc -Wall $(CC) $(SRC) src/droidcam.c $(LIBS) $(GTK) -o droidcam
+	gcc -Wall $(CC) $(SRC) src/droidcam.c $(LIBS) $(GTK) -lm -o droidcam
 
 cli:
 	gcc -Wall $(CC) $(SRC) src/droidcam-cli.c $(LIBS) -lm -o droidcam-cli
