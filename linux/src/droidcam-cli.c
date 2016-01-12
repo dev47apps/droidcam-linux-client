@@ -21,32 +21,10 @@
 
 char *g_ip;
 int g_port;
-int g_webcam_w = 320;
-int g_webcam_h = 240;
 int v_running;
 
 void ShowError(const char * title, const char * msg) {
     errprint("%s: %s\n", title, msg);
-}
-
-static void load_settings(void) {
-    char buf[PATH_MAX];
-    FILE * fp;
-
-    snprintf(buf, sizeof(buf), "%s/.droidcam/settings", getenv("HOME"));
-    fp = fopen(buf, "r");
-
-    if (!fp){
-        MSG_LASTERROR("settings error");
-        return;
-    }
-
-    if(fgets(buf, sizeof(buf), fp)){
-        sscanf(buf, "%d-%d", &g_webcam_w, &g_webcam_h);
-        dbgprint("got webcam_w=%d, webcam_h=%d\n", g_webcam_w, g_webcam_h);
-    }
-
-    fclose(fp);
 }
 
 void stream_video(void) {
@@ -142,8 +120,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    load_settings();
-    if (!decoder_init(g_webcam_w, g_webcam_h)) {
+    if (!decoder_init()) {
         return 2;
     }
     stream_video();

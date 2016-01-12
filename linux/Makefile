@@ -20,4 +20,4 @@ cli:
 clean:
 	rm droidcam || true
 	rm droidcam-cli || true
-	cd v4l2loopback && make -C /lib/modules/`uname -r`/build M=`pwd` clean
+	make -C v4l2loopback clean
