@@ -12,7 +12,7 @@ DRIVER_LOCATION="/lib/modules/`uname -r`/kernel/drivers/media/video/";
 WIDTH="640"
 HEIGHT="480"
 
-if [ "$1" != "" ]
+if [[ "$1" != "" && "$2" != "" ]]
 then
 	WIDTH=$1
 	HEIGHT=$2
@@ -24,7 +24,7 @@ then
 	exit 1
 fi
 
-if [[ $WIDTH < 240 || $HEIGHT < 160 ]]
+if [[ $WIDTH -lt 240 || $HEIGHT -lt 160 ]]
 then
 	echo "Parameters too low: '$WIDTH' and '$HEIGHT'"
 	exit 1
