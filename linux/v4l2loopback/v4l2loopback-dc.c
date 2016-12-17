@@ -1331,7 +1331,7 @@ vidioc_enum_input   (struct file *file,
 
 
 #ifdef V4L2_IN_CAP_STD
-  inp->capabilities |= V4L2_IN_CAP_STD;
+//inp->capabilities |= V4L2_IN_CAP_STD;
 #endif
   return 0;
 }
