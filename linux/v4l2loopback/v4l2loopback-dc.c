@@ -10,7 +10,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -59,7 +59,11 @@ void * v4l2l_vzalloc (unsigned long size) {
 #include <linux/sched.h>
 #include <linux/slab.h>
 
-#define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,1)
+#if defined(timer_setup) && defined(from_timer)
+#define HAVE_TIMER_SETUP
+#endif
+
+#define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,2)
 
 #define DEBUG 0
 
@@ -753,11 +757,7 @@ vidioc_try_fmt_cap  (struct file *file,
                      void *priv,
                      struct v4l2_format *fmt)
 {
-  struct v4l2_loopback_opener *opener;
   struct v4l2_loopback_device *dev;
-
-  opener = file->private_data;
-  opener->type = READER;
 
   dev=v4l2loopback_getdevice(file);
 
@@ -856,19 +856,16 @@ vidioc_g_fmt_out    (struct file *file,
                      struct v4l2_format *fmt)
 {
   struct v4l2_loopback_device *dev;
-  struct v4l2_loopback_opener *opener;
 
   MARK();
 
  if (file != NULL) {
   dev=v4l2loopback_getdevice(file);
-  opener = file->private_data;
-  opener->type = WRITER;
  }
  else {
         dev = v4l2loopback_getdevice_internal(0);
  }
-    
+
   /*
    * LATER: this should return the currently valid format
    * gstreamer doesn't like it, if this returns -EINVAL, as it
@@ -890,14 +887,11 @@ vidioc_try_fmt_out  (struct file *file,
                      void *priv,
                      struct v4l2_format *fmt)
 {
-  struct v4l2_loopback_opener *opener;
   struct v4l2_loopback_device *dev;
   MARK();
 
     if (file != NULL) {
-  opener = file->private_data;
-  opener->type = WRITER;
-  dev=v4l2loopback_getdevice(file);
+        dev=v4l2loopback_getdevice(file);
     }
     else {
         dev = v4l2loopback_getdevice_internal(0);
@@ -1643,13 +1637,16 @@ vidioc_streamon     (struct file *file,
                      enum v4l2_buf_type type)
 {
   struct v4l2_loopback_device *dev;
+  struct v4l2_loopback_opener *opener;
   int ret;
   MARK();
 
   dev=v4l2loopback_getdevice(file);
+  opener = file->private_data;
 
   switch (type) {
   case V4L2_BUF_TYPE_VIDEO_OUTPUT:
+    opener->type = WRITER;
     if (!dev->ready_for_capture) {
       ret = allocate_buffers(dev);
       if (ret < 0)
@@ -1658,6 +1655,7 @@ vidioc_streamon     (struct file *file,
     }
     return 0;
   case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+    opener->type = READER;
     if (!dev->ready_for_capture)
       return -EIO;
     return 0;
@@ -2146,10 +2144,19 @@ check_timers(struct v4l2_loopback_device *dev)
     mod_timer(&dev->sustain_timer, jiffies + dev->frame_jiffies * 3 / 2);
 }
 
-static void
-sustain_timer_clb(unsigned long nr)
+#ifdef HAVE_TIMER_SETUP
+
+static void sustain_timer_clb(struct timer_list *t)
+{
+   struct v4l2_loopback_device *dev = from_timer(dev,t,sustain_timer);
+#else
+
+static void sustain_timer_clb(unsigned long nr)
 {
   struct v4l2_loopback_device *dev = devs[nr];
+
+#endif
+
   spin_lock(&dev->lock);
   if (dev->sustain_framerate) {
     dev->reread_count++;
@@ -2163,10 +2170,17 @@ sustain_timer_clb(unsigned long nr)
   spin_unlock(&dev->lock);
 }
 
-static void
-timeout_timer_clb(unsigned long nr)
+#ifdef HAVE_TIMER_SETUP
+static void timeout_timer_clb(struct timer_list *t)
+{
+ struct v4l2_loopback_device *dev = from_timer(dev,t,timeout_timer);
+#else
+
+static void timeout_timer_clb(unsigned long nr)
 {
   struct v4l2_loopback_device *dev = devs[nr];
+
+#endif
   spin_lock(&dev->lock);
   if (dev->timeout_jiffies > 0) {
     dev->timeout_happened = 1;
@@ -2226,9 +2240,15 @@ v4l2_loopback_init  (struct v4l2_loopback_device *dev,
   dev->buffer_size = 0;
   dev->image = NULL;
   dev->imagesize = 0;
+
+#ifdef HAVE_TIMER_SETUP
+  timer_setup(&dev->sustain_timer, sustain_timer_clb, 0);
+  timer_setup(&dev->timeout_timer, timeout_timer_clb, 0);
+#else
   setup_timer(&dev->sustain_timer, sustain_timer_clb, nr);
-  dev->reread_count = 0;
   setup_timer(&dev->timeout_timer, timeout_timer_clb, nr);
+#endif
+  dev->reread_count = 0;
   dev->timeout_jiffies = 0;
   dev->timeout_image = NULL;
   dev->timeout_happened = 0;
