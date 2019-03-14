@@ -23,11 +23,28 @@
 #include <linux/version.h>
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
-#include <linux/time.h>
 #include <linux/module.h>
 #include <linux/videodev2.h>
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-common.h>
+
+// Recolic: from linux 3.17, do_gettimeofday is moved to linux/timekeeping.h or linux/timekeeping32.h
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,17,0)
+#include <linux/time.h>
+#else
+#include <linux/ktime.h>
+#include <linux/timekeeping.h>
+#endif
+
+// Recolic: do_gettimeofday is removed from linux/timekeeping32.h in linux 5.0
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
+void do_gettimeofday(struct timeval *tv) {
+  struct timespec64 now;
+  ktime_get_real_ts64(&now);
+  tv->tv_sec = now.tv_sec;
+  tv->tv_usec = now.tv_nsec/1000;
+}
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29)
 # define v4l2_file_operations file_operations
