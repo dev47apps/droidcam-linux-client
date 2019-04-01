@@ -23,11 +23,18 @@
 #include <linux/version.h>
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
-#include <linux/time.h>
 #include <linux/module.h>
 #include <linux/videodev2.h>
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-common.h>
+
+// Recolic: v4l2_get_timestamp doesn't exist until linux 3.9.
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0)
+#include <linux/time.h>
+inline void v4l2_get_timestamp(struct timeval *tv) {
+    do_gettimeofday(tv);
+}
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29)
 # define v4l2_file_operations file_operations
@@ -1517,7 +1524,7 @@ vidioc_qbuf         (struct file *file,
     return 0;
   case V4L2_BUF_TYPE_VIDEO_OUTPUT:
     dprintkrw("output QBUF pos: %d index: %d\n", dev->write_position, index);
-    do_gettimeofday(&b->buffer.timestamp);
+    v4l2_get_timestamp(&b->buffer.timestamp);
     set_done(b);
     buffer_written(dev, b);
     wake_up_all(&dev->read_event);
@@ -1965,7 +1972,7 @@ v4l2_loopback_write  (struct file *file,
            count);
     return -EFAULT;
   }
-  do_gettimeofday(&b->timestamp);
+  v4l2_get_timestamp(&b->timestamp);
   b->sequence = dev->write_position;
   buffer_written(dev, &dev->buffers[write_index]);
   wake_up_all(&dev->read_event);
@@ -2069,7 +2076,7 @@ init_buffers        (struct v4l2_loopback_device *dev)
     b->timestamp.tv_usec = 0;
     b->type              = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    do_gettimeofday(&b->timestamp);
+    v4l2_get_timestamp(&b->timestamp);
   }
   dev->timeout_image_buffer = dev->buffers[0];
   dev->timeout_image_buffer.buffer.m.offset = MAX_BUFFERS * buffer_size;
