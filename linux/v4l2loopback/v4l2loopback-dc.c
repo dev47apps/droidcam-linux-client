@@ -28,21 +28,11 @@
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-common.h>
 
-// Recolic: from linux 3.17, do_gettimeofday is moved to linux/timekeeping.h or linux/timekeeping32.h
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,17,0)
+// Recolic: v4l2_get_timestamp doesn't exist until linux 3.9.
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0)
 #include <linux/time.h>
-#else
-#include <linux/ktime.h>
-#include <linux/timekeeping.h>
-#endif
-
-// Recolic: do_gettimeofday is removed from linux/timekeeping32.h in linux 5.0
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
-void do_gettimeofday(struct timeval *tv) {
-  struct timespec64 now;
-  ktime_get_real_ts64(&now);
-  tv->tv_sec = now.tv_sec;
-  tv->tv_usec = now.tv_nsec/1000;
+inline void v4l2_get_timestamp(struct timeval *tv) {
+    do_gettimeofday(tv);
 }
 #endif
 
@@ -1534,7 +1524,7 @@ vidioc_qbuf         (struct file *file,
     return 0;
   case V4L2_BUF_TYPE_VIDEO_OUTPUT:
     dprintkrw("output QBUF pos: %d index: %d\n", dev->write_position, index);
-    do_gettimeofday(&b->buffer.timestamp);
+    v4l2_get_timestamp(&b->buffer.timestamp);
     set_done(b);
     buffer_written(dev, b);
     wake_up_all(&dev->read_event);
@@ -1982,7 +1972,7 @@ v4l2_loopback_write  (struct file *file,
            count);
     return -EFAULT;
   }
-  do_gettimeofday(&b->timestamp);
+  v4l2_get_timestamp(&b->timestamp);
   b->sequence = dev->write_position;
   buffer_written(dev, &dev->buffers[write_index]);
   wake_up_all(&dev->read_event);
@@ -2086,7 +2076,7 @@ init_buffers        (struct v4l2_loopback_device *dev)
     b->timestamp.tv_usec = 0;
     b->type              = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    do_gettimeofday(&b->timestamp);
+    v4l2_get_timestamp(&b->timestamp);
   }
   dev->timeout_image_buffer = dev->buffers[0];
   dev->timeout_image_buffer.buffer.m.offset = MAX_BUFFERS * buffer_size;
