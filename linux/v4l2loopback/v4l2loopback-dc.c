@@ -77,7 +77,7 @@ void * v4l2l_vzalloc (unsigned long size) {
 #define HAVE_TIMER_SETUP
 #endif
 
-#define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,2)
+#define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,3)
 
 #define DEBUG 0
 
@@ -2123,6 +2123,12 @@ init_vdev           (struct video_device *vdev)
   vdev->ioctl_ops    = &v4l2_loopback_ioctl_ops;
   vdev->release      = &video_device_release;
   vdev->minor        = -1;
+  #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+  vdev->device_caps  =
+    V4L2_CAP_DEVICE_CAPS |
+    V4L2_CAP_VIDEO_CAPTURE |
+    V4L2_CAP_STREAMING | V4L2_CAP_READWRITE;
+  #endif
 #if DEBUG
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 20, 0)
    vdev->debug = V4L2_DEBUG_IOCTL | V4L2_DEBUG_IOCTL_ARG;
