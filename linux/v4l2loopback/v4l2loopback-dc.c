@@ -77,7 +77,7 @@ void * v4l2l_vzalloc (unsigned long size) {
 #define HAVE_TIMER_SETUP
 #endif
 
-#define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,2)
+#define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,3)
 
 #define DEBUG 0
 
@@ -603,11 +603,18 @@ vidioc_querycap     (struct file *file,
                      void *priv,
                      struct v4l2_capability *cap)
 {
-  strlcpy(cap->driver, "Droidcam (v4l2loopback)", sizeof(cap->driver));
-  strlcpy(cap->card  , "Droidcam (v4l2loopback)", sizeof(cap->card));
-  cap->bus_info[0]=0;
+  struct v4l2_loopback_device *dev = v4l2loopback_getdevice(file);
+  int devnr = ((struct v4l2loopback_private *)video_get_drvdata(dev->vdev))->devicenr;
 
+  strlcpy(cap->driver, "Droidcam", sizeof(cap->driver));
+  strlcpy(cap->card  , "Droidcam", sizeof(cap->card));
+  snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:v4l2loopback_dc-%03d", devnr);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0)
+  /* since 3.1.0, the v4l2-core system is supposed to set the version */
   cap->version = V4L2LOOPBACK_VERSION_CODE;
+#endif
+
   cap->capabilities =
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
     V4L2_CAP_DEVICE_CAPS |
@@ -2123,6 +2130,12 @@ init_vdev           (struct video_device *vdev)
   vdev->ioctl_ops    = &v4l2_loopback_ioctl_ops;
   vdev->release      = &video_device_release;
   vdev->minor        = -1;
+  #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+  vdev->device_caps  =
+    V4L2_CAP_DEVICE_CAPS |
+    V4L2_CAP_VIDEO_CAPTURE |
+    V4L2_CAP_STREAMING | V4L2_CAP_READWRITE;
+  #endif
 #if DEBUG
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 20, 0)
    vdev->debug = V4L2_DEBUG_IOCTL | V4L2_DEBUG_IOCTL_ARG;
@@ -2417,7 +2430,7 @@ init_module         (void)
 
   dprintk("module installed\n");
 
-  printk(KERN_INFO "v4l2loopback driver version %d.%d.%d-droidcam loaded\n",
+  printk(KERN_INFO "v4l2loopback driver version %d.%d.%d (droidcam) loaded\n",
          (V4L2LOOPBACK_VERSION_CODE >> 16) & 0xff,
          (V4L2LOOPBACK_VERSION_CODE >>  8) & 0xff,
          (V4L2LOOPBACK_VERSION_CODE      ) & 0xff);
