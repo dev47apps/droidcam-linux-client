@@ -365,7 +365,7 @@ static void decode_next_frame() {
     int i,k, row, usetmpbuf=0;
     JSAMPLE *ptr=jpg_decoder.m_decodeBuf;
 
-    jpeg_mem_src_tj(dinfo, p, len);
+    jpeg_mem_src(dinfo, p, len);
     jpeg_read_header(dinfo, TRUE);
     if (fatal_error) return;
     dinfo->raw_data_out=TRUE;
