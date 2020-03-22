@@ -318,8 +318,8 @@ int decoder_prepare_video(char * header) {
     if (jpg_decoder.m_webcamYuvSize != jpg_decoder.m_Yuv420Size) {
         jpg_decoder.m_webcamBuf = (BYTE*)malloc(jpg_decoder.m_webcamYuvSize * sizeof(BYTE));
         jpg_decoder.swc = sws_getCachedContext(NULL,
-                jpg_decoder.m_width, jpg_decoder.m_height, PIX_FMT_YUV420P, /* src */
-                WEBCAM_W, WEBCAM_H , PIX_FMT_YUV420P, /* dst */
+                jpg_decoder.m_width, jpg_decoder.m_height, AV_PIX_FMT_YUV420P, /* src */
+                WEBCAM_W, WEBCAM_H , AV_PIX_FMT_YUV420P, /* dst */
                 SWS_FAST_BILINEAR /* flags */, NULL, NULL, NULL);
     }
 
