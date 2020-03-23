@@ -121,9 +121,6 @@ enum TJSAMP {
 
 static int fatal_error = 0;
 
-void jpeg_mem_dest_tj(j_compress_ptr, unsigned char **, unsigned long *, boolean);
-void jpeg_mem_src_tj(j_decompress_ptr, unsigned char *, unsigned long);
-
 static void decoder_share_frame();
 static void decoder_set_stransform(int value);
 
