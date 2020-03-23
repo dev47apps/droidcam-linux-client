@@ -94,7 +94,7 @@ early_out:
     connection_cleanup();
 }
 
-inline void usage(int argc, char *argv[]) {
+void usage(int argc, char *argv[]) {
     fprintf(stderr, "Usage: \n"
     " %s -l <port>\n"
     "   Listen on 'port' for connections\n"
