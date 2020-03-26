@@ -6,7 +6,11 @@ set(COMMON_SOURCE src/connection.c src/decoder.c)
 include(FindPkgConfig)
 
 #find_package(GTK2 2.6 REQUIRED gtk)
-find_path(SWSCALE_INCLUDE_DIRS libswscale/swscale.h)
+find_path(SWSCALE_INCLUDE_DIRS
+	NAMES libswscale/swscale.h
+	PATH_SUFFIXES include include/ffmpeg
+)
+message(STATUS "swscale.h => ${SWSCALE_INCLUDE_DIRS}")
 find_library(SWSCALE_LIBRARY swscale)
 find_library(M m)
 
