@@ -121,8 +121,8 @@ enum TJSAMP {
 
 static int fatal_error = 0;
 
-void jpeg_mem_dest_tj(j_compress_ptr, unsigned char **, unsigned long *, boolean);
-void jpeg_mem_src_tj(j_decompress_ptr, unsigned char *, unsigned long);
+// void jpeg_mem_dest_tj(j_compress_ptr, unsigned char **, unsigned long *, boolean);
+// void jpeg_mem_src_tj(j_decompress_ptr, unsigned char *, unsigned long);
 
 static void decoder_share_frame();
 static void decoder_set_stransform(int value);
@@ -318,8 +318,8 @@ int decoder_prepare_video(char * header) {
     if (jpg_decoder.m_webcamYuvSize != jpg_decoder.m_Yuv420Size) {
         jpg_decoder.m_webcamBuf = (BYTE*)malloc(jpg_decoder.m_webcamYuvSize * sizeof(BYTE));
         jpg_decoder.swc = sws_getCachedContext(NULL,
-                jpg_decoder.m_width, jpg_decoder.m_height, PIX_FMT_YUV420P, /* src */
-                WEBCAM_W, WEBCAM_H , PIX_FMT_YUV420P, /* dst */
+                jpg_decoder.m_width, jpg_decoder.m_height, AV_PIX_FMT_YUV420P, /* src */
+                WEBCAM_W, WEBCAM_H , AV_PIX_FMT_YUV420P, /* dst */
                 SWS_FAST_BILINEAR /* flags */, NULL, NULL, NULL);
     }
 
@@ -365,7 +365,7 @@ static void decode_next_frame() {
     int i,k, row, usetmpbuf=0;
     JSAMPLE *ptr=jpg_decoder.m_decodeBuf;
 
-    jpeg_mem_src_tj(dinfo, p, len);
+    jpeg_mem_src(dinfo, p, len);
     jpeg_read_header(dinfo, TRUE);
     if (fatal_error) return;
     dinfo->raw_data_out=TRUE;
