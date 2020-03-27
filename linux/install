@@ -54,7 +54,7 @@ cp $BUILD_DIR/droidcam-cli /usr/bin/
 
 echo "Registering webcam device"
 modprobe videodev
-insmod $DRIVER_LOCATION$V4L2_LOOPBACK_KO width=$WIDTH height=$HEIGHT
+insmod $DRIVER_LOCATION$V4L2_LOOPBACK_KO width=$WIDTH height=$HEIGHT || true
 
 echo "Running depmod"
 depmod -a
