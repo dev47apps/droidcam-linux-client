@@ -1,10 +1,16 @@
 Linux Client
 ========
 
-Check the makefiles for details on how things compile.
-Dependencies:
--  libspeex-dev
--  libspeexdsp-dev
--  libjpeg-turbo-official
--  libavutil-dev
--  libswscale-dev
+## Building
+
+Download and install libjpeg-turbo binaries (should go into /opt/libjpeg-turbo):
+https://github.com/libjpeg-turbo/libjpeg-turbo/releases
+
+Install the following dependencies
+```
+gtk+-2.0
+libavutil-dev
+libswscale-dev
+```
+
+Run `make`

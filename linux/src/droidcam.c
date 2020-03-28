@@ -340,7 +340,7 @@ _up:
 					}
 				}
 
-				hVideoThread = g_thread_create(VideoThreadProc, (void*)s, TRUE, NULL);
+				hVideoThread = g_thread_new(NULL, VideoThreadProc, (gpointer)s);
 				gtk_button_set_label(g_settings.button, "Stop");
 				//gtk_widget_set_sensitive(GTK_WIDGET(g_settings.button), FALSE);
 
@@ -409,8 +409,6 @@ int main(int argc, char *argv[])
 	GtkWidget *widget; // generic stuff
 
 	// init threads
-	g_thread_init(NULL);
-	gdk_threads_init();
 	gtk_init(&argc, &argv);
 	memset(&g_settings, 0, sizeof(struct settings));
 
