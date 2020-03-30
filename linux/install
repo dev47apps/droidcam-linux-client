@@ -41,19 +41,40 @@ then
 	exit 1;
 fi
 
+if mokutil --sb-state | grep -qF enabled; then
+	echo "Secure Boot is enabled, attempting to sign the driver"
+	PRIV="/var/lib/shim-signed/mok/MOK.priv"
+	PUB="/var/lib/shim-signed/mok/MOK.der"
+	if [[ ! -e "$PRIV" || ! -e "$PUB" ]]
+	then
+		echo "please specify signing key location (or leave empty to sign manually later)"
+		echo ""
+		read -rp "Enter the path of the public key: " PUB
+		read -rp "Enter the path of the private key: " PRIV
+	fi
+
+	if [[ -e "$PRIV" && -e "$PUB" ]]
+	then
+		kmodsign sha512 "$PRIV" "$PUB" "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" \
+			|| echo "warning: device signing failed."
+	fi
+fi
+
 echo "Moving driver and executable to system folders"
 if [ ! -e $DRIVER_LOCATION ]
 then
 	mkdir -p $DRIVER_LOCATION
 fi
 
+set -x
 cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
 cp droidcam /usr/bin/
 cp droidcam-cli /usr/bin/
+set +x
 
 echo "Registering webcam device"
 modprobe videodev
-insmod $DRIVER_LOCATION$V4L2_LOOPBACK_KO width=$WIDTH height=$HEIGHT
+insmod $DRIVER_LOCATION$V4L2_LOOPBACK_KO width=$WIDTH height=$HEIGHT || echo "warning: device not registered"
 
 echo "Running depmod"
 depmod -a
