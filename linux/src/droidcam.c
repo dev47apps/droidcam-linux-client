@@ -202,7 +202,7 @@ server_wait:
 	}
 
 	memset(buf, 0, sizeof(buf));
-	if (SendRecv(0, buf, 5, videoSocket) <= 0 ){
+	if (SendRecv(0, buf, 9, videoSocket) <= 0 ){
 		MSG_ERROR("Connection reset by app!\nDroidCam is probably busy with another client");
 		goto early_out;
 	}

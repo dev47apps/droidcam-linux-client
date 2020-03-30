@@ -15,7 +15,7 @@
 
 extern void ShowError();
 
-#define VIDEO_REQ "CMD /v2/video?%dx%d"
+#define VIDEO_REQ "CMD /v2/video.4?%dx%d"
 #define OTHER_REQ "CMD /v1/ctl?%d"
 
 #define AUDIO_REQ "CMD /v2/audio"
