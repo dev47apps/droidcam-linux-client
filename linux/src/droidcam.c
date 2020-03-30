@@ -202,7 +202,7 @@ server_wait:
 	}
 
 	memset(buf, 0, sizeof(buf));
-	if (SendRecv(0, buf, 5, videoSocket) <= 0 ){
+	if (SendRecv(0, buf, 9, videoSocket) <= 0 ){
 		MSG_ERROR("Connection reset by app!\nDroidCam is probably busy with another client");
 		goto early_out;
 	}
@@ -223,13 +223,9 @@ server_wait:
 		if (SendRecv(0, buf, 4, videoSocket) == FALSE) break;
 		make_int4(frameLen, buf[0], buf[1], buf[2], buf[3]);
 		f->length = frameLen;
-		char *p = (char*)f->data;
-		while (frameLen > 4096) {
-			if (SendRecv(0, p, 4096, videoSocket) == FALSE) goto early_out;
-			frameLen -= 4096;
-			p += 4096;
-		}
-		if (SendRecv(0, p, frameLen, videoSocket) == FALSE) break;
+		if (SendRecv(0, (char*)f->data, frameLen, videoSocket) == FALSE)
+		    break;
+
 	}
 
 early_out:
@@ -340,7 +336,7 @@ _up:
 					}
 				}
 
-				hVideoThread = g_thread_create(VideoThreadProc, (void*)s, TRUE, NULL);
+				hVideoThread = g_thread_new(NULL, VideoThreadProc, (gpointer)s);
 				gtk_button_set_label(g_settings.button, "Stop");
 				//gtk_widget_set_sensitive(GTK_WIDGET(g_settings.button), FALSE);
 
@@ -409,8 +405,6 @@ int main(int argc, char *argv[])
 	GtkWidget *widget; // generic stuff
 
 	// init threads
-	g_thread_init(NULL);
-	gdk_threads_init();
 	gtk_init(&argc, &argv);
 	memset(&g_settings, 0, sizeof(struct settings));
 

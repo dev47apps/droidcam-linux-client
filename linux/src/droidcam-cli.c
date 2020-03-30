@@ -56,7 +56,7 @@ server_wait:
     }
 
     memset(buf, 0, sizeof(buf));
-    if (SendRecv(0, buf, 5, videoSocket) <= 0 ){
+    if (SendRecv(0, buf, 9, videoSocket) <= 0 ){
         MSG_ERROR("Connection reset by app!\nDroidCam is probably busy with another client");
         goto early_out;
     }
@@ -71,13 +71,8 @@ server_wait:
         if (SendRecv(0, buf, 4, videoSocket) == FALSE) break;
         make_int4(frameLen, buf[0], buf[1], buf[2], buf[3]);
         f->length = frameLen;
-        char *p = (char*)f->data;
-        while (frameLen > 4096) {
-            if (SendRecv(0, p, 4096, videoSocket) == FALSE) goto early_out;
-            frameLen -= 4096;
-            p += 4096;
-        }
-        if (SendRecv(0, p, frameLen, videoSocket) == FALSE) break;
+        if (SendRecv(0, (char*)f->data, frameLen, videoSocket) == FALSE)
+            break;
     }
 
 early_out:
@@ -94,7 +89,7 @@ early_out:
     connection_cleanup();
 }
 
-inline void usage(int argc, char *argv[]) {
+static inline void usage(int argc, char *argv[]) {
     fprintf(stderr, "Usage: \n"
     " %s -l <port>\n"
     "   Listen on 'port' for connections\n"

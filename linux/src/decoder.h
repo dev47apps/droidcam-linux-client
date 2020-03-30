@@ -27,7 +27,6 @@ struct jpg_frame_s* decoder_get_next_frame();
 void decoder_set_video_delay(unsigned v);
 int decoder_get_video_width();
 int decoder_get_video_height();
-void decoder_rotate();
 void decoder_show_test_image();
 
 /* 20ms 16hkz 16 bit */

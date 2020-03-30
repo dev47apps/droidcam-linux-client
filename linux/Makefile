@@ -6,16 +6,27 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # Use at your own risk. See README file for more details.
 
+CC    = -no-pie
 GTK   = `pkg-config --libs --cflags gtk+-2.0`
-LIBS     = -lgthread-2.0 -l:/usr/lib/libswscale.a  -l:/usr/lib/libavutil.a -l:/opt/libjpeg-turbo/lib`getconf LONG_BIT`/libturbojpeg.a
-CC       =
+LIBS  = `pkg-config --libs libswscale libavutil`
+JPEG  = -I/opt/libjpeg-turbo/include /opt/libjpeg-turbo/lib`getconf LONG_BIT`/libturbojpeg.a
 SRC      = src/connection.c src/decoder.c
+NO_WARN  = -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 
-all:
-	gcc -Wall $(CC) $(SRC) src/droidcam.c $(LIBS) $(GTK) -lm -o droidcam
+ifeq "$(RELEASE)" "1"
+LIBS = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a -lpthread
+package: clean all
+	zip -x *.png src/* -r droidcam_`date +%s`.zip ./*
 
-cli:
-	gcc -Wall $(CC) $(SRC) src/droidcam-cli.c $(LIBS) -lm -o droidcam-cli
+endif
+
+all: droidcam-cli droidcam
+
+droidcam-cli: src/droidcam-cli.c $(SRC)
+	gcc -Wall $(CC) $(NO_WARN) $^        $(JPEG) $(LIBS) -lm -o droidcam-cli
+
+droidcam: src/droidcam.c $(SRC)
+	gcc -Wall $(CC) $(NO_WARN) $^ $(GTK) $(JPEG) $(LIBS) -lm -o droidcam
 
 clean:
 	rm droidcam || true
