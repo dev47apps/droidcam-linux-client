@@ -1,19 +1,16 @@
 obj-m := v4l2loopback-dc.o
-KVERSION := $(shell uname -r)
-RES_WIDTH := 640
-RES_HEIGHT := 480
 
 all:
-	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD)
+	make -C /lib/modules/`uname -r`/build M=`pwd`
 
 test:
 	gcc test.c -o test
 
 clean:
-	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
+	make -C /lib/modules/`uname -r`/build M=`pwd` clean
 
 insmod:
-	sudo insmod v4l2loopback-dc.ko width=$(RES_WIDTH) height=$(RES_HEIGHT)
+	sudo insmod v4l2loopback-dc.ko width=320 height=240
 
 rmmod:
 	sudo rmmod v4l2loopback-dc.ko
