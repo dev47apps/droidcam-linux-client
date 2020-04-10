@@ -2,35 +2,14 @@
 #
 # Usage: ./install [640 480]
 # Dev47Apps.com
+# functions in install_shell_func_and_conf
 #
 set -e
-V4L2_LOOPBACK_DIR="v4l2loopback";
-V4L2_LOOPBACK_DC="v4l2loopback_dc";
-V4L2_LOOPBACK_KO="v4l2loopback-dc.ko";
-DRIVER_LOCATION="/lib/modules/`uname -r`/kernel/drivers/media/video/";
 
-WIDTH="640"
-HEIGHT="480"
+REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
+source "${REPO_PATH}/install_shell_func_and_conf"
 
-if [[ "$1" != "" && "$2" != "" ]]
-then
-	WIDTH=$1
-	HEIGHT=$2
-fi
-
-if [[ ! $(echo "$WIDTH" | grep -E "^[0-9]+$") || ! $(echo "$HEIGHT" | grep -E "^[0-9]+$") ]]
-then
-	echo "Inavlid parameters: '$WIDTH' and '$HEIGHT'"
-	exit 1
-fi
-
-if [[ $WIDTH -lt 240 || $HEIGHT -lt 160 ]]
-then
-	echo "Parameters too low: '$WIDTH' and '$HEIGHT'"
-	exit 1
-fi
-
-echo "Webcam parameters: '$WIDTH' and '$HEIGHT'"
+check_params "$1" "$2"
 
 echo "Building $V4L2_LOOPBACK_KO"
 make -C $V4L2_LOOPBACK_DIR
@@ -100,7 +79,7 @@ etc_modules_load_d() {
 
 }
 
-[[ -d "/etc/modprobe.d/" ]] && echo "options $V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" > /etc/modprobe.d/droidcam.conf
+create_v4l2loopback_dc_conf
 
 if [ -e "/etc/modules" ]
 then

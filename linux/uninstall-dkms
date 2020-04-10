@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# Usage: ./uninstall-dkms
+
+set -e
+REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
+source "${REPO_PATH}/install_shell_func_and_conf"
+
+KVERSION=`uname -r`
+echo "Removing DKMS module ${V4L2_LOOPBACK_DC} from kernel ${KVERSION}"
+rmmod ${V4L2_LOOPBACK_DC}
+
+echo "De-registering as DKMS module"
+dkms remove ${V4L2_LOOPBACK_DC}/${V4L2_LOOPBACK_VERSION} -k ${KVERSION}
+
+if [ -L "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ]; then
+    echo "Removing link in /usr/src"
+    rm "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}"
+fi
+
+if [ -r "/etc/modprobe.d/droidcam.conf" ]; then
+    echo "Removing module config"
+    rm /etc/modprobe.d/droidcam.conf
+fi
+

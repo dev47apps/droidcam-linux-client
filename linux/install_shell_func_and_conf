@@ -1,0 +1,38 @@
+# You should not call this directly.
+# This is sourced from install and install-dkms scripts
+
+
+V4L2_LOOPBACK_DIR="v4l2loopback"
+V4L2_LOOPBACK_DC="v4l2loopback_dc"
+V4L2_LOOPBACK_KO="v4l2loopback-dc.ko"
+V4L2_LOOPBACK_VERSION="0.0.1"
+DRIVER_LOCATION="/lib/modules/`uname -r`/kernel/drivers/media/video/"
+
+WIDTH="640"
+HEIGHT="480"
+
+check_params() {
+    if [[ "$1" != "" && "$2" != "" ]]
+    then
+    	WIDTH=$1
+    	HEIGHT=$2
+    fi
+    
+    if [[ ! $(echo "$WIDTH" | grep -E "^[0-9]+$") || ! $(echo "$HEIGHT" | grep -E "^[0-9]+$") ]]
+    then
+    	echo "Invalid parameters: '$WIDTH' and '$HEIGHT'"
+    	exit 1
+    fi
+    
+    if [[ $WIDTH -lt 240 || $HEIGHT -lt 160 ]]
+    then
+    	echo "Parameters too low: '$WIDTH' and '$HEIGHT'"
+    	exit 1
+    fi
+    
+    echo "Webcam parameters: '$WIDTH' and '$HEIGHT'"
+}
+
+create_v4l2loopback_dc_conf() {
+    [[ -d "/etc/modprobe.d/" ]] && echo "options $V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" > /etc/modprobe.d/droidcam.conf
+}

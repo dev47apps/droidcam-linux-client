@@ -1,7 +1,7 @@
 obj-m := v4l2loopback-dc.o
 KVERSION := $(shell uname -r)
-RES_WIDTH := 960
-RES_HEIGHT := 720
+RES_WIDTH := 640
+RES_HEIGHT := 480
 
 all:
 	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD)
@@ -17,3 +17,10 @@ insmod:
 
 rmmod:
 	sudo rmmod v4l2loopback-dc.ko
+
+dkms:
+	sudo ../install-dkms $(RES_WIDTH) $(RES_HEIGHT)
+
+dkms-uninstall:
+	sudo ../uninstall-dkms
+	

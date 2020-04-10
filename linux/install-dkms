@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# Usage: ./install-dkms [640 480]
+
+set -e
+REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
+source "${REPO_PATH}/install_shell_func_and_conf"
+
+
+check_params "$1" "$2"
+
+# Creating link with correct name in /usr/src to the v4l2loopback directory
+cd "${REPO_PATH}/${V4L2_LOOPBACK_DIR}"
+if [ -d "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ] || [ -L "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ]; then
+    # Skipping link creation...
+    echo "'usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}' already exists. Skipping creation."
+else
+    ln -s "`pwd`" "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}"
+fi
+
+cd "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}"
+dkms build -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
+dkms install -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
+dkms mkdeb -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
+
+create_v4l2loopback_dc_conf
+modprobe ${V4L2_LOOPBACK_DC}
+
+
