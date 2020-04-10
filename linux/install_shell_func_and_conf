@@ -1,5 +1,5 @@
 # You should not call this directly.
-# This is sourced from install and install-dkms scripts
+# This is supposed to be sourced from install and install-dkms scripts
 
 
 V4L2_LOOPBACK_DIR="v4l2loopback"

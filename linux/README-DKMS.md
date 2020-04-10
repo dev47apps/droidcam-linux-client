@@ -16,7 +16,7 @@ This is where [DKMS] comes into the picture.
 
 By properly declaring the `v4l2loopback_dc` module as a [DKMS] module, future installs of kernel upgrades will _automatically_ take `v4l2loopback_dc` module re-installation into account after the kernel has been updated.
 
-**If your system supports DKMS, it should probably be your prefered install mechanism.** Both for the fact it survives kernel updates, but also for the fact it keeps your kernel module tree _clean_, as extra [DKMS] modules are installed in separated directories.
+**If your system supports DKMS, it should probably be your prefered install mechanism.** Both for the fact it survives kernel updates, but also for the fact it keeps your kernel module tree _clean_, as extra [DKMS] modules are kept in separated directories.
 
 # DKMS flavour installation of `droidcam`
 
@@ -26,16 +26,16 @@ First clone the `droidcam` Github repo anywhere you want (in `/opt` for example)
 
 Build it following the standard procedure described [here][droidcam build procedure].
 
-:information_source: The pre-requisite is that the previous build succeeded.
+**:information_source: The pre-requisite for what's coming next is that the previous build succeeded.**
 
 
 From within the repository, go to the `linux` directory, and then issue a:
 
-    $ ./install-dkms [width] [height]
+    $ sudo ./install-dkms [width] [height]
 
 If you want specific webcam resolution, you can directly pass the width and height to the script (as for the standard install script). Default is 640 480.
 
-:information_source: After this, the module is built, loaded (you may check using `lsmod|grep v4l2loopback_dc`), and its config for the webcam resolution is created in the file `/etc/modprobe.d/droidcam.conf` (you may want to edit this file afterwards, or you can re-run the install script multiple times with different parameters which is harmless). [Supported webcam resolutions are listed here][webcam resolutions].
+:information_source: After this, the module is built, loaded (you may check this using `lsmod|grep v4l2loopback_dc`), and its config for the webcam resolution is created in the file `/etc/modprobe.d/droidcam.conf` (you may want to edit this file afterwards, or you can re-run the install script multiple times with different parameters which is harmless). [Supported webcam resolutions are listed here][webcam resolutions].
 
 
 # Uninstalling `droidcam` after a DKMS install
@@ -43,7 +43,7 @@ If you want specific webcam resolution, you can directly pass the width and heig
 
 From within the repository, go to the `linux` directory, and then issue a:
 
-    $ ./uninstall-dkms
+    $ sudo ./uninstall-dkms
 
 It will remove the binaries `droidcam` and `droidcam-cli` from `/usr/bin` and remove cleanly the DKMS module `v4l2loopback_dc`.
 
