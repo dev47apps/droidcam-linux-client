@@ -17,10 +17,3 @@ insmod:
 
 rmmod:
 	sudo rmmod v4l2loopback-dc.ko
-
-dkms:
-	sudo ../install-dkms $(RES_WIDTH) $(RES_HEIGHT)
-
-dkms-uninstall:
-	sudo ../uninstall-dkms
-	

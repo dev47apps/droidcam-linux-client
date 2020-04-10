@@ -9,6 +9,22 @@ source "${REPO_PATH}/install_shell_func_and_conf"
 
 check_params "$1" "$2"
 
+# Installing droidcam binaries. Requires make to have succeeded.
+if [ -f "${REPO_PATH}/droidcam" ]; then 
+    echo "Installing droidcam in /usr/bin" 
+    cp "${REPO_PATH}/droidcam" /usr/bin/
+else
+    echo "droidcam was not previously built. Installation skip."
+fi
+if [ -f "${REPO_PATH}/droidcam-cli" ]; then 
+    echo "Installing droidcam-cli in /usr/bin" 
+    cp "${REPO_PATH}/droidcam-cli" /usr/bin/
+else
+    echo "droidcam-cli was not previously built. Installation skip."
+fi
+
+# Now setting up the module as a DKMS module
+
 # Creating link with correct name in /usr/src to the v4l2loopback directory
 cd "${REPO_PATH}/${V4L2_LOOPBACK_DIR}"
 if [ -d "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ] || [ -L "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ]; then
@@ -25,5 +41,7 @@ dkms mkdeb -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
 
 create_v4l2loopback_dc_conf
 modprobe ${V4L2_LOOPBACK_DC}
+
+echo 'Done'
 
 
