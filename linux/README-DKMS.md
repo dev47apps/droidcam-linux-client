@@ -45,7 +45,11 @@ From within the repository, go to the `linux` directory, and then issue a:
 
     $ sudo ./uninstall-dkms
 
-It will remove the binaries `droidcam` and `droidcam-cli` from `/usr/bin` and remove cleanly the DKMS module `v4l2loopback_dc`.
+Or alternatively, in case you removed the original repository after install, you can issue:
+
+    $ sudo /opt/droidcam-uninstall
+
+Both methods will remove the binaries `droidcam` and `droidcam-cli` from `/usr/bin` and remove cleanly the DKMS module `v4l2loopback_dc`. You may want to manually remove the uninstall script `/opt/droidcam-uninstall` after you ran it.
 
 
 
