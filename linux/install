@@ -7,7 +7,7 @@
 set -e
 
 REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
-source "${REPO_PATH}/install_shell_func_and_conf"
+source "${REPO_PATH}/install.common"
 
 check_params "$1" "$2"
 
