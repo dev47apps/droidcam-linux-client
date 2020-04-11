@@ -6,40 +6,66 @@ set -e
 REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
 source "${REPO_PATH}/install.common"
 
+generate_dkms_conf() {
+    local target="$*"
+    cat <<EOF > "${target}"
+PACKAGE_NAME="${V4L2_LOOPBACK_DC}"
+PACKAGE_VERSION="${V4L2_LOOPBACK_VERSION}"
+CLEAN="make clean"
+MAKE[0]="make all KVERSION=$kernelver"
+BUILT_MODULE_NAME[0]="${V4L2_LOOPBACK_KM}"
+DEST_MODULE_LOCATION[0]="/updates"
+AUTOINSTALL="yes"
+EOF
+}
 
-check_params "$1" "$2"
+install_droidcam_binaries() {
+    # Installing droidcam binaries. Requires make to have succeeded.
+    # But testing if the binaries are present, to avoid failing because we want to be able 
+    # to build and deploy the module in any case.
+    if [ -f "${REPO_PATH}/droidcam" ]; then
+        echo "Installing droidcam in /usr/bin"
+        cp "${REPO_PATH}/droidcam" /usr/bin/
+    else
+        echo "droidcam was not previously built. Installation skip."
+    fi
+    if [ -f "${REPO_PATH}/droidcam-cli" ]; then
+        echo "Installing droidcam-cli in /usr/bin"
+        cp "${REPO_PATH}/droidcam-cli" /usr/bin/
+    else
+        echo "droidcam-cli was not previously built. Installation skip."
+    fi
+}
 
-# Installing droidcam binaries. Requires make to have succeeded.
-if [ -f "${REPO_PATH}/droidcam" ]; then
-    echo "Installing droidcam in /usr/bin"
-    cp "${REPO_PATH}/droidcam" /usr/bin/
-else
-    echo "droidcam was not previously built. Installation skip."
-fi
-if [ -f "${REPO_PATH}/droidcam-cli" ]; then
-    echo "Installing droidcam-cli in /usr/bin"
-    cp "${REPO_PATH}/droidcam-cli" /usr/bin/
-else
-    echo "droidcam-cli was not previously built. Installation skip."
-fi
+setup_dkms_module() {
+    # Copying module dir with name expected by dkms in /usr/src
+    if [ -d "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ] || [ -L "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ]; then
+        rm -Rf "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}"
+    fi
+    cp -a "${REPO_PATH}/${V4L2_LOOPBACK_DIR}" "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}"
+    chown root:root "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" -R
+    generate_dkms_conf "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}/dkms.conf"
 
-# Now setting up the module as a DKMS module
+    dkms build -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
+    dkms install -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
+    dkms mkdeb -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
+}
 
-# Creating link with correct name in /usr/src to the v4l2loopback directory
-cd "${REPO_PATH}/${V4L2_LOOPBACK_DIR}"
-if [ -d "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ] || [ -L "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ]; then
-    # Skipping link creation...
-    echo "'usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}' already exists. Skipping creation."
-else
-    ln -s "`pwd`" "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}"
-fi
+copy_uninstall_script() {
+    echo "Adding uninstall script in '/opt/droidcam-uninstall'"
+    mkdir -p /opt || true
+    cp "${REPO_PATH}/uninstall-dkms" /opt/droidcam-uninstall
+}
 
-cd "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}"
-dkms build -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
-dkms install -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
-dkms mkdeb -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
+# Here we go
+check_module_options "$1" "$2"
 
+copy_uninstall_script
+install_droidcam_binaries
+setup_dkms_module
 create_v4l2loopback_dc_conf
+
+# Finally let's load the module
 modprobe ${V4L2_LOOPBACK_DC}
 
 echo 'Done'

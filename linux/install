@@ -9,7 +9,7 @@ set -e
 REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
 source "${REPO_PATH}/install.common"
 
-check_params "$1" "$2"
+check_module_options "$1" "$2"
 
 echo "Building $V4L2_LOOPBACK_KO"
 make -C $V4L2_LOOPBACK_DIR

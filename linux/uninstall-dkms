@@ -2,25 +2,28 @@
 #
 # Usage: ./uninstall-dkms
 
-set -e
-REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
-source "${REPO_PATH}/install.common"
-
-
-# Removing DKMS module
-
 KVERSION=`uname -r`
-echo "Unloading DKMS module ${V4L2_LOOPBACK_DC} from kernel ${KVERSION}"
-rmmod ${V4L2_LOOPBACK_DC}
+DKMS_STATUS_OUTPUT_RE="^\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^:]+):(.*)$"
 
-echo "De-registering as DKMS module"
-dkms remove ${V4L2_LOOPBACK_DC}/${V4L2_LOOPBACK_VERSION} -k ${KVERSION}
-
-if [ -L "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}" ]; then
-    echo "Removing link in /usr/src"
-    rm "/usr/src/${V4L2_LOOPBACK_DC}-${V4L2_LOOPBACK_VERSION}"
+# Unloading module
+if (lsmod | grep v4l2loopback_dc); then
+    echo "Unloading module"
+    rmmod v4l2loopback_dc
 fi
 
+# DKMS module
+dkms status| grep v4l2loopback_dc | grep ${KVERSION} | while read LINE; do
+    if [[ "${LINE}" =~ ${DKMS_STATUS_OUTPUT_RE} ]] && module="${BASH_REMATCH[1]}" && version="${BASH_REMATCH[2]}"  && kversion="${BASH_REMATCH[3]}"  && arch="${BASH_REMATCH[4]}" && status="${BASH_REMATCH[5]}"; then
+        echo "De-registering as DKMS module v4l2loopback_dc version ${version} from kernel ${kversion}..."
+        dkms remove v4l2loopback_dc/${version} -k ${kversion}
+        if [ -d "/usr/src/v4l2loopback_dc-${version}" ]; then
+            echo "Removing v4l2loopback_dc version ${version} module source in /usr/src"
+            rm -Rf "/usr/src/v4l2loopback_dc-${version}"
+        fi
+    fi
+done
+
+# Module configuration
 if [ -f "/etc/modprobe.d/droidcam.conf" ]; then
     echo "Removing module config"
     rm /etc/modprobe.d/droidcam.conf
