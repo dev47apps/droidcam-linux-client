@@ -40,7 +40,6 @@ dkms install -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
 dkms mkdeb -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
 
 create_v4l2loopback_dc_conf
-modprobe videodev
 modprobe ${V4L2_LOOPBACK_DC}
 
 echo 'Done'
