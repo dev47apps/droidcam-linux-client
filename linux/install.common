@@ -55,12 +55,10 @@ etc_modules_load_d() {
 }
 
 register_module_at_boot_time() {
-    if [ -e "/etc/modules" ]
-    then
-        etc_modules
-    elif [ -d "/etc/modules-load.d" ]
-    then
+    if [ -d "/etc/modules-load.d" ]; then
         etc_modules_load_d
+    elif [ -e "/etc/modules" ]; then
+        etc_modules
     else
         echo "Warning: Unknown distro. Webcam module may not load after a reboot :("
     fi
