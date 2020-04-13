@@ -64,6 +64,7 @@ copy_uninstall_script
 install_droidcam_binaries
 setup_dkms_module
 create_v4l2loopback_dc_conf
+register_module_at_boot_time
 
 # Finally let's load the module
 modprobe ${V4L2_LOOPBACK_DC}
