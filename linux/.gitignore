@@ -1,1 +1,4 @@
 droidcam*
+
+# vim swap files
+*.swp

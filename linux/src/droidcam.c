@@ -488,7 +488,7 @@ int main(int argc, char *argv[])
 
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	widget = gtk_button_new_with_label("...");
-	gtk_widget_set_size_request(widget, 40, 28);
+	// gtk_widget_set_size_request(widget, 40, 28);
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_OTR);
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, FALSE, FALSE, 0);
@@ -502,7 +502,7 @@ int main(int argc, char *argv[])
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	gtk_box_pack_start(GTK_BOX(hbox2), gtk_label_new("Phone IP:"), FALSE, FALSE, 0);
 	widget = gtk_entry_new_with_max_length(16);
-	gtk_widget_set_size_request(widget, 120, 30);
+	// gtk_widget_set_size_request(widget, 120, 30);
 	g_settings.ipEntry = (GtkEntry*)widget;
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 
@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	gtk_box_pack_start(GTK_BOX(hbox2), gtk_label_new("DroidCam Port:"), FALSE, FALSE, 0);
 	widget = gtk_entry_new_with_max_length(5);
-	gtk_widget_set_size_request(widget, 60, 30);
+	// gtk_widget_set_size_request(widget, 60, 30);
 	g_settings.portEntry = (GtkEntry*)widget;
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 
@@ -523,7 +523,7 @@ int main(int argc, char *argv[])
 
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	widget = gtk_button_new_with_label("Connect");
-	gtk_widget_set_size_request(widget, 80, 30);
+	// gtk_widget_set_size_request(widget, 80, 30);
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), CB_BUTTON);
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 	g_settings.button = (GtkButton*)widget;
