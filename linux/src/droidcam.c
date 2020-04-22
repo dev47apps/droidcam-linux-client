@@ -404,6 +404,8 @@ int main(int argc, char *argv[])
 	GtkWidget *vbox;
 	GtkWidget *widget; // generic stuff
 
+    GtkRequisition widgetSize;
+
 	// init threads
 	gtk_init(&argc, &argv);
 	memset(&g_settings, 0, sizeof(struct settings));
@@ -467,16 +469,28 @@ int main(int argc, char *argv[])
 	vbox = gtk_vbox_new(FALSE, 1);
 
 	widget = gtk_radio_button_new_with_label(NULL, "WiFi / LAN");
+
+    gtk_widget_size_request(widget, &widgetSize);
+	gtk_widget_set_size_request(widget, widgetSize.width, widgetSize.height + 10);
+
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(widget), TRUE);
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_WIFI);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Wifi Server Mode");
+
+    gtk_widget_size_request(widget, &widgetSize);
+	gtk_widget_set_size_request(widget, widgetSize.width, widgetSize.height + 10);
+
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
 	// gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	// widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Bluetooth");
 	// g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_BTH);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "USB (over adb)");
+
+    gtk_widget_size_request(widget, &widgetSize);
+	gtk_widget_set_size_request(widget, widgetSize.width, widgetSize.height + 10);
+
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 
@@ -488,7 +502,10 @@ int main(int argc, char *argv[])
 
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	widget = gtk_button_new_with_label("...");
-	// gtk_widget_set_size_request(widget, 40, 28);
+
+    gtk_widget_size_request(widget, &widgetSize);
+	gtk_widget_set_size_request(widget, widgetSize.width + 40, widgetSize.height);
+
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_OTR);
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, FALSE, FALSE, 0);
@@ -502,7 +519,10 @@ int main(int argc, char *argv[])
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	gtk_box_pack_start(GTK_BOX(hbox2), gtk_label_new("Phone IP:"), FALSE, FALSE, 0);
 	widget = gtk_entry_new_with_max_length(16);
-	// gtk_widget_set_size_request(widget, 120, 30);
+
+    gtk_widget_size_request(widget, &widgetSize);
+	gtk_widget_set_size_request(widget, widgetSize.width + 82, widgetSize.height + 10);
+
 	g_settings.ipEntry = (GtkEntry*)widget;
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 
@@ -513,7 +533,10 @@ int main(int argc, char *argv[])
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	gtk_box_pack_start(GTK_BOX(hbox2), gtk_label_new("DroidCam Port:"), FALSE, FALSE, 0);
 	widget = gtk_entry_new_with_max_length(5);
-	// gtk_widget_set_size_request(widget, 60, 30);
+
+    gtk_widget_size_request(widget, &widgetSize);
+	gtk_widget_set_size_request(widget, widgetSize.width + 5, widgetSize.height + 10);
+
 	g_settings.portEntry = (GtkEntry*)widget;
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 
@@ -523,7 +546,10 @@ int main(int argc, char *argv[])
 
 	hbox2 = gtk_hbox_new(FALSE, 1);
 	widget = gtk_button_new_with_label("Connect");
-	// gtk_widget_set_size_request(widget, 80, 30);
+
+    gtk_widget_size_request(widget, &widgetSize);
+	gtk_widget_set_size_request(widget, widgetSize.width + 40, widgetSize.height + 10);
+
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), CB_BUTTON);
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 	g_settings.button = (GtkButton*)widget;
