@@ -405,6 +405,9 @@ int main(int argc, char *argv[])
 	GtkWidget *widget; // generic stuff
 
     GtkRequisition widget_size;
+    gint total_phone_ip_width = 0;
+    gint total_port_width = 0;
+    gint port_input_width = 0;
 
 	// init threads
 	gtk_init(&argc, &argv);
@@ -518,20 +521,18 @@ int main(int argc, char *argv[])
 
 	hbox2 = gtk_hbox_new(FALSE, 1);
 
-    gint total_phone_ip_width = 0;
-
     widget = gtk_label_new("Phone IP:");
-
     gtk_widget_size_request(widget, &widget_size);
+    // Add `Phone IP` label widget with to the total.
     total_phone_ip_width += widget_size.width;
 
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 	widget = gtk_entry_new_with_max_length(16);
 
     gtk_widget_size_request(widget, &widget_size);
+    gtk_widget_set_size_request(widget, widget_size.width + 80, widget_size.height + 10);
+    // Add `Phone IP` input widget with to the total.
     total_phone_ip_width += widget_size.width + 80;
-
-	gtk_widget_set_size_request(widget, widget_size.width + 80, widget_size.height + 10);
 
 	g_settings.ipEntry = (GtkEntry*)widget;
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
@@ -539,8 +540,6 @@ int main(int argc, char *argv[])
 	widget = gtk_alignment_new(0,0,0,0);
 	gtk_container_add(GTK_CONTAINER(widget), hbox2);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-
-    gint total_port_width = 0;
 
     hbox2 = gtk_hbox_new(FALSE, 1);
     widget = gtk_label_new("DroidCam Port:");
@@ -552,9 +551,9 @@ int main(int argc, char *argv[])
 	widget = gtk_entry_new_with_max_length(5);
     gtk_widget_size_request(widget, &widget_size);
 
-    gint port_width = total_phone_ip_width - total_port_width;
-
-	gtk_widget_set_size_request(widget, port_width, widget_size.height + 10);
+    // Calculate the recommended width of port input widget width.
+    port_input_width = total_phone_ip_width - total_port_width;
+    gtk_widget_set_size_request(widget, port_input_width, widget_size.height + 10);
 
 	g_settings.portEntry = (GtkEntry*)widget;
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
