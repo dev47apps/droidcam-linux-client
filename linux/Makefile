@@ -7,7 +7,7 @@
 # Use at your own risk. See README file for more details.
 
 CC    = -no-pie
-GTK   = `pkg-config --libs --cflags gtk+-2.0`
+GTK   = `pkg-config --libs --cflags gtk+-2.0` `pkg-config --libs x11`
 LIBS  = `pkg-config --libs --cflags libswscale libavutil`
 JPEG  = -I/opt/libjpeg-turbo/include /opt/libjpeg-turbo/lib`getconf LONG_BIT`/libturbojpeg.a
 SRC      = src/connection.c src/decoder.c

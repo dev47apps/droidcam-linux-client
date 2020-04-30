@@ -202,8 +202,8 @@ server_wait:
 	}
 
 	memset(buf, 0, sizeof(buf));
-	if (SendRecv(0, buf, 9, videoSocket) <= 0 ){
-		MSG_ERROR("Connection reset by app!\nDroidCam is probably busy with another client");
+	if (SendRecv(0, buf, 9, videoSocket) <= 0) {
+		MSG_ERROR("Connection reset!\nIs the app running?");
 		goto early_out;
 	}
 
@@ -408,6 +408,7 @@ int main(int argc, char *argv[])
     gint total_width = 0;
 
 	// init threads
+	XInitThreads();
 	gtk_init(&argc, &argv);
 	memset(&g_settings, 0, sizeof(struct settings));
 
