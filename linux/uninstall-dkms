@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# Usage: ./uninstall-dkms
+
+KVERSION=`uname -r`
+DKMS_STATUS_OUTPUT_RE="^\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^:]+):(.*)$"
+
+# Unloading module
+if (lsmod | grep v4l2loopback_dc); then
+    echo "Unloading module"
+    rmmod v4l2loopback_dc
+fi
+
+# DKMS module
+dkms status| grep v4l2loopback_dc | grep ${KVERSION} | while read LINE; do
+    if [[ "${LINE}" =~ ${DKMS_STATUS_OUTPUT_RE} ]] && module="${BASH_REMATCH[1]}" && version="${BASH_REMATCH[2]}"  && kversion="${BASH_REMATCH[3]}"  && arch="${BASH_REMATCH[4]}" && status="${BASH_REMATCH[5]}"; then
+        echo "De-registering as DKMS module v4l2loopback_dc version ${version} from kernel ${kversion}..."
+        dkms remove v4l2loopback_dc/${version} -k ${kversion}
+        if [ -d "/usr/src/v4l2loopback_dc-${version}" ]; then
+            echo "Removing v4l2loopback_dc version ${version} module source in /usr/src"
+            rm -Rf "/usr/src/v4l2loopback_dc-${version}"
+        fi
+    fi
+done
+
+echo "Cleaning system configs"
+
+# Module configuration
+if [ -f "/etc/modprobe.d/droidcam.conf" ]; then
+    echo "Removing module config"
+    rm /etc/modprobe.d/droidcam.conf
+fi
+
+# Systemd module registration
+if [ -f "/etc/modules-load.d/droidcam.conf" ]; then
+    echo "Removing systemd module registration"
+    rm /etc/modules-load.d/droidcam.conf
+fi
+
+# Old style module registration
+clean_etc_modules() {
+	# Remove droidcam reference in /etc/modules
+    echo "Removing module references in /etc/modules"
+	cat /etc/modules | egrep -v "^(videodev|v4l2loopback_dc)" > /tmp/.etc.modules
+	prevperm=`stat -c %a /etc/modules`
+	sudo mv /tmp/.etc.modules /etc/modules
+	sudo chmod $prevperm /etc/modules
+}
+[[ -e "/etc/modules" ]] && clean_etc_modules
+
+
+echo "Removing droidcam binaries"
+# Removing droidcam binaries
+if [ -f "/usr/bin/droidcam" ]; then
+    echo "Removing droidcam binary"
+    rm /usr/bin/droidcam
+fi
+if [ -f "/usr/bin/droidcam-cli" ]; then
+    echo "Removing droidcam-cli binary"
+    rm /usr/bin/droidcam-cli
+fi
+

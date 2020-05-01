@@ -1,0 +1,65 @@
+# You should not call this directly.
+# This is supposed to be sourced from install and install-dkms scripts
+
+
+V4L2_LOOPBACK_DIR="v4l2loopback"
+V4L2_LOOPBACK_DC="v4l2loopback_dc"
+V4L2_LOOPBACK_KM="v4l2loopback-dc"
+V4L2_LOOPBACK_KO="${V4L2_LOOPBACK_KM}.ko"
+V4L2_LOOPBACK_VERSION="0.0.1"
+DRIVER_LOCATION="/lib/modules/`uname -r`/kernel/drivers/media/video/"
+
+WIDTH="640"
+HEIGHT="480"
+
+check_module_options() {
+    if [[ "$1" != "" && "$2" != "" ]]
+    then
+    	WIDTH=$1
+    	HEIGHT=$2
+    fi
+    
+    if [[ ! $(echo "$WIDTH" | grep -E "^[0-9]+$") || ! $(echo "$HEIGHT" | grep -E "^[0-9]+$") ]]
+    then
+    	echo "Invalid parameters: '$WIDTH' and '$HEIGHT'"
+    	exit 1
+    fi
+    
+    if [[ $WIDTH -lt 240 || $HEIGHT -lt 160 ]]
+    then
+    	echo "Parameters too low: '$WIDTH' and '$HEIGHT'"
+    	exit 1
+    fi
+    
+    echo "Webcam parameters: '$WIDTH' and '$HEIGHT'"
+}
+
+create_v4l2loopback_dc_conf() {
+    [[ -d "/etc/modprobe.d/" ]] && echo "options $V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" > /etc/modprobe.d/droidcam.conf
+}
+
+etc_modules() {
+	echo "Adding driver to /etc/modules"
+	cp /etc/modules /etc/modules.bak
+	prevperm=`stat -c %a /etc/modules`
+	chmod 666 /etc/modules
+	[[ ! $(egrep "^videodev$" /etc/modules) ]] && echo "videodev" >> /etc/modules
+	[[ ! $(egrep "^$V4L2_LOOPBACK_DC" /etc/modules) ]] && echo "$V4L2_LOOPBACK_DC" >> /etc/modules
+	chmod $prevperm /etc/modules
+}
+
+etc_modules_load_d() {
+	printf "videodev\n$V4L2_LOOPBACK_DC\n" \
+		 > /etc/modules-load.d/droidcam.conf
+
+}
+
+register_module_at_boot_time() {
+    if [ -d "/etc/modules-load.d" ]; then
+        etc_modules_load_d
+    elif [ -e "/etc/modules" ]; then
+        etc_modules
+    else
+        echo "Warning: Unknown distro. Webcam module may not load after a reboot :("
+    fi
+}

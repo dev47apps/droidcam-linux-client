@@ -14,3 +14,5 @@ libswscale-dev
 ```
 
 Run `make`
+
+To install then, use either the `install` or `install-dkms` scripts [depending on the fact your system supports DKMS](./README-DKMS.md).
