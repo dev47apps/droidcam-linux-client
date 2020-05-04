@@ -77,13 +77,13 @@ static int xioctl(int fd, int request, void *arg){
 
 static int find_droidcam_v4l(){
     int crt_video_dev = 0;
-    char device[12];
+    char device[16];
     struct stat st;
     struct v4l2_capability v4l2cap;
 
     for(crt_video_dev = 0; crt_video_dev < 99; crt_video_dev++) {
         droidcam_device_fd = -1;
-        sprintf(device, "/dev/video%d", crt_video_dev);
+        snprintf(device, sizeof(device), "/dev/video%d", crt_video_dev);
         if(-1 == stat(device, &st)){
             continue;
         }
@@ -110,7 +110,9 @@ static int find_droidcam_v4l(){
         close(droidcam_device_fd); // not DroidCam .. keep going
         continue;
     }
-    MSG_ERROR("Device not found (/dev/video[0-9]).\nDid you install it?\n");
+    MSG_ERROR("Device not found (/dev/video[0-9]).\n"
+            "Did it install correctly?\n"
+            "If you had a kernel update, you may need to re-install.");
     return 0;
 }
 
