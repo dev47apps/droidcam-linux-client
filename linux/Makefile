@@ -8,7 +8,7 @@
 
 JPEG_DIR ?= /opt/libjpeg-turbo
 JPEG_INCLUDE ?= $(JPEG_DIR)/include
-JPEG_LIB ?= $(JPEG_DIR)/lib$(shell getconf LONG_BIT)
+JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 
 CC    = -no-pie
 GTK   = `pkg-config --libs --cflags gtk+-2.0` `pkg-config --libs x11`
