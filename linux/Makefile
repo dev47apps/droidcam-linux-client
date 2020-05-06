@@ -6,10 +6,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # Use at your own risk. See README file for more details.
 
+JPEG_DIR ?= /opt/libjpeg-turbo
+JPEG_INCLUDE ?= $(JPEG_DIR)/include
+JPEG_LIB ?= $(JPEG_DIR)/lib$(shell getconf LONG_BIT)
+
 CC    = -no-pie
 GTK   = `pkg-config --libs --cflags gtk+-2.0` `pkg-config --libs x11`
 LIBS  = `pkg-config --libs --cflags libswscale libavutil`
-JPEG  = -I/opt/libjpeg-turbo/include /opt/libjpeg-turbo/lib`getconf LONG_BIT`/libturbojpeg.a
+JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
 SRC      = src/connection.c src/decoder.c
 NO_WARN  = -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 

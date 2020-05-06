@@ -1,13 +1,20 @@
+KERNELRELEASE ?= `uname -r`
+KERNEL_DIR  ?= /lib/modules/$(KERNELRELEASE)/build
+PWD := $(shell pwd)
+
 obj-m := v4l2loopback-dc.o
 
 all:
-	make -C /lib/modules/`uname -r`/build M=`pwd`
+	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) modules
+
+install:
+	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) modules_install
 
 test:
 	gcc test.c -o test
 
 clean:
-	make -C /lib/modules/`uname -r`/build M=`pwd` clean
+	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) clean
 
 insmod:
 	sudo insmod v4l2loopback-dc.ko width=320 height=240
