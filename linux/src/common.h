@@ -15,6 +15,8 @@
 
 extern void ShowError();
 
+#define ADB_LOCALHOST_IP "127.0.0.1"
+
 #define VIDEO_REQ "CMD /v2/video.4?%dx%d"
 #define OTHER_REQ "CMD /v1/ctl?%d"
 

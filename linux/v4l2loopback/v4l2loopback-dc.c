@@ -6,6 +6,9 @@
  * Copyright (C) 2011 Stefan Diewald (stefan.diewald@mytum.de)
  * Copyright (C) 2012 Anton Novikov (random.plant@gmail.com)
  *
+ * https://github.com/aramg/droidcam
+ * Copyright (C) 2013 @dev47apps
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -16,10 +19,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * Use at your own risk.
  *
- * Source has been modified for DroidCam (dev47apps.com).
- *
  */
-
 #include <linux/version.h>
 #include <linux/vmalloc.h>
 #include <linux/mm.h>

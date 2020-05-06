@@ -16,7 +16,10 @@ void connection_cleanup();
 void disconnect(SOCKET s);
 
 SOCKET accept_connection(int port);
-
+SOCKET CreateUdpSocket(void);
 int SendRecv(int doSend, char * buffer, int bytes, SOCKET s);
+int RecvNonBlock(char * buffer, int bytes, SOCKET s);
+int RecvNonBlockUDP(char * buffer, int bytes, SOCKET s);
+int SendUDPMessage(SOCKET s, const char *message, int length, char *ip, int port);
 
 #endif

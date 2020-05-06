@@ -4,7 +4,6 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * Use at your own risk. See README file for more details.
  */
 
 #include <stdio.h>
@@ -14,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <gtk/gtk.h>
+#include <X11/Xlib.h>
 
 #include <errno.h>
 #include <string.h>
@@ -134,7 +134,6 @@ static void LoadSaveSettings(int load) {
 
 	// Set Defaults
 	if (load) {
-		dbgprint("set defaults...");
 		g_settings.connection = CB_RADIO_WIFI;
 		gtk_entry_set_text(g_settings.ipEntry, "");
 		gtk_entry_set_text(g_settings.portEntry, "4747");

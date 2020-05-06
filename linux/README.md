@@ -11,6 +11,8 @@ Install the following dependencies
 gtk+-2.0
 libavutil-dev
 libswscale-dev
+libasound2-dev
+libspeex-dev
 ```
 
 Run `make`

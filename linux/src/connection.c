@@ -66,6 +66,30 @@ _error_out:
     return retCode;
 }
 
+int RecvNonBlock(char * buffer, int bytes, SOCKET s) {
+    int res = recv(s, buffer, bytes, MSG_DONTWAIT);
+    return (res < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) ? 0 : res;
+}
+
+int RecvNonBlockUDP(char * buffer, int bytes, SOCKET s) {
+    struct sockaddr_in from;
+    socklen_t fromLen = sizeof(from);
+    int res = recvfrom(s, buffer, bytes, MSG_DONTWAIT, (struct sockaddr *)&from, &fromLen);
+    return (res < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) ? 0 : res;
+}
+
+int SendUDPMessage(SOCKET s, const char *message, int length, char *ip, int port) {
+    struct sockaddr_in sin;
+    sin.sin_port = htons((u_short)port);
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = inet_addr(ip);
+    return sendto(s, message, length, 0, (struct sockaddr *)&sin, sizeof(sin));
+}
+
+SOCKET CreateUdpSocket(void) {
+    return socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+}
+
 static int StartInetServer(int port)
 {
     int flags = 0;

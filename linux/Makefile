@@ -12,25 +12,26 @@ JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 
 CC    = -no-pie
 GTK   = `pkg-config --libs --cflags gtk+-2.0` `pkg-config --libs x11`
-LIBS  = `pkg-config --libs --cflags libswscale libavutil`
+LIBAV = `pkg-config --libs --cflags libswscale libavutil`
+LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
-SRC      = src/connection.c src/decoder.c
+SRC      = src/connection.c src/decoder*.c
 NO_WARN  = -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 
 ifeq "$(RELEASE)" "1"
-LIBS = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a -lpthread
+LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
 package: clean all
+	@rm droidam_*.zip || true
 	zip -x *.png src/* -r droidcam_`date +%s`.zip ./*
-
 endif
 
 all: droidcam-cli droidcam
 
 droidcam-cli: src/droidcam-cli.c $(SRC)
-	gcc -Wall $(CC) $(NO_WARN) $^        $(JPEG) $(LIBS) -lm -o droidcam-cli
+	gcc -Wall $(CC) $(NO_WARN) $^        $(JPEG) $(LIBAV) $(LIBS) -o droidcam-cli
 
 droidcam: src/droidcam.c $(SRC)
-	gcc -Wall $(CC) $(NO_WARN) $^ $(GTK) $(JPEG) $(LIBS) -lm -o droidcam
+	gcc -Wall $(CC) $(NO_WARN) $^ $(GTK) $(JPEG) $(LIBAV) $(LIBS) -o droidcam
 
 clean:
 	rm droidcam || true

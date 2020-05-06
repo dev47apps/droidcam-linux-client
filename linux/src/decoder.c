@@ -4,37 +4,29 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * Use at your own risk. See README file for more details.
  */
 
 #ifdef HAVE_AV_CONFIG_H
 #undef HAVE_AV_CONFIG_H
 #endif
 
-#include <unistd.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <linux/videodev2.h>
 #include <linux/limits.h>
 
 #include "turbojpeg.h"
 #include "libswscale/swscale.h"
-// #include "speex/speex.h"
+#include "speex/speex.h"
 
 #include "common.h"
 #include "decoder.h"
 
 struct spx_decoder_s {
+ snd_pcm_t *snd_handle;
  void *state;
-#if 0
  SpeexBits bits;
-#endif
  int audioBoostPerc;
  int frame_size;
 };
@@ -63,91 +55,11 @@ struct spx_decoder_s  spx_decoder;
 #define WEBCAM_Hf ((float)WEBCAM_H)
 static int WEBCAM_W, WEBCAM_H;
 static int droidcam_device_fd;
+static snd_output_t *output = NULL;
 
 static void decoder_share_frame();
 
 #define FREE_OBJECT(obj, free_func) if(obj){dbgprint(" " #obj " %p\n", obj); free_func(obj); obj=NULL;}
-
-static int xioctl(int fd, int request, void *arg){
-    int r;
-    do r = ioctl (fd, request, arg);
-    while (-1 == r && EINTR == errno);
-    return r;
-}
-
-static int find_droidcam_v4l(){
-    int crt_video_dev = 0;
-    char device[16];
-    struct stat st;
-    struct v4l2_capability v4l2cap;
-
-    for(crt_video_dev = 0; crt_video_dev < 99; crt_video_dev++) {
-        droidcam_device_fd = -1;
-        snprintf(device, sizeof(device), "/dev/video%d", crt_video_dev);
-        if(-1 == stat(device, &st)){
-            continue;
-        }
-
-        if(!S_ISCHR(st.st_mode)){
-            continue;
-        }
-
-        droidcam_device_fd = open(device, O_RDWR | O_NONBLOCK, 0);
-
-        if(-1 == droidcam_device_fd) {
-            printf("Error opening '%s': %d '%s'\n", device, errno, strerror(errno));
-            continue;
-        }
-        if(-1 == xioctl(droidcam_device_fd, VIDIOC_QUERYCAP, &v4l2cap)) {
-            close(droidcam_device_fd);
-            continue;
-        }
-        printf("Device: %s\n", v4l2cap.card);
-        if(0 == strncmp((const char*) v4l2cap.card, "Droidcam", 8)) {
-            printf("Found driver: %s (fd:%d)\n", device, droidcam_device_fd);
-            return 1;
-        }
-        close(droidcam_device_fd); // not DroidCam .. keep going
-        continue;
-    }
-    MSG_ERROR("Device not found (/dev/video[0-9]).\n"
-            "Did it install correctly?\n"
-            "If you had a kernel update, you may need to re-install.");
-    return 0;
-}
-
-static void query_droidcam_v4l(void) {
-    struct v4l2_format vid_format = {0};
-    vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    vid_format.fmt.pix.width = 0;
-    vid_format.fmt.pix.height = 0;
-    if (xioctl(droidcam_device_fd, VIDIOC_G_FMT, &vid_format) < 0) {
-        fprintf(stderr, "Fatal: Unable to query droidcam video device. errno=%d\n", errno);
-        return;
-    }
-
-    dbgprint("  vid_format->type                =%d\n", vid_format.type );
-    dbgprint("  vid_format->fmt.pix.width       =%d\n", vid_format.fmt.pix.width );
-    dbgprint("  vid_format->fmt.pix.height      =%d\n", vid_format.fmt.pix.height );
-    dbgprint("  vid_format->fmt.pix.pixelformat =%d\n", vid_format.fmt.pix.pixelformat);
-    dbgprint("  vid_format->fmt.pix.sizeimage   =%d\n", vid_format.fmt.pix.sizeimage );
-    dbgprint("  vid_format->fmt.pix.field       =%d\n", vid_format.fmt.pix.field );
-    dbgprint("  vid_format->fmt.pix.bytesperline=%d\n", vid_format.fmt.pix.bytesperline );
-    dbgprint("  vid_format->fmt.pix.colorspace  =%d\n", vid_format.fmt.pix.colorspace );
-    if (vid_format.fmt.pix.pixelformat != V4L2_PIX_FMT_YUV420) {
-        fprintf(stderr, "Fatal: droidcam video device reported pixel format %d, expected %d\n",
-            vid_format.fmt.pix.pixelformat, V4L2_PIX_FMT_YUV420);
-        return;
-    }
-    if (vid_format.fmt.pix.width <= 0 ||  vid_format.fmt.pix.height <= 0) {
-        fprintf(stderr, "Fatal: droidcam video device reported invalid resolution: %dx%d\n",
-            vid_format.fmt.pix.width, vid_format.fmt.pix.height);
-        return;
-    }
-
-    WEBCAM_W = vid_format.fmt.pix.width;
-    WEBCAM_H = vid_format.fmt.pix.height;
-}
 
 void decoder_set_video_delay(unsigned v) {
     if (v > JPG_BACKBUF_MAX) v = JPG_BACKBUF_MAX;
@@ -160,9 +72,16 @@ int decoder_init(void) {
     WEBCAM_W = 0;
     WEBCAM_H = 0;
 
-    if (!find_droidcam_v4l())
+    droidcam_device_fd = find_droidcam_v4l();
+    if (droidcam_device_fd < 0) {
+        MSG_ERROR("Droidcam video device not found (/dev/video[0-9]).\n"
+                "Did it install correctly?\n"
+                "If you had a kernel update, you may need to re-install.");
+
         return 0;
-    query_droidcam_v4l();
+    }
+
+    query_droidcam_v4l(droidcam_device_fd, &WEBCAM_W, &WEBCAM_H);
     dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
     if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
         MSG_ERROR("Unable to query droidcam device for parameters");
@@ -176,13 +95,25 @@ int decoder_init(void) {
     jpg_decoder.m_webcam_uvSize  = jpg_decoder.m_webcam_ySize / 4;
     decoder_set_video_delay(0);
 
-#if 0
+    if (snd_output_stdio_attach(&output, stdout, 0) < 0) {
+        errprint("snd_output_stdio_attach failed\n");
+    }
+
+    dbgprint("init audio\n");
+    memset(&spx_decoder, 0, sizeof(struct spx_decoder_s));
+    spx_decoder.snd_handle = find_snd_device();
+    if (!spx_decoder.snd_handle) {
+        MSG_ERROR("Audio loopback device not found.\n"
+                "Is snd_aloop loaded?");
+    }
+
+    spx_decoder.audioBoostPerc = 100;
     speex_bits_init(&spx_decoder.bits);
     spx_decoder.state = speex_decoder_init(speex_lib_get_mode(SPEEX_MODEID_WB));
     speex_decoder_ctl(spx_decoder.state, SPEEX_GET_FRAME_SIZE, &spx_decoder.frame_size);
-    dbgprint("spx_decoder.state=%p\n", spx_decoder.state);
-#endif
+    dbgprint("spx_decoder.state=%p, frame_size=%d\n", spx_decoder.state, spx_decoder.frame_size);
 
+    dbgprint("decoder_init done\n");
     return 1;
 }
 
@@ -190,12 +121,11 @@ void decoder_fini() {
     if (droidcam_device_fd) close(droidcam_device_fd);
     decoder_cleanup();
 
+    FREE_OBJECT(spx_decoder.snd_handle, snd_pcm_close);
     dbgprint("spx_decoder.state=%p\n", spx_decoder.state);
     if (spx_decoder.state != NULL) {
-#if 0
         speex_bits_destroy(&spx_decoder.bits);
         speex_decoder_destroy(spx_decoder.state);
-#endif
         spx_decoder.state = NULL;
     }
 }
@@ -246,6 +176,12 @@ int decoder_prepare_video(char * header) {
     return TRUE;
 }
 
+snd_pcm_t * decoder_prepare_audio(void) {
+    speex_bits_reset(&spx_decoder.bits);
+    dbgprint("audio boost %d%%\n", spx_decoder.audioBoostPerc);
+    return spx_decoder.snd_handle;
+}
+
 void decoder_cleanup() {
     dbgprint("Cleanup\n");
     FREE_OBJECT(jpg_decoder.m_inBuf, free);
@@ -294,7 +230,11 @@ static void decode_next_frame() {
     dstSlice[2] = dstSlice[1] + jpg_decoder.m_uvSize;
     dstSlice[3] = NULL;
 
-    if (tjDecompressToYUVPlanes(jpg_decoder.tj, p, len, dstSlice, jpg_decoder.m_width, dstStride, jpg_decoder.m_height, TJFLAG_FASTDCT | TJFLAG_FASTUPSAMPLE)) {
+    if (tjDecompressToYUVPlanes(jpg_decoder.tj, p, len,
+            dstSlice, jpg_decoder.m_width,
+            dstStride, jpg_decoder.m_height,
+            TJFLAG_FASTDCT | TJFLAG_FASTUPSAMPLE))
+    {
         errprint("tjDecompressToYUV2 failure: %d\n", tjGetErrorCode(jpg_decoder.tj));
         return;
     }
@@ -406,4 +346,34 @@ int decoder_get_video_height(){
 
 int decoder_get_audio_frame_size(void) {
     return spx_decoder.frame_size; //20ms for wb speex
+}
+
+void decoder_speex_plc(struct snd_transfer_s* transfer) {
+    short *output_buffer = transfer->my_areas->addr;
+    if (transfer->frames >= spx_decoder.frame_size){
+        speex_decode_int(spx_decoder.state, NULL, &output_buffer[transfer->offset]);
+        transfer->frames = spx_decoder.frame_size;
+    } else {
+        memset(&output_buffer[transfer->offset], 0, transfer->frames * sizeof(short));
+    }
+    // dbgprint("guessed %ld frames\n", transfer->frames);
+}
+
+int decode_speex_frame(char *stream_buf, short *decode_buf, int droidcam_spx_chunks) {
+    int output_used = 0;
+    for (int i = 0; i < droidcam_spx_chunks; i++) {
+        speex_bits_read_from(&spx_decoder.bits, &stream_buf[i * DROIDCAM_SPX_CHUNK_BYTES_2], DROIDCAM_SPX_CHUNK_BYTES_2);
+        while (output_used < DECODE_BUF_SIZE) {
+            int ret = speex_decode_int(spx_decoder.state, &spx_decoder.bits, &decode_buf[output_used]);
+            if (ret != 0) break;
+            output_used += spx_decoder.frame_size;
+        }
+    }
+    if (output_used > 0 && spx_decoder.audioBoostPerc != 100 && spx_decoder.audioBoostPerc >= 50 && spx_decoder.audioBoostPerc < 200) {
+        for (int i = 0; i < output_used; i++) {
+            decode_buf[i] += (decode_buf[i] * spx_decoder.audioBoostPerc / 100);
+        }
+    }
+    // dbgprint("decoded %d frames\n", output_used);
+    return output_used;
 }
