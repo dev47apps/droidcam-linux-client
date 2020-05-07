@@ -8,6 +8,8 @@
 #include "common.h"
 #include "decoder.h"
 
+char v4l2_device[32];
+
 static int xioctl(int fd, int request, void *arg){
     int r;
     do r = ioctl (fd, request, arg);
@@ -18,21 +20,20 @@ static int xioctl(int fd, int request, void *arg){
 int find_droidcam_v4l() {
 	int droidcam_device_fd;
     int crt_video_dev = 0;
-    char device[16];
     struct stat st;
     struct v4l2_capability v4l2cap;
 
     for(crt_video_dev = 0; crt_video_dev < 99; crt_video_dev++) {
-        snprintf(device, sizeof(device), "/dev/video%d", crt_video_dev);
-        if (-1 == stat(device, &st))
+        snprintf(v4l2_device, sizeof(v4l2_device), "/dev/video%d", crt_video_dev);
+        if (-1 == stat(v4l2_device, &st))
             continue;
 
         if (!S_ISCHR(st.st_mode))
             continue;
 
-        droidcam_device_fd = open(device, O_RDWR | O_NONBLOCK, 0);
+        droidcam_device_fd = open(v4l2_device, O_RDWR | O_NONBLOCK, 0);
         if (-1 == droidcam_device_fd) {
-            printf("Error opening '%s': %d '%s'\n", device, errno, strerror(errno));
+            printf("Error opening '%s': %d '%s'\n", v4l2_device, errno, strerror(errno));
             continue;
         }
 
@@ -41,9 +42,9 @@ int find_droidcam_v4l() {
             continue;
         }
 
-        printf("Device %s is '%s'\n", device, v4l2cap.card);
+        printf("Device %s is '%s'\n", v4l2_device, v4l2cap.card);
         if (0 == strncmp((const char*) v4l2cap.card, "Droidcam", 8)) {
-            printf("Opened %s, fd:%d\n", device, droidcam_device_fd);
+            printf("Opened %s, fd:%d\n", v4l2_device, droidcam_device_fd);
             return droidcam_device_fd;
         }
 

@@ -285,6 +285,8 @@ snd_pcm_t *find_snd_device(void) {
                 return NULL;
             }
 
+            // update the buffer to have output device name, which will be shown in the UI
+            snprintf(snd_device, sizeof(snd_device), "hw:%d,1,%d", card, i);
             return handle;
         }
     }

@@ -15,7 +15,7 @@ GTK   = `pkg-config --libs --cflags gtk+-2.0` `pkg-config --libs x11`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
-SRC      = src/connection.c src/decoder*.c
+SRC      = src/connection.c src/settings.c src/decoder*.c src/av.c
 NO_WARN  = -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 
 ifeq "$(RELEASE)" "1"
