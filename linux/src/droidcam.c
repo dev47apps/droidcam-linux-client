@@ -6,8 +6,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <gtk/gtk.h>
@@ -27,6 +25,7 @@ GtkEntry * ipEntry;
 GtkEntry * portEntry;
 GtkButton *start_button;
 GThread* hVideoThread;
+GThread* hAudioThread;
 
 int a_running = 0;
 int v_running = 0;
@@ -36,6 +35,7 @@ struct settings g_settings = {0};
 extern char snd_device[32];
 extern char v4l2_device[32];
 
+void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
 
 /* Helper Functions */
@@ -53,66 +53,18 @@ void ShowError(const char * title, const char * msg)
 		gdk_threads_leave();
 }
 
-static int CheckAdbDevices(int port){
-	char buf[256];
-	int haveDevice = 0;
-
-	system("adb start-server");
-	FILE* pipe = popen("adb devices", "r");
-	if (!pipe) {
-		goto _exit;
-	}
-
-	while (!feof(pipe)) {
-		dbgprint("->");
-		if (fgets(buf, sizeof(buf), pipe) == NULL) break;
-		dbgprint("Got line: %s", buf);
-
-		if (strstr(buf, "List of") != NULL){
-			haveDevice = 2;
-			continue;
-		}
-		if (haveDevice == 2) {
-			if (strstr(buf, "offline") != NULL){
-				haveDevice = 4;
-				break;
-			}
-			if (strstr(buf, "device") != NULL && strstr(buf, "??") == NULL){
-				haveDevice = 8;
-				break;
-			}
-		}
-	}
-	pclose(pipe);
-	#define TAIL "Please refer to the website for manual adb setup info."
-	if (haveDevice == 0 || haveDevice == 1) {
-		MSG_ERROR("adb program not detected. " TAIL);
-	}
-	else if (haveDevice == 2) {
-		MSG_ERROR("No devices detected. " TAIL);
-	}
-	else if (haveDevice == 4) {
-		system("adb kill-server");
-		MSG_ERROR("Device is offline. Try re-attaching device.");
-	}
-	else if (haveDevice == 8) {
-		sprintf(buf, "adb forward tcp:%d tcp:%d", port, port);
-		system(buf);
-	}
-_exit:
-	dbgprint("haveDevice = %d\n", haveDevice);
-	return haveDevice;
-}
-
 static void Stop(void)
 {
+	a_running = 0;
 	v_running = 0;
-	if (hVideoThread != NULL)
-	{
-		dbgprint("Waiting for videothread..\n");
+	dbgprint("join\n");
+	if (hVideoThread) {
 		g_thread_join(hVideoThread);
-		dbgprint("videothread joined\n");
 		hVideoThread = NULL;
+	}
+	if (hAudioThread) {
+		g_thread_join(hAudioThread);
+		hAudioThread = NULL;
 	}
 }
 
@@ -147,6 +99,10 @@ static void Start(void)
 	g_settings.port = port;
 
 	hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*)s);
+	if (s != INVALID_SOCKET && g_settings.audio) {
+		a_running = 1;
+		hAudioThread = g_thread_new(NULL, AudioThreadProc, NULL);
+	}
 	gtk_button_set_label(start_button, "Stop");
 	gtk_widget_set_sensitive(GTK_WIDGET(ipEntry), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(portEntry), FALSE);
@@ -195,6 +151,7 @@ _up:
 			g_settings.connection = CB_WIFI_SRVR;
 			text = "Prepare";
 			ipEdit = FALSE;
+			audioBox = FALSE;
 		break;
 		case CB_RADIO_WIFI:
 			g_settings.connection = CB_RADIO_WIFI;

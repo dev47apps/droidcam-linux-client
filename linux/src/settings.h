@@ -32,4 +32,6 @@ struct settings {
 void LoadSettings(struct settings* settings);
 void SaveSettings(struct settings* settings);
 
+int CheckAdbDevices(int port);
+
 #endif
