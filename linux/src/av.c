@@ -88,7 +88,7 @@ void *AudioThreadProc(void *arg) {
     snd_pcm_t *handle = decoder_prepare_audio();
     transfer.first = 1;
     if (!handle) {
-        MSG_ERROR("Audio Error: fopen failed");
+        errprint("Audio device not available");
         return 0;
     }
 

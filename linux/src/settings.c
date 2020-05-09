@@ -32,7 +32,6 @@ void LoadSettings(struct settings* settings) {
     settings->port = 4747;
 
     if (!fp) {
-        MSG_ERROR("Couldnt load settings");
         return;
     }
 

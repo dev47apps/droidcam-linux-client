@@ -258,7 +258,7 @@ snd_pcm_t *find_snd_device(void) {
 
         for (i = 0; i < 8; i++) {
             snprintf(snd_device, sizeof(snd_device), "hw:%d,0,%d", card, i);
-            printf("Trying to open audio device: %s\n", snd_device);
+            dbgprint("Trying to open audio device: %s\n", snd_device);
             err = snd_pcm_open(&handle, snd_device, SND_PCM_STREAM_PLAYBACK, 0);
             if (err < 0 || !handle) {
                 errprint("snd_pcm_open failed: %s\n", snd_strerror(err));
@@ -291,5 +291,6 @@ snd_pcm_t *find_snd_device(void) {
         }
     }
 
+    snd_device[0] = 0; // this will get shown on the UI, clear the value
     return NULL;
 }
