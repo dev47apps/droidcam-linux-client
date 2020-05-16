@@ -2,21 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <linux/limits.h>
-#include <sys/stat.h>
 
 #include "common.h"
 #include "settings.h"
 
 static inline FILE *GetFile(const char* mode) {
     char buf[PATH_MAX];
-    struct stat st = {0};
-
-    snprintf(buf, sizeof(buf), "%s/.droidcam", getenv("HOME"));
-    if (stat(buf, &st) == -1) {
-        mkdir(buf, 0700);
-    }
-
-    snprintf(buf, sizeof(buf), "%s/.droidcam/settings", getenv("HOME"));
+    snprintf(buf, sizeof(buf), "%s/.config/droidcam", getenv("HOME"));
     return fopen(buf, mode);
 }
 

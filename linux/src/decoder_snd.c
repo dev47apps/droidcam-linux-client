@@ -270,19 +270,19 @@ snd_pcm_t *find_snd_device(void) {
             if (set_hwparams(handle, hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED) < 0) {
                 errprint("setting audio hwparams failed: %s\n", snd_strerror(err));
                 snd_pcm_close(handle);
-                return NULL;
+                goto OUT;
             }
 
             if (set_swparams(handle, swparams) < 0) {
                 errprint("Setting audio swparams failed: %s\n", snd_strerror(err));
                 snd_pcm_close(handle);
-                return NULL;
+                goto OUT;
             }
 
             if (buffer_size != DROIDCAM_PCM_CHUNK_BYTES_2) {
                 errprint("Unexpected audio device buffer size: %ld\n", buffer_size);
                 snd_pcm_close(handle);
-                return NULL;
+                goto OUT;
             }
 
             // update the buffer to have output device name, which will be shown in the UI
@@ -291,6 +291,7 @@ snd_pcm_t *find_snd_device(void) {
         }
     }
 
+OUT:
     snd_device[0] = 0; // this will get shown on the UI, clear the value
     return NULL;
 }

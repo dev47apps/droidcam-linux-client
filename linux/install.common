@@ -1,6 +1,6 @@
+#!/bin/bash
 # You should not call this directly.
 # This is supposed to be sourced from install and install-dkms scripts
-
 
 V4L2_LOOPBACK_DIR="v4l2loopback"
 V4L2_LOOPBACK_DC="v4l2loopback_dc"
@@ -12,25 +12,35 @@ DRIVER_LOCATION="/lib/modules/`uname -r`/kernel/drivers/media/video/"
 WIDTH="640"
 HEIGHT="480"
 
+check_if_loaded() {
+    if lsmod | grep -q $V4L2_LOOPBACK_DC; then
+        echo "Looks like the DroidCam driver ($V4L2_LOOPBACK_DC) is currently loaded."
+        echo "Close any programs that might be using it, and press enter to try to unload."
+        echo "Press Ctrl+C to cancel."
+        read -rp "Continue?" X
+        rmmod $V4L2_LOOPBACK_DC || exit 1
+    fi
+}
+
 check_module_options() {
     if [[ "$1" != "" && "$2" != "" ]]
     then
     	WIDTH=$1
     	HEIGHT=$2
     fi
-    
+
     if [[ ! $(echo "$WIDTH" | grep -E "^[0-9]+$") || ! $(echo "$HEIGHT" | grep -E "^[0-9]+$") ]]
     then
     	echo "Invalid parameters: '$WIDTH' and '$HEIGHT'"
     	exit 1
     fi
-    
+
     if [[ $WIDTH -lt 240 || $HEIGHT -lt 160 ]]
     then
     	echo "Parameters too low: '$WIDTH' and '$HEIGHT'"
     	exit 1
     fi
-    
+
     echo "Webcam parameters: '$WIDTH' and '$HEIGHT'"
 }
 

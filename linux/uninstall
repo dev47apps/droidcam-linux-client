@@ -19,5 +19,5 @@ echo "Cleaning configs"
 [[ -e "/etc/modules" ]] && etc_modules
 rm -f /etc/modprobe.d/droidcam.conf || true
 rm -f /etc/modules-load.d/droidcam.conf || true
-
+rm -f $0
 echo "Done"
