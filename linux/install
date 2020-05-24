@@ -35,7 +35,7 @@ if mokutil --sb-state | grep -qF enabled; then
 
 
 	SIGNER_BIN="/usr/src/linux-headers-`uname -r`/scripts/sign-file"
-	[ -e "SIGNER_BIN"  ] || SIGNER_BIN="kmodsign"
+	[ -e "SIGNER_BIN" ] || SIGNER_BIN="kmodsign"
 	if [[ -e "$PRIV" && -e "$PUB" ]]
 	then
 		$SIGNER_BIN sha512 "$PRIV" "$PUB" "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" \

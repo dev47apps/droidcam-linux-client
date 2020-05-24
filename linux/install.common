@@ -50,7 +50,7 @@ create_v4l2loopback_dc_conf() {
 
 etc_modules() {
 	echo "Adding driver to /etc/modules"
-	cp /etc/modules /etc/modules.bak
+	cp /etc/modules /tmp/etc_modules_bak
 	prevperm=`stat -c %a /etc/modules`
 	chmod 666 /etc/modules
 	[[ ! $(egrep "^videodev$" /etc/modules) ]] && echo "videodev" >> /etc/modules
