@@ -103,7 +103,7 @@ int decoder_init(void) {
     memset(&spx_decoder, 0, sizeof(struct spx_decoder_s));
     spx_decoder.snd_handle = find_snd_device();
     if (!spx_decoder.snd_handle) {
-        MSG_ERROR("Audio loopback device not found.\n"
+        errprint("Audio loopback device not found.\n"
                 "Is snd_aloop loaded?");
     }
 

@@ -225,6 +225,9 @@ int main(int argc, char *argv[])
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("minus"), 0, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN-10), NULL);
+	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("plus"), 0, GTK_ACCEL_VISIBLE, closure);
+
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN-10), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), 0, GTK_ACCEL_VISIBLE, closure);
 
 	gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel);
@@ -283,7 +286,7 @@ int main(int argc, char *argv[])
 
 	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Wifi Server Mode");
     gtk_widget_size_request(widget, &widget_size);
-	gtk_widget_set_size_request(widget, widget_size.width, widget_size.height + 10);
+	gtk_widget_set_size_request(widget, widget_size.width + 10, widget_size.height + 10);
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	radios[CB_WIFI_SRVR] = widget;
