@@ -16,7 +16,6 @@ LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
 SRC      = src/connection.c src/settings.c src/decoder*.c src/av.c src/adb.c
-NO_WARN  = -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 
 all: droidcam-cli droidcam
 
@@ -27,10 +26,10 @@ package: clean all
 endif
 
 droidcam-cli: src/droidcam-cli.c $(SRC)
-	gcc -Wall $(CC) $(NO_WARN) $^        $(JPEG) $(LIBAV) $(LIBS) -o droidcam-cli
+	gcc -Wall $(CC) $^        $(JPEG) $(LIBAV) $(LIBS) -o droidcam-cli
 
 droidcam: src/droidcam.c $(SRC)
-	gcc -Wall $(CC) $(NO_WARN) $^ $(GTK) $(JPEG) $(LIBAV) $(LIBS) -o droidcam
+	gcc -Wall $(CC) $^ $(GTK) $(JPEG) $(LIBAV) $(LIBS) -o droidcam
 
 clean:
 	rm droidcam || true
