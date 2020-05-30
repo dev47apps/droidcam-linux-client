@@ -88,7 +88,7 @@ void *AudioThreadProc(void *arg) {
     snd_pcm_t *handle = decoder_prepare_audio();
     transfer.first = 1;
     if (!handle) {
-        errprint("Audio device not available");
+        MSG_ERROR("Missing audio device");
         return 0;
     }
 

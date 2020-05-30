@@ -5,7 +5,7 @@ etc_modules() {
 	cp /etc/modules /tmp/etc_modules_bak
 	prevperm=`stat -c %a /etc/modules`
 	chmod 666 /etc/modules
-	[[ ! $(egrep "^snd_aloop$" /etc/modules) ]] && echo "snd_aloop" >> /etc/modules
+	[[ ! $(egrep "^snd-aloop$" /etc/modules) ]] && echo "snd-aloop" >> /etc/modules
 	chmod $prevperm /etc/modules
 }
 
@@ -16,7 +16,7 @@ then
 fi
 
 echo "Loading Loopback device"
-modprobe snd_aloop || exit 1
+modprobe snd-aloop || exit 1
 
 LOOPBACK_CARD_ID=$(grep -F "[Loopback" < /proc/asound/cards | awk '{print $1}')
 if [[ ! $(echo "$LOOPBACK_CARD_ID" | grep -E "^[0-9]$") ]]
@@ -30,7 +30,7 @@ mv /tmp/modprobe.d_droidcam.conf /etc/modprobe.d/droidcam.conf
 
 if [ -f "/etc/modules-load.d/droidcam.conf" ]
 then
-	echo "snd_aloop" >> /etc/modules-load.d/droidcam.conf
+	echo "snd-aloop" >> /etc/modules-load.d/droidcam.conf
 elif [ -e "/etc/modules" ]; then
     etc_modules
 else

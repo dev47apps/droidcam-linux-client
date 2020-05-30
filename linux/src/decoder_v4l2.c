@@ -52,6 +52,7 @@ int find_droidcam_v4l() {
         continue;
     }
 
+    v4l2_device[0] = 0;
     return -1;
 }
 

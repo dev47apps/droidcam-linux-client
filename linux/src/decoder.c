@@ -78,14 +78,16 @@ int decoder_init(void) {
                 "Did it install correctly?\n"
                 "If you had a kernel update, you may need to re-install.");
 
-        return 0;
-    }
-
-    query_droidcam_v4l(droidcam_device_fd, &WEBCAM_W, &WEBCAM_H);
-    dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
-    if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
-        MSG_ERROR("Unable to query droidcam device for parameters");
-        return 0;
+        WEBCAM_W = 320;
+        WEBCAM_H = 240;
+        droidcam_device_fd = 0;
+    } else {
+        query_droidcam_v4l(droidcam_device_fd, &WEBCAM_W, &WEBCAM_H);
+        dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
+        if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
+            MSG_ERROR("Unable to query droidcam device for parameters");
+            return 0;
+        }
     }
 
     memset(&jpg_decoder, 0, sizeof(struct jpg_dec_ctx_s));
@@ -104,7 +106,7 @@ int decoder_init(void) {
     spx_decoder.snd_handle = find_snd_device();
     if (!spx_decoder.snd_handle) {
         errprint("Audio loopback device not found.\n"
-                "Is snd_aloop loaded?");
+                "Is snd_aloop loaded?\n");
     }
 
     spx_decoder.audioBoostPerc = 100;
@@ -119,6 +121,7 @@ int decoder_init(void) {
 
 void decoder_fini() {
     if (droidcam_device_fd) close(droidcam_device_fd);
+    droidcam_device_fd = 0;
     decoder_cleanup();
 
     FREE_OBJECT(spx_decoder.snd_handle, snd_pcm_close);
@@ -134,6 +137,11 @@ int decoder_prepare_video(char * header) {
     int i;
     make_int(jpg_decoder.m_width,  header[0], header[1]);
     make_int(jpg_decoder.m_height, header[2], header[3]);
+
+    if (droidcam_device_fd <= 0) {
+        MSG_ERROR("Missing video device");
+        return FALSE;
+    }
 
     if (jpg_decoder.m_width <= 0 || jpg_decoder.m_height <= 0) {
         MSG_ERROR("Invalid data stream!");
