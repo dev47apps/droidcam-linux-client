@@ -98,7 +98,7 @@ static void Start(void)
 	}
 	g_settings.port = port;
 
-	hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*)s);
+	hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
 	if (s != INVALID_SOCKET && g_settings.audio) {
 		a_running = 1;
 		hAudioThread = g_thread_new(NULL, AudioThreadProc, NULL);
@@ -119,14 +119,14 @@ accel_callback( GtkAccelGroup  *group,
 		  gpointer		user_data)
 {
 	if(v_running == 1 && thread_cmd ==0){
-		thread_cmd = (int) user_data;
+		thread_cmd = (uintptr_t) user_data;
 	}
 	return TRUE;
 }
 
 static void the_callback(GtkWidget* widget, gpointer extra)
 {
-	int cb = (int) extra;
+	int cb = (uintptr_t) extra;
 	gboolean ipEdit = TRUE;
 	gboolean portEdit = TRUE;
 	gboolean audioBox = TRUE;

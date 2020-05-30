@@ -6,15 +6,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # Use at your own risk. See README file for more details.
 
-JPEG_DIR ?= /opt/libjpeg-turbo
-JPEG_INCLUDE ?= $(JPEG_DIR)/include
-JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
-
 CC    = -no-pie
 GTK   = `pkg-config --libs --cflags gtk+-2.0` `pkg-config --libs x11`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
-JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
+JPEG  = `pkg-config --libs --cflags libturbojpeg`
 SRC      = src/connection.c src/settings.c src/decoder*.c src/av.c src/adb.c
 NO_WARN  = -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 
