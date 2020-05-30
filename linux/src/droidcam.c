@@ -41,16 +41,10 @@ void * VideoThreadProc(void * args);
 /* Helper Functions */
 void ShowError(const char * title, const char * msg)
 {
-	if (hVideoThread != NULL)
-		gdk_threads_enter();
-
 	GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "%s", msg);
 	gtk_window_set_title(GTK_WINDOW(dialog), title);
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
-
-	if (hVideoThread != NULL)
-		gdk_threads_leave();
 }
 
 static void Stop(void)
@@ -406,9 +400,7 @@ int main(int argc, char *argv[])
 		pango_attr_list_unref(attrlist);
 
 		// main loop
-		gdk_threads_enter();
 		gtk_main();
-		gdk_threads_leave();
 		Stop();
 		decoder_fini();
 		connection_cleanup();
