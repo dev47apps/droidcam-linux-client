@@ -235,27 +235,27 @@ int main(int argc, char *argv[])
 	menu = gtk_menu_new();
 
 	widget = gtk_menu_item_new_with_label("DroidCamX Commands:");
-	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	gtk_widget_set_sensitive(widget, 0);
 
 	widget = gtk_menu_item_new_with_label("Auto-Focus (Ctrl+A)");
-	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_AF);
 
 	widget = gtk_menu_item_new_with_label("Toggle LED Flash (Ctrl+L)");
-	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_LED);
 
 	widget = gtk_menu_item_new_with_label("Zoom In (+)");
-   	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZIN);
 
 	widget = gtk_menu_item_new_with_label("Zoom Out (-)");
-	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZOUT);
 
