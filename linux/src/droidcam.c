@@ -284,14 +284,14 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	radios[CB_RADIO_WIFI] = widget;
 
-	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Wifi Server Mode");
+	widget = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(widget), "Wifi Server Mode");
     gtk_widget_size_request(widget, &widget_size);
 	gtk_widget_set_size_request(widget, widget_size.width + 10, widget_size.height + 10);
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
 	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 	radios[CB_WIFI_SRVR] = widget;
 
-	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "USB (over adb)");
+	widget = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(widget), "USB (over adb)");
     gtk_widget_size_request(widget, &widget_size);
 	gtk_widget_set_size_request(widget, widget_size.width, widget_size.height + 10);
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
@@ -327,7 +327,8 @@ int main(int argc, char *argv[])
     total_width += widget_size.width;
 
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
-	widget = gtk_entry_new_with_max_length(16);
+	widget = gtk_entry_new();
+		gtk_entry_set_max_length(GTK_ENTRY(widget), 16);
 
     gtk_widget_size_request(widget, &widget_size);
     gtk_widget_set_size_request(widget, widget_size.width + 10, widget_size.height + 10);
@@ -348,7 +349,8 @@ int main(int argc, char *argv[])
     total_width -= widget_size.width;
 
 	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
-	widget = gtk_entry_new_with_max_length(5);
+	widget = gtk_entry_new();
+    gtk_entry_set_max_length(GTK_ENTRY(widget), 5);
     gtk_widget_size_request(widget, &widget_size);
     gtk_widget_set_size_request(widget, total_width, widget_size.height + 10);
 

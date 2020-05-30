@@ -11,7 +11,7 @@ JPEG_INCLUDE ?= $(JPEG_DIR)/include
 JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 
 CC    = -no-pie
-GTK   = `pkg-config --libs --cflags gtk+-2.0 glib-2.0` `pkg-config --libs x11`
+GTK   = `pkg-config --libs --cflags gtk+-3.0 glib-2.0` `pkg-config --libs x11`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
