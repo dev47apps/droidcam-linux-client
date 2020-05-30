@@ -26,7 +26,7 @@ package: clean all
 endif
 
 droidcam-cli: src/droidcam-cli.c $(SRC)
-	gcc -Wall $(CC) $^        $(JPEG) $(LIBAV) $(LIBS) -o droidcam-cli
+	gcc -Wall $(CC) $^ $(JPEG) $(LIBAV) $(LIBS) -o droidcam-cli
 
 droidcam: src/droidcam.c $(SRC)
 	gcc -Wall $(CC) $^ $(GTK) $(JPEG) $(LIBAV) $(LIBS) -o droidcam
