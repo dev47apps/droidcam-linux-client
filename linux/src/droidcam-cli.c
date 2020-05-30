@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
                 return 0;
             }
         }
-        vthread_rc = pthread_create(&vthread, NULL, VideoThreadProc, (void*) videoSocket);
+        vthread_rc = pthread_create(&vthread, NULL, VideoThreadProc, (void*) (SOCKET_PTR) videoSocket);
     }
 
     if (a_running){

@@ -5,11 +5,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+#include <stdint.h>
+
 #ifndef __CONN_H__
 #define __CONN_H__
 
 #define INVALID_SOCKET -1
 typedef int SOCKET;
+typedef intptr_t SOCKET_PTR;
 
 SOCKET connect_droidcam(char * ip, int port);
 void connection_cleanup();

@@ -10,7 +10,7 @@ extern struct settings g_settings;
 
 void * VideoThreadProc(void * args) {
     char buf[32];
-    SOCKET videoSocket = (SOCKET) args;
+    SOCKET videoSocket = (SOCKET_PTR) args;
     int keep_waiting = 0;
     dbgprint("Video Thread Started s=%d\n", videoSocket);
     v_running = 1;
