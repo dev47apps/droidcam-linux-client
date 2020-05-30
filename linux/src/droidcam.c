@@ -157,7 +157,7 @@ _up:
 			ipEdit = FALSE;
 		break;
 		case CB_BTN_OTR:
-			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, 0);
+			gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
 		break;
 		case CB_CONTROL_ZIN  :
 		case CB_CONTROL_ZOUT :
