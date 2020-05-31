@@ -23,7 +23,6 @@ all: droidcam-cli droidcam
 ifeq "$(RELEASE)" "1"
 LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
 package: clean all
-	@rm droidam_*.zip || true
 	zip -x *.png src/* -r droidcam_`date +%s`.zip ./*
 endif
 
