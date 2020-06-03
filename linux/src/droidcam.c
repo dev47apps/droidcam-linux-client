@@ -202,9 +202,8 @@ int main(int argc, char *argv[])
 	gtk_container_set_border_width(GTK_CONTAINER(window), 1);
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_NONE);
-	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-//	gtk_widget_set_size_request(window, 250, 120);
-	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_resource("/com/dev47apps/droidcam/icon.png", NULL));
+	gtk_container_set_border_width(GTK_CONTAINER(window), 4);
+	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_resource("/com/dev47apps/droidcam/icon2.png", NULL));
 
  {
 	GtkAccelGroup *gtk_accel = gtk_accel_group_new ();
@@ -269,7 +268,7 @@ int main(int argc, char *argv[])
 	gtk_container_add(GTK_CONTAINER(window), grid);
 
 	// Columns and rows should be separated a bit.
-	gtk_grid_set_column_spacing(GTK_GRID(grid), 25);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 	gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
 
 	// Create grid for radio buttons, so they are easy to distinguish from the rest
@@ -316,7 +315,7 @@ int main(int argc, char *argv[])
 
 	// Phone IP label.
 	widget = gtk_label_new("Phone IP:");
-	gtk_label_set_xalign(GTK_LABEL(widget), 0.0);
+	gtk_label_set_xalign(GTK_LABEL(widget), 1.0);
 	gtk_grid_attach(GTK_GRID(grid), widget, 1, 0, 1, 1);
 
 	// And input field for phone IP.
@@ -327,7 +326,7 @@ int main(int argc, char *argv[])
 
 	// Port label.
 	widget = gtk_label_new("DroidCam Port:");
-	gtk_label_set_xalign (GTK_LABEL(widget), 0.0);
+	gtk_label_set_xalign (GTK_LABEL(widget), 1.0);
 	gtk_grid_attach(GTK_GRID(grid), widget, 1, 1, 1, 1);
 
 	// Port input field.

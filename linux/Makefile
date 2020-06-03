@@ -11,13 +11,13 @@ JPEG_INCLUDE ?= $(JPEG_DIR)/include
 JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 
 CC    = -no-pie
-GTK   = `pkg-config --libs --cflags gtk+-3.0 glib-2.0` `pkg-config --libs x11`
+GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
 SRC      = src/connection.c src/settings.c src/decoder*.c src/av.c src/adb.c
 
-all: gresource droidcam-cli droidcam
+all: droidcam-cli droidcam
 
 ifeq "$(RELEASE)" "1"
 LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
@@ -25,7 +25,7 @@ package: clean all
 	zip -x *.png src/* -r droidcam_`date +%s`.zip ./*
 endif
 
-gresource: .gresource.xml icon.png
+gresource: .gresource.xml icon2.png
 	glib-compile-resources .gresource.xml --generate-source --target=src/resources.c
 
 droidcam-cli: src/droidcam-cli.c $(SRC)
