@@ -11,6 +11,7 @@ enum radios {
 enum widgets {
     CB_BUTTON = CB_RADIO_COUNT,
     CB_AUDIO,
+    CB_VIDEO,
     CB_BTN_OTR,
     CB_WIDGETS_COUNT
 };
@@ -26,6 +27,7 @@ struct settings {
     char ip[16];
     int port;
     int audio;
+    int video;
     int connection; // Connection type
 };
 

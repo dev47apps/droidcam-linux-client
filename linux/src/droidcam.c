@@ -21,6 +21,7 @@
 GtkWidget *menu;
 GtkWidget *infoText;
 GtkWidget *audioCheckbox;
+GtkWidget *videoCheckbox;
 GtkEntry * ipEntry;
 GtkEntry * portEntry;
 GtkButton *start_button;
@@ -68,17 +69,35 @@ static void Start(void)
 	SOCKET s = INVALID_SOCKET;
 	int port = atoi(gtk_entry_get_text(portEntry));
 
+	if (port <= 0 || port > 65535) {
+		MSG_ERROR("Invalid Port value");
+		return;
+	}
+
+	if (g_settings.connection == CB_WIFI_SRVR) {
+		hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
+		goto EARLY_OUT;
+	}
+
+	if (!g_settings.audio && !g_settings.video) {
+		MSG_ERROR("Both Audio and Video are disabled");
+		return;
+	}
+
 	if (g_settings.connection == CB_RADIO_ADB) {
 		if (CheckAdbDevices(port) != 8) return;
 		ip = "127.0.0.1";
 	} else if (g_settings.connection == CB_RADIO_WIFI) {
 		ip = (char*)gtk_entry_get_text(ipEntry);
+	} else {
+		MSG_ERROR("Internal error: Invalid connection mode");
+		return;
 	}
 
 	// wifi or USB
 	if (ip != NULL) {
-		if (strlen(ip) < 7 || port <= 0 || port > 65535) {
-			MSG_ERROR("You must enter the correct IP address (and port) to connect to.");
+		if (strlen(ip) < 7) {
+			MSG_ERROR("Invalid IP value");
 			return;
 		}
 
@@ -92,15 +111,23 @@ static void Start(void)
 	}
 	g_settings.port = port;
 
-	hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
-	if (s != INVALID_SOCKET && g_settings.audio) {
+	if (g_settings.video) {
+		hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
+	} else {
+		disconnect(s);
+	}
+
+	if (g_settings.audio) {
 		a_running = 1;
 		hAudioThread = g_thread_new(NULL, AudioThreadProc, NULL);
 	}
+
+EARLY_OUT:
 	gtk_button_set_label(start_button, "Stop");
 	gtk_widget_set_sensitive(GTK_WIDGET(ipEntry), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(portEntry), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(audioCheckbox), FALSE);
+	gtk_widget_set_sensitive(GTK_WIDGET(videoCheckbox), FALSE);
 	SaveSettings(&g_settings);
 }
 
@@ -124,6 +151,7 @@ static void the_callback(GtkWidget* widget, gpointer extra)
 	gboolean ipEdit = TRUE;
 	gboolean portEdit = TRUE;
 	gboolean audioBox = TRUE;
+	gboolean videoBox = TRUE;
 	char * text = NULL;
 
 _up:
@@ -146,6 +174,7 @@ _up:
 			text = "Prepare";
 			ipEdit = FALSE;
 			audioBox = FALSE;
+			videoBox = FALSE;
 		break;
 		case CB_RADIO_WIFI:
 			g_settings.connection = CB_RADIO_WIFI;
@@ -157,7 +186,9 @@ _up:
 			ipEdit = FALSE;
 		break;
 		case CB_BTN_OTR:
-			gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
+			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, 0);
+			// TODO drop support for older OSs and use
+			// gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
 		break;
 		case CB_CONTROL_ZIN  :
 		case CB_CONTROL_ZOUT :
@@ -171,6 +202,10 @@ _up:
 			g_settings.audio = (int) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(audioCheckbox));
 			dbgprint("audio=%d\n", g_settings.audio);
 		break;
+		case CB_VIDEO:
+			g_settings.video = (int) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(videoCheckbox));
+			dbgprint("video=%d\n", g_settings.video);
+		break;
 	}
 
 	if (text != NULL && v_running == 0){
@@ -178,6 +213,7 @@ _up:
 		gtk_widget_set_sensitive(GTK_WIDGET(ipEntry), ipEdit);
 		gtk_widget_set_sensitive(GTK_WIDGET(portEntry), portEdit);
 		gtk_widget_set_sensitive(GTK_WIDGET(audioCheckbox), audioBox);
+		gtk_widget_set_sensitive(GTK_WIDGET(videoCheckbox), videoBox);
 	}
 }
 
@@ -256,11 +292,10 @@ int main(int argc, char *argv[])
 	// |---------------+    +--------------|
 	// ||RadioGroup    |    |Input field  ||
 	// ||              |    |Input field  ||
-	// ||Toggle Audio  |    |      Connect||
-	// ||Menu          |    |             ||
-	// ||              |    |             ||
-	// ||Info          |    |             ||
+	// ||Toggle A/V    |    |      Connect||
+	// ||[...]         |    |             ||
 	// |---------------+    +--------------|
+	// + InfoText                         -+
 	// +-----------------------------------+
 	grid = gtk_grid_new();
 
@@ -294,24 +329,30 @@ int main(int argc, char *argv[])
 	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radio1, radio2, GTK_POS_BOTTOM, 1, 1);
 	radios[CB_RADIO_ADB] = radio1;
 
-	// Add toggle button to enable audio as 2nd element of left column.
+	// Add toggle button to enable video as 2nd element of left column.
+	widget = gtk_check_button_new_with_label("Enable Video");
+	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_VIDEO);
+	gtk_grid_attach(GTK_GRID(grid), widget, 0, 3, 1, 1);
+	videoCheckbox = widget;
+
+	// Add toggle button to enable audio as 3nd element of left column.
 	widget = gtk_check_button_new_with_label("Enable Audio");
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_AUDIO);
-	gtk_grid_attach(GTK_GRID(grid), widget, 0, 3, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), widget, 0, 4, 1, 1);
 	audioCheckbox = widget;
 
-	// Menu button goes third to the left column.
+	// Add [...] Menu button
 	widget = gtk_button_new_with_label("...");
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_OTR);
 
 	// Put menu button in the grid, so it's not full column width, but smaller.
 	menuGrid = gtk_grid_new();
 	gtk_grid_attach(GTK_GRID(menuGrid), widget, 0, 0, 1, 1);
-	gtk_grid_attach(GTK_GRID(grid), menuGrid, 0, 4, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), menuGrid, 0, 5, 1, 1);
 
 	// Info text goes as last element of left column.
 	infoText = gtk_label_new(NULL);
-	gtk_grid_attach(GTK_GRID(grid), infoText, 0, 5, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), infoText, 0, 6, 2, 1);
 
 	// Phone IP label.
 	widget = gtk_label_new("Phone IP:");
@@ -354,6 +395,9 @@ int main(int argc, char *argv[])
 
 	if (g_settings.audio)
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(audioCheckbox), TRUE);
+
+	if (g_settings.video)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(videoCheckbox), TRUE);
 
 	if ( decoder_init() )
 	{

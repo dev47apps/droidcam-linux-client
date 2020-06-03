@@ -19,6 +19,7 @@ void LoadSettings(struct settings* settings) {
 
     // set defaults
     settings->audio = 0;
+    settings->video = 1;
     settings->connection = CB_RADIO_WIFI;
     settings->ip[0] = 0;
     settings->port = 4747;
@@ -42,7 +43,7 @@ void LoadSettings(struct settings* settings) {
             settings->port = atoi(buf);
         }
     }
-    else if (version == 2) {
+    else if (version == 2 || version == 3) {
         if (fgets(buf, sizeof(buf), fp)){
             buf[strlen(buf)-1] = '\0';
             strncpy(settings->ip, buf, sizeof(settings->ip));
@@ -52,6 +53,11 @@ void LoadSettings(struct settings* settings) {
         }
         if (fgets(buf, sizeof(buf), fp)) {
             sscanf(buf, "%d", &settings->audio);
+        }
+        if (version == 3) {
+            if (fgets(buf, sizeof(buf), fp)) {
+                sscanf(buf, "%d", &settings->video);
+            }
         }
         if (fgets(buf, sizeof(buf), fp)) {
             sscanf(buf, "%d", &settings->connection);
@@ -63,16 +69,18 @@ void LoadSettings(struct settings* settings) {
         "settings: ip=%s\n"
         "settings: port=%d\n"
         "settings: audio=%d\n"
+        "settings: video=%d\n"
         "settings: connection=%d\n"
         ,
         settings->ip,
         settings->port,
         settings->audio,
+        settings->video,
         settings->connection);
 }
 
 void SaveSettings(struct settings* settings) {
-    int version = 2;
+    int version = 3;
     FILE * fp = GetFile("w");
     if (!fp) return;
 
@@ -82,11 +90,13 @@ void SaveSettings(struct settings* settings) {
         "%d\n"
         "%d\n"
         "%d\n"
+        "%d\n"
         ,
         version,
         settings->ip,
         settings->port,
         settings->audio,
+        settings->video,
         settings->connection);
     fclose(fp);
 }

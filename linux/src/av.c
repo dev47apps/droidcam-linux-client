@@ -116,7 +116,7 @@ void *AudioThreadProc(void *arg) {
 
 TCP_ONLY:
     dbgprint("UDP didnt work, trying TCP\n");
-
+    mode = TCP_STREAM;
     socket = connect_droidcam(g_settings.ip, g_settings.port);
     if (socket == INVALID_SOCKET) {
         errprint("Audio: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);
@@ -149,7 +149,6 @@ TCP_ONLY:
     }
 
     bytes_per_packet = CHUNKS_PER_PACKET * DROIDCAM_SPX_CHUNK_BYTES_2;
-    mode = TCP_STREAM;
 
 STREAM:
     while (a_running) {
@@ -211,7 +210,12 @@ STREAM:
     }
 
 early_out:
-    disconnect(socket);
+    if (mode == UDP_STREAM)
+        SendUDPMessage(socket, STOP_REQ, CSTR_LEN(STOP_REQ), g_settings.ip, g_settings.port + 1);
+
+    if (socket > 0)
+        disconnect(socket);
+
     dbgprint("Audio Thread End\n");
     return 0;
 }
