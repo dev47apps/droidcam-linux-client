@@ -22,7 +22,7 @@ all: droidcam-cli droidcam
 ifeq "$(RELEASE)" "1"
 LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
 package: clean all
-	zip -x *.png src/* -r droidcam_`date +%s`.zip ./*
+	zip -x *.png src/ src/* Makefile -r droidcam_`date +%s`.zip ./*
 endif
 
 gresource: .gresource.xml icon2.png
