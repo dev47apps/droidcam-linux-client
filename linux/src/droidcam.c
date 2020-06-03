@@ -41,16 +41,10 @@ void * VideoThreadProc(void * args);
 /* Helper Functions */
 void ShowError(const char * title, const char * msg)
 {
-	if (hVideoThread != NULL)
-		gdk_threads_enter();
-
 	GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "%s", msg);
 	gtk_window_set_title(GTK_WINDOW(dialog), title);
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
-
-	if (hVideoThread != NULL)
-		gdk_threads_leave();
 }
 
 static void Stop(void)
@@ -98,7 +92,7 @@ static void Start(void)
 	}
 	g_settings.port = port;
 
-	hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*)s);
+	hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
 	if (s != INVALID_SOCKET && g_settings.audio) {
 		a_running = 1;
 		hAudioThread = g_thread_new(NULL, AudioThreadProc, NULL);
@@ -119,14 +113,14 @@ accel_callback( GtkAccelGroup  *group,
 		  gpointer		user_data)
 {
 	if(v_running == 1 && thread_cmd ==0){
-		thread_cmd = (int) user_data;
+		thread_cmd = (uintptr_t) user_data;
 	}
 	return TRUE;
 }
 
 static void the_callback(GtkWidget* widget, gpointer extra)
 {
-	int cb = (int) extra;
+	int cb = (uintptr_t) extra;
 	gboolean ipEdit = TRUE;
 	gboolean portEdit = TRUE;
 	gboolean audioBox = TRUE;
@@ -163,7 +157,7 @@ _up:
 			ipEdit = FALSE;
 		break;
 		case CB_BTN_OTR:
-			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, 0);
+			gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
 		break;
 		case CB_CONTROL_ZIN  :
 		case CB_CONTROL_ZOUT :
@@ -192,13 +186,12 @@ int main(int argc, char *argv[])
 	char info[128];
 	char port[16];
 	GtkWidget *window;
-	GtkWidget *hbox, *hbox2;
-	GtkWidget *vbox;
+	GtkWidget *grid;
+	GtkWidget *radioGroup;
+	GtkWidget *menuGrid;
+	GtkWidget *radio1, *radio2;
 	GtkWidget *radios[CB_RADIO_COUNT];
 	GtkWidget *widget; // generic stuff
-
-    GtkRequisition widget_size;
-    gint total_width = 0;
 
 	// init threads
 	XInitThreads();
@@ -211,7 +204,7 @@ int main(int argc, char *argv[])
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_NONE);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 //	gtk_widget_set_size_request(window, 250, 120);
-	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_inline(-1, icon_inline, FALSE, NULL));
+	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_resource("/com/dev47apps/droidcam/icon.png", NULL));
 
  {
 	GtkAccelGroup *gtk_accel = gtk_accel_group_new ();
@@ -235,145 +228,119 @@ int main(int argc, char *argv[])
 	menu = gtk_menu_new();
 
 	widget = gtk_menu_item_new_with_label("DroidCamX Commands:");
-	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	gtk_widget_set_sensitive(widget, 0);
 
 	widget = gtk_menu_item_new_with_label("Auto-Focus (Ctrl+A)");
-	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_AF);
 
 	widget = gtk_menu_item_new_with_label("Toggle LED Flash (Ctrl+L)");
-	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_LED);
 
 	widget = gtk_menu_item_new_with_label("Zoom In (+)");
-   	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZIN);
 
 	widget = gtk_menu_item_new_with_label("Zoom Out (-)");
-	gtk_menu_append (GTK_MENU(menu), widget);
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZOUT);
 
-	vbox = gtk_vbox_new(FALSE, 5);
-	hbox = gtk_hbox_new(FALSE, 50);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+	// Create main grid to create left and right column of the UI.
+	// +-----------------------------------+
+	// |---------------+    +--------------|
+	// ||RadioGroup    |    |Input field  ||
+	// ||              |    |Input field  ||
+	// ||Toggle Audio  |    |      Connect||
+	// ||Menu          |    |             ||
+	// ||              |    |             ||
+	// ||Info          |    |             ||
+	// |---------------+    +--------------|
+	// +-----------------------------------+
+	grid = gtk_grid_new();
 
-	// info text
-	hbox2 = gtk_hbox_new(FALSE, 1);
-	infoText = gtk_label_new(NULL);
-	gtk_box_pack_start(GTK_BOX(hbox2), infoText, FALSE, FALSE, 2);
+	// Add created grid to main window.
+	gtk_container_add(GTK_CONTAINER(window), grid);
 
-	widget = gtk_alignment_new(0,0,1,1);
-	gtk_container_add(GTK_CONTAINER(widget), hbox2);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
+	// Columns and rows should be separated a bit.
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 25);
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
 
-	gtk_container_add(GTK_CONTAINER(window), vbox);
+	// Create grid for radio buttons, so they are easy to distinguish from the rest
+	// the elements.
+	radioGroup = gtk_grid_new();
 
-	// Toggle buttons
-	vbox = gtk_vbox_new(FALSE, 1);
+	// Put radio group as first element of left column.
+	gtk_grid_attach(GTK_GRID(grid), radioGroup, 0, 0, 1, 3);
 
-	widget = gtk_radio_button_new_with_label(NULL, "WiFi / LAN");
-    gtk_widget_size_request(widget, &widget_size);
-	gtk_widget_set_size_request(widget, widget_size.width, widget_size.height + 10);
-	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_WIFI);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-	radios[CB_RADIO_WIFI] = widget;
+	// Create radio options.
+	radio1 = gtk_radio_button_new_with_label(NULL, "WiFi / LAN");
+	g_signal_connect(radio1, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_WIFI);
+	gtk_grid_attach(GTK_GRID(radioGroup), radio1, 0, 0, 1, 1);
+	radios[CB_RADIO_WIFI] = radio1;
 
-	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "Wifi Server Mode");
-    gtk_widget_size_request(widget, &widget_size);
-	gtk_widget_set_size_request(widget, widget_size.width + 10, widget_size.height + 10);
-	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-	radios[CB_WIFI_SRVR] = widget;
+	radio2 = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Wifi Server Mode");
+	g_signal_connect(radio2, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
+	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radio2, radio1, GTK_POS_BOTTOM, 1, 1);
+	radios[CB_WIFI_SRVR] = radio2;
 
-	widget = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(widget)), "USB (over adb)");
-    gtk_widget_size_request(widget, &widget_size);
-	gtk_widget_set_size_request(widget, widget_size.width, widget_size.height + 10);
-	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-	radios[CB_RADIO_ADB] = widget;
+	radio1 = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio2), "USB (over adb)");
+	g_signal_connect(radio1, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
+	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radio1, radio2, GTK_POS_BOTTOM, 1, 1);
+	radios[CB_RADIO_ADB] = radio1;
 
+	// Add toggle button to enable audio as 2nd element of left column.
 	widget = gtk_check_button_new_with_label("Enable Audio");
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_AUDIO);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 5);
+	gtk_grid_attach(GTK_GRID(grid), widget, 0, 3, 1, 1);
 	audioCheckbox = widget;
 
-	hbox2 = gtk_hbox_new(FALSE, 1);
+	// Menu button goes third to the left column.
 	widget = gtk_button_new_with_label("...");
-
-    gtk_widget_size_request(widget, &widget_size);
-	gtk_widget_set_size_request(widget, widget_size.width + 40, widget_size.height);
-
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_OTR);
-	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox2, FALSE, FALSE, 0);
 
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 0);
+	// Put menu button in the grid, so it's not full column width, but smaller.
+	menuGrid = gtk_grid_new();
+	gtk_grid_attach(GTK_GRID(menuGrid), widget, 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), menuGrid, 0, 4, 1, 1);
 
-	// IP/Port/Button
+	// Info text goes as last element of left column.
+	infoText = gtk_label_new(NULL);
+	gtk_grid_attach(GTK_GRID(grid), infoText, 0, 5, 1, 1);
 
-	vbox = gtk_vbox_new(FALSE, 5);
+	// Phone IP label.
+	widget = gtk_label_new("Phone IP:");
+	gtk_label_set_xalign(GTK_LABEL(widget), 0.0);
+	gtk_grid_attach(GTK_GRID(grid), widget, 1, 0, 1, 1);
 
-	hbox2 = gtk_hbox_new(FALSE, 1);
-
-    widget = gtk_label_new("Phone IP:");
-    gtk_widget_size_request(widget, &widget_size);
-    // Add `Phone IP` label widget with to the total.
-    total_width += widget_size.width;
-
-	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
-	widget = gtk_entry_new_with_max_length(16);
-
-    gtk_widget_size_request(widget, &widget_size);
-    gtk_widget_set_size_request(widget, widget_size.width + 10, widget_size.height + 10);
-    // Add `Phone IP` input widget with to the total.
-    total_width += widget_size.width + 10;
-
+	// And input field for phone IP.
+	widget = gtk_entry_new();
+	gtk_entry_set_max_length(GTK_ENTRY(widget), 16);
 	ipEntry = (GtkEntry*)widget;
-	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
+	gtk_grid_attach(GTK_GRID(grid), widget, 2, 0, 1, 1);
 
-	widget = gtk_alignment_new(0,0,0,0);
-	gtk_container_add(GTK_CONTAINER(widget), hbox2);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
+	// Port label.
+	widget = gtk_label_new("DroidCam Port:");
+	gtk_label_set_xalign (GTK_LABEL(widget), 0.0);
+	gtk_grid_attach(GTK_GRID(grid), widget, 1, 1, 1, 1);
 
-    hbox2 = gtk_hbox_new(FALSE, 1);
-    widget = gtk_label_new("DroidCam Port:");
-    gtk_widget_size_request(widget, &widget_size);
-    // Subtract the width of `DroidCam Port:` label widget
-    total_width -= widget_size.width;
-
-	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
-	widget = gtk_entry_new_with_max_length(5);
-    gtk_widget_size_request(widget, &widget_size);
-    gtk_widget_set_size_request(widget, total_width, widget_size.height + 10);
-
+	// Port input field.
+	widget = gtk_entry_new();
+	gtk_entry_set_max_length(GTK_ENTRY(widget), 5);
 	portEntry = (GtkEntry*)widget;
-	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
+	gtk_grid_attach(GTK_GRID(grid), widget, 2, 1, 1, 1);
 
-	widget = gtk_alignment_new(0,0,0,0);
-	gtk_container_add(GTK_CONTAINER(widget), hbox2);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-
-	hbox2 = gtk_hbox_new(FALSE, 1);
+	// And finally connect button.
 	widget = gtk_button_new_with_label("Connect");
-
-    gtk_widget_size_request(widget, &widget_size);
-	gtk_widget_set_size_request(widget, widget_size.width + 40, widget_size.height + 10);
-
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer) CB_BUTTON);
-	gtk_box_pack_start(GTK_BOX(hbox2), widget, FALSE, FALSE, 0);
 	start_button = (GtkButton*)widget;
-
-	widget = gtk_alignment_new(1,0,0,0);
-	gtk_container_add(GTK_CONTAINER(widget), hbox2);
-	gtk_box_pack_start(GTK_BOX(vbox), widget, FALSE, FALSE, 2);
-
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 0);
+	gtk_grid_attach(GTK_GRID(grid), widget, 2, 2, 1, 1);
 
 	g_signal_connect(window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
 	gtk_widget_show_all(window);
@@ -404,9 +371,7 @@ int main(int argc, char *argv[])
 		pango_attr_list_unref(attrlist);
 
 		// main loop
-		gdk_threads_enter();
 		gtk_main();
-		gdk_threads_leave();
 		Stop();
 		decoder_fini();
 		connection_cleanup();
