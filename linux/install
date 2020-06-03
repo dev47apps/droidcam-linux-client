@@ -20,6 +20,7 @@ then
 	exit 1;
 fi
 
+set +e
 if mokutil --sb-state | grep -qF enabled; then
 	echo "Secure Boot is enabled, attempting to sign the driver"
 	PRIV="/var/lib/shim-signed/mok/MOK.priv"
@@ -35,13 +36,15 @@ if mokutil --sb-state | grep -qF enabled; then
 
 
 	SIGNER_BIN="/usr/src/linux-headers-`uname -r`/scripts/sign-file"
-	[ -e "SIGNER_BIN" ] || SIGNER_BIN="kmodsign"
+	[ -e "$SIGNER_BIN" ] || SIGNER_BIN="/usr/src/kernels/`uname -r`/scripts/sign-file"
+	[ -e "$SIGNER_BIN" ] || SIGNER_BIN="kmodsign"
 	if [[ -e "$PRIV" && -e "$PUB" ]]
 	then
 		$SIGNER_BIN sha512 "$PRIV" "$PUB" "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" \
 			|| echo "warning: device signing failed."
 	fi
 fi
+set -e
 
 if [ -z "$SUDO_USER" ]; then
 	USER_HOME=~
