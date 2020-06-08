@@ -1,6 +1,12 @@
 Linux Client
 ========
 
+## Download and Install
+
+You can download and install the latest release from the official website at https://www.dev47apps.com/droidcam/linuxx/, along with instructions on how to update the webcam resolution and other info.
+
+All releases are also available here on GitHub at https://github.com/aramg/droidcam/releases
+
 ## Building
 
 Download and install latest libjpeg-turbo 2.0.X via:
