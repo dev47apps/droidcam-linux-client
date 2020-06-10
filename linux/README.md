@@ -22,6 +22,7 @@ libavutil-dev
 libswscale-dev
 libasound2-dev
 libspeex-dev
+dh-make
 ```
 
 Run `make`
