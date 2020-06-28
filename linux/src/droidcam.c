@@ -10,12 +10,12 @@
 #include <sys/types.h>
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
+#include <libappindicator/app-indicator.h>
 
 #include "common.h"
 #include "settings.h"
 #include "connection.h"
 #include "decoder.h"
-#include "icon.h"
 
 /* Globals */
 GtkWidget *menu;
@@ -36,7 +36,7 @@ struct settings g_settings = {0};
 
 extern char snd_device[32];
 extern char v4l2_device[32];
-
+const char *APP_ICON_FILE = "/opt/droidcam-icon.png";
 
 void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
@@ -161,6 +161,23 @@ EARLY_OUT:
 
 /* Messages */
 
+// app indicator callbacks
+static void hide_window(GtkWidget* widget, gpointer extra) {
+	GtkWindow* window = GTK_WINDOW(extra);
+	gtk_widget_hide(GTK_WIDGET(window));
+}
+
+static void show_window(GtkWidget* widget, gpointer extra) {
+	GtkWindow* window = GTK_WINDOW(extra);
+	gtk_widget_show(GTK_WIDGET(window));
+}
+
+static void exit_window(GtkWidget* widget, gpointer extra) {
+	GtkWindow* window = GTK_WINDOW(extra);
+	gtk_window_close(window);
+}
+
+// generic callback
 static void the_callback(GtkWidget* widget, gpointer extra)
 {
 	int cb = (uintptr_t) extra;
@@ -219,7 +236,7 @@ _up:
 			thread_cmd =  cb - 10;
 		}
 		break;
-		case CB_CONTROL_H_FLIP:
+		case CB_H_FLIP:
 			decoder_horizontal_flip();
 		break;
 		case CB_AUDIO:
@@ -298,7 +315,7 @@ int main(int argc, char *argv[])
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_NONE);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 4);
-	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_resource("/com/dev47apps/droidcam/icon2.png", NULL));
+	gtk_window_set_icon_from_file(GTK_WINDOW(window), APP_ICON_FILE, NULL);
 
 	// keyboard shortcuts
 	gtk_accel = gtk_accel_group_new ();
@@ -353,7 +370,7 @@ int main(int argc, char *argv[])
 	widget = gtk_menu_item_new_with_label("Mirror Video (Ctrl+M)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
-	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_H_FLIP);
+	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_H_FLIP);
 
 	// Create main grid to create left and right column of the UI.
 	// +-----------------------------------+
@@ -481,6 +498,9 @@ int main(int argc, char *argv[])
 		pango_attr_list_insert(attrlist, attr);
 		gtk_label_set_attributes(GTK_LABEL(infoText), attrlist);
 		pango_attr_list_unref(attrlist);
+
+		// add taskbar widget
+		add_indicator(window);
 
 		// main loop
 		gtk_main();

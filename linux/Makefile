@@ -13,6 +13,7 @@ JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 GXX   = g++
 CC    = -std=c++11 -x c++ -Wall -fPIC -no-pie
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
+GTK  += `pkg-config --cflags --libs appindicator3-0.1`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
@@ -25,7 +26,7 @@ ifeq "$(RELEASE)" "1"
 LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
 SRC  += /usr/lib/x86_64-linux-gnu/libusbmuxd.a /usr/lib/x86_64-linux-gnu/libxml2.a src/libplist-2.0.a
 package: clean all
-	zip -x *.png src/ src/* Makefile -r droidcam_`date +%s`.zip ./*
+	zip -x icon.png src/ src/* Makefile -r droidcam_`date +%s`.zip ./*
 
 else
 LIBS += $(USBMUXD)

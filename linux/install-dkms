@@ -21,7 +21,7 @@ EOF
 
 install_droidcam_binaries() {
     # Installing droidcam binaries. Requires make to have succeeded.
-    # But testing if the binaries are present, to avoid failing because we want to be able 
+    # But testing if the binaries are present, to avoid failing because we want to be able
     # to build and deploy the module in any case.
     if [ -f "${REPO_PATH}/droidcam" ]; then
         echo "Installing droidcam in /usr/bin"
@@ -59,6 +59,7 @@ copy_uninstall_script() {
     echo "Adding uninstall script in '/opt/droidcam-uninstall'"
     mkdir -p /opt || true
     cp "${REPO_PATH}/uninstall-dkms" /opt/droidcam-uninstall
+    cp "${REPO_PATH}/icon2.png"     /opt/droidcam-icon.png
 }
 
 # Here we go

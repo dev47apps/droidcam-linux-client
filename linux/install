@@ -65,6 +65,9 @@ fi
 echo "Adding uninstall script"
 cp uninstall /opt/droidcam-uninstall
 
+echo "Adding icon"
+cp icon2.png /opt/droidcam-icon.png
+
 echo "Moving driver and executable to system folders"
 set -x
 cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
