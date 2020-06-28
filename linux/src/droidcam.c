@@ -16,6 +16,7 @@
 #include "connection.h"
 #include "decoder.h"
 #include "icon.h"
+#include <libappindicator/app-indicator.h>
 
 /* Globals */
 GtkWidget *menu;
@@ -143,6 +144,17 @@ accel_callback( GtkAccelGroup  *group,
 		thread_cmd = (uintptr_t) user_data;
 	}
 	return TRUE;
+}
+
+static void hide_window(GtkWidget* widget, gpointer extra) {
+	GtkWindow * window = GTK_WINDOW(extra);
+
+	gtk_widget_hide(window);
+}
+static void show_window(GtkWidget* widget, gpointer extra) {
+	GtkWindow * window = GTK_WINDOW(extra);
+
+	gtk_widget_show(window);
 }
 
 static void the_callback(GtkWidget* widget, gpointer extra)
@@ -412,6 +424,23 @@ int main(int argc, char *argv[])
 		pango_attr_list_insert(attrlist, attr);
 		gtk_label_set_attributes(GTK_LABEL(infoText), attrlist);
 		pango_attr_list_unref(attrlist);
+
+		AppIndicator *indicator = app_indicator_new("droidcam", "/usr/share/pixmaps/droidcam.png", APP_INDICATOR_CATEGORY_HARDWARE);
+		GtkWidget *menu = gtk_menu_new();
+		GtkWidget *hide_menu_item = gtk_menu_item_new_with_label("Hide");
+		GtkWidget *show_menu_item = gtk_menu_item_new_with_label("Show");
+
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
+							  hide_menu_item);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
+							  show_menu_item);
+
+		app_indicator_set_status(indicator, APP_INDICATOR_STATUS_ACTIVE);
+		app_indicator_set_menu(indicator, menu);
+		gtk_widget_show_all(menu);
+
+		g_signal_connect(G_OBJECT(hide_menu_item), "activate", G_CALLBACK(hide_window), window);
+		g_signal_connect(G_OBJECT(show_menu_item), "activate", G_CALLBACK(show_window), window);
 
 		// main loop
 		gtk_main();
