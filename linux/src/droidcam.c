@@ -40,12 +40,23 @@ void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
 
 /* Helper Functions */
-void ShowError(const char * title, const char * msg)
+char title[256];
+char msg[256];
+
+gboolean ShowError_GTK(gpointer data)
 {
 	GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "%s", msg);
 	gtk_window_set_title(GTK_WINDOW(dialog), title);
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
+	return FALSE;
+}
+
+void ShowError(const char* in_title, const char* in_msg)
+{
+	strncpy(msg, in_msg, sizeof(msg));
+	strncpy(title, in_title, sizeof(title));
+	gdk_threads_add_idle(ShowError_GTK, NULL);
 }
 
 static void Stop(void)
