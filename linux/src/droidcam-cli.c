@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
             if (g_settings.connection == CB_RADIO_ADB && CheckAdbDevices(g_settings.port) != 8)
                 return 1;
 
-            videoSocket = connect_droidcam(g_settings.ip, g_settings.port);
+            videoSocket = Connect(g_settings.ip, g_settings.port);
             if (videoSocket == INVALID_SOCKET) {
                 errprint("Video: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);
                 return 0;

@@ -65,7 +65,7 @@ static void Stop(void)
 
 static void Start(void)
 {
-	char * ip = NULL;
+	const char* ip = NULL;
 	SOCKET s = INVALID_SOCKET;
 	int port = atoi(gtk_entry_get_text(portEntry));
 
@@ -102,7 +102,7 @@ static void Start(void)
 		}
 
 		gtk_button_set_label(start_button, "Please wait");
-		s = connect_droidcam(ip, port);
+		s = Connect(ip, port);
 		if (s == INVALID_SOCKET) {
 			gtk_button_set_label(start_button, "Connect");
 			return;
@@ -152,7 +152,7 @@ static void the_callback(GtkWidget* widget, gpointer extra)
 	gboolean portEdit = TRUE;
 	gboolean audioBox = TRUE;
 	gboolean videoBox = TRUE;
-	char * text = NULL;
+	const char* text = NULL;
 
 _up:
 	dbgprint("the_cb=%d\n", cb);
@@ -229,6 +229,9 @@ int main(int argc, char *argv[])
 	GtkWidget *radios[CB_RADIO_COUNT];
 	GtkWidget *widget; // generic stuff
 
+	GClosure *closure;
+	GtkAccelGroup *gtk_accel;
+
 	// init threads
 	XInitThreads();
 	gtk_init(&argc, &argv);
@@ -241,25 +244,24 @@ int main(int argc, char *argv[])
 	gtk_container_set_border_width(GTK_CONTAINER(window), 4);
 	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_resource("/com/dev47apps/droidcam/icon2.png", NULL));
 
- {
-	GtkAccelGroup *gtk_accel = gtk_accel_group_new ();
-	GClosure *closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_AF-10), NULL);
+	gtk_accel = gtk_accel_group_new ();
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_AF-10), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("a"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_LED-10), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("l"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOUT-10), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("minus"), 0, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("minus"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN-10), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("plus"), 0, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("plus"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN-10), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), 0, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
 	gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel);
- }
+
 	menu = gtk_menu_new();
 
 	widget = gtk_menu_item_new_with_label("DroidCamX Commands:");

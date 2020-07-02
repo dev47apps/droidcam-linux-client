@@ -14,13 +14,13 @@
 typedef int SOCKET;
 typedef intptr_t SOCKET_PTR;
 
-SOCKET connect_droidcam(char * ip, int port);
+SOCKET Connect(const char* ip, int port);
 void connection_cleanup();
 void disconnect(SOCKET s);
 
 SOCKET accept_connection(int port);
 SOCKET CreateUdpSocket(void);
-int SendRecv(int doSend, char * buffer, int bytes, SOCKET s);
+int SendRecv(int doSend, const char * buffer, int bytes, SOCKET s);
 int RecvNonBlock(char * buffer, int bytes, SOCKET s);
 int RecvNonBlockUDP(char * buffer, int bytes, SOCKET s);
 int SendUDPMessage(SOCKET s, const char *message, int length, char *ip, int port);

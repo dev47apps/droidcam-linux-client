@@ -8,6 +8,8 @@
 
 #ifndef __DECODR_H__
 #define __DECODR_H__
+
+extern "C" {
 #include <alsa/asoundlib.h>
 
 typedef unsigned char BYTE;
@@ -23,6 +25,7 @@ struct snd_transfer_s {
     snd_pcm_uframes_t frames;
     const snd_pcm_channel_area_t *my_areas;
 };
+}
 
 int  decoder_init();
 void decoder_fini();

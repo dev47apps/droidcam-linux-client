@@ -21,35 +21,59 @@
 SOCKET wifiServerSocket = INVALID_SOCKET;
 extern int v_running;
 
-SOCKET connect_droidcam(char * ip, int port)
-{
+SOCKET Connect(const char* ip, int port) {
+    int flags;
     struct sockaddr_in sin;
     SOCKET sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     printf("connecting to %s:%d\n", ip, port);
     if(sock == INVALID_SOCKET) {
         MSG_LASTERROR("Error");
-    } else {
-        sin.sin_family = AF_INET;
-        sin.sin_addr.s_addr = inet_addr(ip);
-        sin.sin_port = htons(port);
+        goto _error_out;
+    }
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = inet_addr(ip);
+    sin.sin_port = htons(port);
 
-        if (connect(sock, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
-            printf("connect failed %d '%s'\n", errno, strerror(errno));
-            MSG_ERROR("Connect failed, please try again.\nCheck IP and Port.\nCheck network connection.");
-            close(sock);
-            sock = INVALID_SOCKET;
-        }
+    flags = fcntl(sock, F_GETFL, NULL);
+    if(flags < 0) {
+        MSG_LASTERROR("Error: fcntl");
+        close(sock);
+        sock = INVALID_SOCKET;
+        goto _error_out;
+    }
+    flags |= O_NONBLOCK;
+    fcntl(sock, F_SETFL, flags);
+
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+
+    fd_set set;
+    FD_ZERO(&set);
+    FD_SET(sock, &set);
+
+    connect(sock, (struct sockaddr*)&sin, sizeof(sin));
+    if (!(errno == EAGAIN || errno == EWOULDBLOCK || errno == EINPROGRESS) || (select(sock+1, NULL, &set, NULL, &timeout) <= 0)) {
+        printf("connect timeout/error %d '%s'\n", errno, strerror(errno));
+        MSG_ERROR("Connect failed, please try again.\nCheck IP and Port.\nCheck network connection.");
+        close(sock);
+        sock = INVALID_SOCKET;
+        goto _error_out;
     }
 
+    flags = fcntl(sock, F_GETFL, NULL);
+    flags &= ~O_NONBLOCK;
+    fcntl(sock, F_SETFL, flags);
+
+_error_out:
     dbgprint(" - return fd: %d\n", sock);
     return sock;
 }
 
-int SendRecv(int doSend, char * buffer, int bytes, SOCKET s)
-{
+int SendRecv(int doSend, const char * buffer, int bytes, SOCKET s) {
     int retCode;
-    char * ptr = buffer;
+    char * ptr = (char *)buffer;
 
     while (bytes > 0) {
         retCode = (doSend) ? send(s, ptr, bytes, 0) : recv(s, ptr, bytes, 0);

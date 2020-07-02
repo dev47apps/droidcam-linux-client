@@ -117,7 +117,7 @@ void *AudioThreadProc(void *arg) {
 TCP_ONLY:
     dbgprint("UDP didnt work, trying TCP\n");
     mode = TCP_STREAM;
-    socket = connect_droidcam(g_settings.ip, g_settings.port);
+    socket = Connect(g_settings.ip, g_settings.port);
     if (socket == INVALID_SOCKET) {
         errprint("Audio: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);
         return 0;
@@ -185,8 +185,8 @@ STREAM:
         if (decode_buf_used == 0) {
             decoder_speex_plc(&transfer);
         } else {
-            short *output_buffer = transfer.my_areas->addr;
-            if (transfer.frames >= decoder_get_audio_frame_size()) {
+            short *output_buffer = (short *)transfer.my_areas->addr;
+            if ((int)transfer.frames >= decoder_get_audio_frame_size()) {
                 transfer.frames = decoder_get_audio_frame_size();
             }
             memcpy(&output_buffer[transfer.offset], decode_buf, transfer.frames * sizeof(short));

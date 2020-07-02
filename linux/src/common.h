@@ -15,8 +15,7 @@
 
 #define MSG_ERROR(str)     ShowError("Error",str)
 #define MSG_LASTERROR(str) ShowError(str,strerror(errno))
-
-extern void ShowError();
+void ShowError(const char*, const char*);
 
 #define ADB_LOCALHOST_IP "127.0.0.1"
 
@@ -40,7 +39,7 @@ extern void ShowError();
 
 #define errprint(...) fprintf(stderr, __VA_ARGS__)
 #define voidprint(...) /* */
-#define dbgprint      voidprint
+#define dbgprint      errprint
 
 #define VIDEO_INBUF_SZ 4096
 #define AUDIO_INBUF_SZ 32

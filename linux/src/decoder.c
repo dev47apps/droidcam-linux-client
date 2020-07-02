@@ -16,12 +16,14 @@
 #include <errno.h>
 #include <linux/limits.h>
 
+#include "common.h"
+#include "decoder.h"
+
+extern "C" {
+
 #include "turbojpeg.h"
 #include "libswscale/swscale.h"
 #include "speex/speex.h"
-
-#include "common.h"
-#include "decoder.h"
 
 struct spx_decoder_s {
  snd_pcm_t *snd_handle;
@@ -45,6 +47,8 @@ struct jpg_dec_ctx_s {
  struct SwsContext *swc;
  tjhandle tj;
 };
+
+}
 
 #define JPG_BACKBUF_MAX 10
 struct jpg_frame_s    jpg_frames[JPG_BACKBUF_MAX];
@@ -357,8 +361,8 @@ int decoder_get_audio_frame_size(void) {
 }
 
 void decoder_speex_plc(struct snd_transfer_s* transfer) {
-    short *output_buffer = transfer->my_areas->addr;
-    if (transfer->frames >= spx_decoder.frame_size){
+    short *output_buffer = (short *)transfer->my_areas->addr;
+    if ((int)transfer->frames >= spx_decoder.frame_size){
         speex_decode_int(spx_decoder.state, NULL, &output_buffer[transfer->offset]);
         transfer->frames = spx_decoder.frame_size;
     } else {
