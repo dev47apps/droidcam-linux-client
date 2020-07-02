@@ -11,14 +11,6 @@
 
 extern "C" {
 #include <alsa/asoundlib.h>
-
-typedef unsigned char BYTE;
-
-struct jpg_frame_s {
- BYTE *data;
- unsigned length;
-};
-
 struct snd_transfer_s {
     int first;
     snd_pcm_uframes_t offset;
@@ -26,6 +18,17 @@ struct snd_transfer_s {
     const snd_pcm_channel_area_t *my_areas;
 };
 }
+
+typedef unsigned char BYTE;
+
+struct JPGFrame {
+    BYTE *data;
+    unsigned length;
+    JPGFrame(void) {
+        data = 0; length = 0;
+    }
+};
+
 
 int  decoder_init();
 void decoder_fini();
@@ -37,8 +40,10 @@ int decode_speex_frame(char *stream_buf, short *decode_buf, int droidcam_spx_chu
 int  decoder_prepare_video(char * header);
 void decoder_cleanup();
 
-struct jpg_frame_s* decoder_get_next_frame();
-void decoder_set_video_delay(unsigned v);
+JPGFrame* pull_empty_jpg_frame(void);
+JPGFrame* pull_ready_jpg_frame(void);
+void push_jpg_frame(JPGFrame*, bool empty);
+void process_frame(JPGFrame*);
 int decoder_get_video_width();
 int decoder_get_video_height();
 void decoder_show_test_image();

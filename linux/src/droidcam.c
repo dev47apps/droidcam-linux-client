@@ -27,6 +27,7 @@ GtkEntry * portEntry;
 GtkButton *start_button;
 GThread* hVideoThread;
 GThread* hAudioThread;
+GThread* hDecodeThread;
 
 int a_running = 0;
 int v_running = 0;
@@ -38,6 +39,7 @@ extern char v4l2_device[32];
 
 void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
+void * DecodeThreadProc(void * args);
 
 /* Helper Functions */
 char title[256];
@@ -72,6 +74,10 @@ static void Stop(void)
 		g_thread_join(hAudioThread);
 		hAudioThread = NULL;
 	}
+	if (hDecodeThread) {
+		g_thread_join(hDecodeThread);
+		hDecodeThread = NULL;
+	}
 }
 
 static void Start(void)
@@ -86,7 +92,9 @@ static void Start(void)
 	}
 
 	if (g_settings.connection == CB_WIFI_SRVR) {
+		v_running = 1;
 		hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
+		hDecodeThread = g_thread_new(NULL, DecodeThreadProc, NULL);
 		goto EARLY_OUT;
 	}
 
@@ -96,8 +104,14 @@ static void Start(void)
 	}
 
 	if (g_settings.connection == CB_RADIO_ADB) {
-		if (CheckAdbDevices(port) != 8) return;
+		if (CheckAdbDevices(port) < 0) return;
 		ip = "127.0.0.1";
+	} else if (g_settings.connection == CB_RADIO_IOS) {
+		s = CheckiOSDevices(port);
+		if (s <= 0) {
+			gtk_button_set_label(start_button, "Connect");
+			return;
+		}
 	} else if (g_settings.connection == CB_RADIO_WIFI) {
 		ip = (char*)gtk_entry_get_text(ipEntry);
 	} else {
@@ -123,7 +137,9 @@ static void Start(void)
 	g_settings.port = port;
 
 	if (g_settings.video) {
+		v_running = 1;
 		hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
+		hDecodeThread = g_thread_new(NULL, DecodeThreadProc, NULL);
 	} else {
 		disconnect(s);
 	}
@@ -196,6 +212,11 @@ _up:
 			text = "Connect";
 			ipEdit = FALSE;
 		break;
+		case CB_RADIO_IOS:
+			g_settings.connection = CB_RADIO_IOS;
+			text = "Connect";
+			ipEdit = FALSE;
+		break;
 		case CB_BTN_OTR:
 			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, 0);
 			// TODO drop support for older OSs and use
@@ -236,7 +257,6 @@ int main(int argc, char *argv[])
 	GtkWidget *grid;
 	GtkWidget *radioGroup;
 	GtkWidget *menuGrid;
-	GtkWidget *radio1, *radio2;
 	GtkWidget *radios[CB_RADIO_COUNT];
 	GtkWidget *widget; // generic stuff
 
@@ -327,20 +347,21 @@ int main(int argc, char *argv[])
 	gtk_grid_attach(GTK_GRID(grid), radioGroup, 0, 0, 1, 3);
 
 	// Create radio options.
-	radio1 = gtk_radio_button_new_with_label(NULL, "WiFi / LAN");
-	g_signal_connect(radio1, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_WIFI);
-	gtk_grid_attach(GTK_GRID(radioGroup), radio1, 0, 0, 1, 1);
-	radios[CB_RADIO_WIFI] = radio1;
+	radios[CB_RADIO_WIFI] = gtk_radio_button_new_with_label(NULL, "WiFi / LAN");
+	g_signal_connect(radios[CB_RADIO_WIFI], "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_WIFI);
+	gtk_grid_attach(GTK_GRID(radioGroup), radios[CB_RADIO_WIFI], 0, 0, 1, 1);
 
-	radio2 = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio1), "Wifi Server Mode");
-	g_signal_connect(radio2, "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
-	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radio2, radio1, GTK_POS_BOTTOM, 1, 1);
-	radios[CB_WIFI_SRVR] = radio2;
+	radios[CB_WIFI_SRVR] = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radios[CB_RADIO_WIFI]), "Wifi Server Mode");
+	g_signal_connect(radios[CB_WIFI_SRVR], "toggled", G_CALLBACK(the_callback), (gpointer)CB_WIFI_SRVR);
+	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radios[CB_WIFI_SRVR], radios[CB_RADIO_WIFI], GTK_POS_BOTTOM, 1, 1);
 
-	radio1 = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radio2), "USB (over adb)");
-	g_signal_connect(radio1, "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
-	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radio1, radio2, GTK_POS_BOTTOM, 1, 1);
-	radios[CB_RADIO_ADB] = radio1;
+	radios[CB_RADIO_ADB] = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radios[CB_WIFI_SRVR]), "USB (Android)");
+	g_signal_connect(radios[CB_RADIO_ADB], "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
+	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radios[CB_RADIO_ADB], radios[CB_WIFI_SRVR], GTK_POS_BOTTOM, 1, 1);
+
+	radios[CB_RADIO_IOS] = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radios[CB_RADIO_ADB]), "USB (iOS)");
+	g_signal_connect(radios[CB_RADIO_IOS], "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_IOS);
+	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radios[CB_RADIO_IOS], radios[CB_RADIO_ADB], GTK_POS_BOTTOM, 1, 1);
 
 	// Add toggle button to enable video as 2nd element of left column.
 	widget = gtk_check_button_new_with_label("Enable Video");

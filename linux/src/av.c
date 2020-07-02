@@ -8,12 +8,26 @@ extern int v_running;
 extern int thread_cmd;
 extern struct settings g_settings;
 
+void * DecodeThreadProc(void * args) {
+    dbgprint("Decode Thread Start\n");
+    while (v_running != 0){
+       JPGFrame *f = pull_ready_jpg_frame();
+       if (!f) {
+            usleep(2000);
+            continue;
+       }
+       process_frame(f);
+       push_jpg_frame(f, true);
+    }
+    dbgprint("Decode Thread End\n");
+    return 0;
+}
+
 void * VideoThreadProc(void * args) {
     char buf[32];
     SOCKET videoSocket = (SOCKET_PTR) args;
     int keep_waiting = 0;
     dbgprint("Video Thread Started s=%d\n", videoSocket);
-    v_running = 1;
 
 server_wait:
     if (videoSocket == INVALID_SOCKET) {
@@ -48,13 +62,14 @@ server_wait:
         }
 
         int frameLen;
-        struct jpg_frame_s *f = decoder_get_next_frame();
+        JPGFrame *f = pull_empty_jpg_frame();
         if (SendRecv(0, buf, 4, videoSocket) == FALSE) break;
         make_int4(frameLen, buf[0], buf[1], buf[2], buf[3]);
         f->length = frameLen;
         if (SendRecv(0, (char*)f->data, frameLen, videoSocket) == FALSE)
             break;
 
+        push_jpg_frame(f, false);
     }
 
 early_out:
@@ -92,6 +107,8 @@ void *AudioThreadProc(void *arg) {
         return 0;
     }
 
+    if (g_settings.connection == CB_RADIO_IOS)
+        goto TCP_ONLY;
     if (strncmp(g_settings.ip, ADB_LOCALHOST_IP, CSTR_LEN(ADB_LOCALHOST_IP)) == 0)
         goto TCP_ONLY;
 
@@ -117,7 +134,13 @@ void *AudioThreadProc(void *arg) {
 TCP_ONLY:
     dbgprint("UDP didnt work, trying TCP\n");
     mode = TCP_STREAM;
-    socket = Connect(g_settings.ip, g_settings.port);
+    if (g_settings.connection == CB_RADIO_IOS) {
+        socket = CheckiOSDevices(g_settings.port);
+        if (socket <= 0) socket = INVALID_SOCKET;
+    } else {
+        socket = Connect(g_settings.ip, g_settings.port);
+    }
+
     if (socket == INVALID_SOCKET) {
         errprint("Audio: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);
         return 0;

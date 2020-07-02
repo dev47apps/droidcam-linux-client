@@ -19,15 +19,27 @@
 #include "connection.h"
 #include "decoder.h"
 
+struct Thread {
+    pthread_t t;
+    int rc;
+    Thread() {
+        rc = -1;
+    }
+};
+
+Thread athread, vthread, dthread;
+
 int v_running = 0;
 int a_running = 0;
 int thread_cmd = 0;
 struct settings g_settings = {0};
 
+
 extern char snd_device[32];
 extern char v4l2_device[32];
 void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
+void * DecodeThreadProc(void * args);
 
 void sig_handler(int sig) {
     a_running = 0;
@@ -50,9 +62,15 @@ static inline void usage(int argc, char *argv[]) {
     " %s [-a] [-v] adb <port>\n"
     "   Connect via adb with audio and/or video\n"
     "\n"
+    " %s [-a] [-v] ios <port>\n"
+    "   Connect via usbmuxd with audio and/or video\n"
+    "\n"
     "Input '?' for list of commands while streaming.\n"
     ,
-    argv[0], argv[0], argv[0]);
+    argv[0],
+    argv[0],
+    argv[0],
+    argv[0]);
 }
 
 static void parse_args(int argc, char *argv[]) {
@@ -85,6 +103,9 @@ static void parse_args(int argc, char *argv[]) {
         if (strcmp(g_settings.ip, "adb") == 0) {
             strcpy(g_settings.ip, ADB_LOCALHOST_IP);
             g_settings.connection = CB_RADIO_ADB;
+        }
+        else if (strcmp(g_settings.ip, "ios") == 0) {
+            g_settings.connection = CB_RADIO_IOS;
         }
         else {
             g_settings.connection = CB_RADIO_WIFI;
@@ -152,9 +173,6 @@ void wait_command() {
 }
 
 int main(int argc, char *argv[]) {
-    pthread_t athread, vthread;
-    int athread_rc = -1, vthread_rc = -1;
-
     parse_args(argc, argv);
 
     if (!decoder_init()) {
@@ -165,26 +183,35 @@ int main(int argc, char *argv[]) {
     if (v_running) {
         printf("Video: %s\n", v4l2_device);
         SOCKET videoSocket = INVALID_SOCKET;
-        if (g_settings.connection == CB_RADIO_WIFI || g_settings.connection == CB_RADIO_ADB) {
+        if (g_settings.connection == CB_RADIO_WIFI || g_settings.connection == CB_RADIO_ADB || g_settings.connection == CB_RADIO_IOS) {
 
-            if (g_settings.connection == CB_RADIO_ADB && CheckAdbDevices(g_settings.port) != 8)
+            if (g_settings.connection == CB_RADIO_ADB && CheckAdbDevices(g_settings.port) < 0)
                 return 1;
 
-            videoSocket = Connect(g_settings.ip, g_settings.port);
-            if (videoSocket == INVALID_SOCKET) {
-                errprint("Video: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);
-                return 0;
+            if (g_settings.connection == CB_RADIO_IOS) {
+                if ((videoSocket = CheckiOSDevices(g_settings.port)) <= 0)
+                    return 1;
+            }
+            else {
+                videoSocket = Connect(g_settings.ip, g_settings.port);
+                if (videoSocket == INVALID_SOCKET) {
+                    errprint("Video: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);
+                    return 0;
+                }
             }
         }
-        vthread_rc = pthread_create(&vthread, NULL, VideoThreadProc, (void*) (SOCKET_PTR) videoSocket);
+        vthread.rc = pthread_create(&vthread.t, NULL, VideoThreadProc, (void*) (SOCKET_PTR) videoSocket);
+        dthread.rc = pthread_create(&dthread.t, NULL, DecodeThreadProc, NULL);
     }
 
     if (a_running){
         printf("Audio: %s\n", snd_device);
-        if (!v_running && g_settings.connection == CB_RADIO_ADB && CheckAdbDevices(g_settings.port) != 8)
-            return 1;
+        if (!v_running) {
+            if (g_settings.connection == CB_RADIO_ADB && CheckAdbDevices(g_settings.port) != 0)
+                return 1;
+        }
 
-        athread_rc = pthread_create(&athread, NULL, AudioThreadProc, NULL);
+        athread.rc = pthread_create(&athread.t, NULL, AudioThreadProc, NULL);
     }
 
     signal(SIGINT, sig_handler);
@@ -195,8 +222,9 @@ int main(int argc, char *argv[]) {
 
     dbgprint("joining\n");
     sig_handler(SIGHUP);
-    if (athread_rc == 0) pthread_join(athread, NULL);
-    if (vthread_rc == 0) pthread_join(vthread, NULL);
+    if (athread.rc == 0) pthread_join(athread.t, NULL);
+    if (vthread.rc == 0) pthread_join(vthread.t, NULL);
+    if (dthread.rc == 0) pthread_join(dthread.t, NULL);
     decoder_fini();
     dbgprint("exit\n");
     return 0;

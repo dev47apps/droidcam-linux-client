@@ -18,9 +18,9 @@
 
 #include "common.h"
 #include "decoder.h"
+#include "queue.h"
 
 extern "C" {
-
 #include "turbojpeg.h"
 #include "libswscale/swscale.h"
 #include "speex/speex.h"
@@ -38,7 +38,7 @@ struct jpg_dec_ctx_s {
  int m_width, m_height;
  int m_Yuv420Size, m_ySize, m_uvSize;
  int m_webcamYuvSize, m_webcam_ySize, m_webcam_uvSize;;
- int m_NextFrame, m_NextSlot, m_BufferLimit, m_BufferedFrames;
+ size_t m_BufferLimit;
 
  BYTE *m_inBuf;         /* incoming stream */
  BYTE *m_decodeBuf;     /* decoded individual frames */
@@ -50,8 +50,11 @@ struct jpg_dec_ctx_s {
 
 }
 
-#define JPG_BACKBUF_MAX 10
-struct jpg_frame_s    jpg_frames[JPG_BACKBUF_MAX];
+#define JPG_BACKBUF_MAX 3
+JPGFrame jpg_frames[JPG_BACKBUF_MAX];
+Queue<JPGFrame*> decodeQueue;
+Queue<JPGFrame*> recieveQueue;
+
 struct jpg_dec_ctx_s  jpg_decoder;
 struct spx_decoder_s  spx_decoder;
 
@@ -64,13 +67,6 @@ static snd_output_t *output = NULL;
 static void decoder_share_frame();
 
 #define FREE_OBJECT(obj, free_func) if(obj){dbgprint(" " #obj " %p\n", obj); free_func(obj); obj=NULL;}
-
-void decoder_set_video_delay(unsigned v) {
-    if (v > JPG_BACKBUF_MAX) v = JPG_BACKBUF_MAX;
-    else if (v < 1) v = 1;
-    jpg_decoder.m_BufferLimit = v;
-    dbgprint("buffer %d frames\n", jpg_decoder.m_BufferLimit);
-}
 
 int decoder_init(void) {
     WEBCAM_W = 0;
@@ -96,10 +92,10 @@ int decoder_init(void) {
 
     memset(&jpg_decoder, 0, sizeof(struct jpg_dec_ctx_s));
     jpg_decoder.tj = NULL;
+    jpg_decoder.m_BufferLimit = 0;
     jpg_decoder.m_webcamYuvSize  = WEBCAM_W * WEBCAM_H * 3 / 2;
     jpg_decoder.m_webcam_ySize   = WEBCAM_W * WEBCAM_H;
     jpg_decoder.m_webcam_uvSize  = jpg_decoder.m_webcam_ySize / 4;
-    decoder_set_video_delay(0);
 
     if (snd_output_stdio_attach(&output, stdout, 0) < 0) {
         errprint("snd_output_stdio_attach failed\n");
@@ -182,9 +178,9 @@ int decoder_prepare_video(char * header) {
         jpg_frames[i].data = &jpg_decoder.m_inBuf[i*jpg_decoder.m_Yuv420Size];
         jpg_frames[i].length = 0;
         dbgprint("jpg: jpg_frames[%d]: %p\n", i, jpg_frames[i].data);
+        recieveQueue.add_item(&jpg_frames[i]);
     }
 
-    jpg_decoder.m_BufferedFrames  = jpg_decoder.m_NextFrame = jpg_decoder.m_NextSlot = 0;
     return TRUE;
 }
 
@@ -201,11 +197,13 @@ void decoder_cleanup() {
     FREE_OBJECT(jpg_decoder.m_webcamBuf, free);
     FREE_OBJECT(jpg_decoder.swc, sws_freeContext);
     FREE_OBJECT(jpg_decoder.tj, tjDestroy);
+    recieveQueue.clear();
+    decodeQueue.clear();
 }
 
-static void decode_next_frame() {
-    BYTE *p = jpg_frames[jpg_decoder.m_NextFrame].data;
-    unsigned long len = (unsigned long)jpg_frames[jpg_decoder.m_NextFrame].length;
+void process_frame(JPGFrame *frame) {
+    unsigned long len = (unsigned long)frame->length;
+    BYTE *p = frame->data;
 
     if (jpg_decoder.subsamp == 0) {
         int width, height, subsamp, colorspace;
@@ -325,27 +323,19 @@ void decoder_show_test_image() {
     decoder_share_frame();
 }
 
-struct jpg_frame_s* decoder_get_next_frame() {
-    while (jpg_decoder.m_BufferedFrames > jpg_decoder.m_BufferLimit) {
-        jpg_decoder.m_BufferedFrames--;
-        jpg_decoder.m_NextFrame = (jpg_decoder.m_NextFrame < (JPG_BACKBUF_MAX-1)) ? (jpg_decoder.m_NextFrame + 1) : 0;
-    }
-    if (jpg_decoder.m_BufferedFrames == jpg_decoder.m_BufferLimit) {
-        // dbgprint("decoding #%2d (have buffered: %d)\n", jpg_decoder.m_NextFrame, jpg_decoder.m_BufferedFrames);
-        decode_next_frame();
-        jpg_decoder.m_BufferedFrames--;
-        jpg_decoder.m_NextFrame = (jpg_decoder.m_NextFrame < (JPG_BACKBUF_MAX-1)) ? (jpg_decoder.m_NextFrame + 1) : 0;
-    }
+void push_jpg_frame(JPGFrame* frame, bool empty) {
+    if (empty || recieveQueue.items.size() == 0 || decodeQueue.items.size() > jpg_decoder.m_BufferLimit)
+        recieveQueue.add_item(frame);
+    else
+        decodeQueue.add_item(frame);
+}
 
-    // a call to this function assumes we are about to get a full frame (or exit on failure).
-    // so increment the # of buffered frames. do this after the while() loop above to
-    // take care of the initial case:
-    jpg_decoder.m_BufferedFrames ++;
+JPGFrame* pull_empty_jpg_frame(void) {
+    return recieveQueue.next_item();
+}
 
-    int nextSlotSaved = jpg_decoder.m_NextSlot;
-    jpg_decoder.m_NextSlot = (jpg_decoder.m_NextSlot < (JPG_BACKBUF_MAX-1)) ? (jpg_decoder.m_NextSlot + 1) : 0;
-    // dbgprint("next image going to #%2d (have buffered: %d)\n", nextSlotSaved, (jpg_decoder.m_BufferedFrames-1));
-    return &jpg_frames[nextSlotSaved];
+JPGFrame* pull_ready_jpg_frame(void) {
+    return decodeQueue.next_item(jpg_decoder.m_BufferLimit);
 }
 
 int decoder_get_video_width() {
