@@ -17,6 +17,7 @@ LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
 SRC      = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c
+USBMUXD = -lusbmuxd
 
 all: droidcam-cli droidcam
 
@@ -27,7 +28,7 @@ package: clean all
 	zip -x *.png src/ src/* Makefile -r droidcam_`date +%s`.zip ./*
 
 else
-LIBS += -lusbmuxd
+LIBS += $(USBMUXD)
 endif
 
 gresource: .gresource.xml icon2.png
