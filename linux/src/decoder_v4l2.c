@@ -42,8 +42,8 @@ int find_droidcam_v4l() {
             continue;
         }
 
-        printf("Device %s is '%s'\n", v4l2_device, v4l2cap.card);
-        if (0 == strncmp((const char*) v4l2cap.card, "Droidcam", 8)) {
+        printf("Device %s is '%s' @ %s\n", v4l2_device, v4l2cap.card, v4l2cap.bus_info);
+        if (0 == strncmp((const char*) v4l2cap.bus_info, "platform:v4l2loopback", 20)) {
             printf("Opened %s, fd:%d\n", v4l2_device, droidcam_device_fd);
             return droidcam_device_fd;
         }
