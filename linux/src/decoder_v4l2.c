@@ -61,7 +61,24 @@ void query_droidcam_v4l(int droidcam_device_fd, int *WEBCAM_W, int *WEBCAM_H) {
     vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     vid_format.fmt.pix.width = 0;
     vid_format.fmt.pix.height = 0;
-    if (xioctl(droidcam_device_fd, VIDIOC_G_FMT, &vid_format) < 0) {
+
+    int ret = xioctl(droidcam_device_fd, VIDIOC_G_FMT, &vid_format);
+    if (ret < 0 && errno == EINVAL) {
+        fprintf(stderr, "No format set, querying default format\n");
+        vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+        vid_format.fmt.pix.width = 0;
+        vid_format.fmt.pix.height = 0;
+        vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+        vid_format.fmt.pix.field = V4L2_FIELD_ANY;
+        if (xioctl(droidcam_device_fd, VIDIOC_TRY_FMT, &vid_format) < 0) {
+            fprintf(stderr, "Fatal: Unable to query droidcam video device. errno=%d\n", errno);
+            return;
+        }
+        if (xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format) < 0) {
+            fprintf(stderr, "Fatal: Unable to adjust droidcam video device. errno=%d\n", errno);
+            return;
+        }
+    } else if (ret < 0) {
         fprintf(stderr, "Fatal: Unable to query droidcam video device. errno=%d\n", errno);
         return;
     }
@@ -75,8 +92,12 @@ void query_droidcam_v4l(int droidcam_device_fd, int *WEBCAM_W, int *WEBCAM_H) {
     dbgprint("  vid_format->fmt.pix.bytesperline=%d\n", vid_format.fmt.pix.bytesperline );
     dbgprint("  vid_format->fmt.pix.colorspace  =%d\n", vid_format.fmt.pix.colorspace );
     if (vid_format.fmt.pix.pixelformat != V4L2_PIX_FMT_YUV420) {
-        errprint("Fatal: droidcam video device reported pixel format %d, expected %d\n",
-            vid_format.fmt.pix.pixelformat, V4L2_PIX_FMT_YUV420);
+        uint32_t pixelfmt = vid_format.fmt.pix.pixelformat;
+        uint8_t fourcc[5] = { (uint8_t)(pixelfmt >> 0), (uint8_t)(pixelfmt >> 8),
+            (uint8_t)(pixelfmt >> 16), (uint8_t)(pixelfmt >> 24), '\0' };
+        errprint("Fatal: droidcam video device reported pixel format %x (%s), expected %x (YU12/I420)\n"
+                 "Try 'v4l2loopback-ctl set-caps \"video/x-raw, format=I420, width=640, height=480\" %s'\n",
+            vid_format.fmt.pix.pixelformat, fourcc, V4L2_PIX_FMT_YUV420, "/dev/video<N>");
         return;
     }
     if (vid_format.fmt.pix.width <= 0 ||  vid_format.fmt.pix.height <= 0) {
