@@ -65,8 +65,8 @@ void decoder_show_test_image();
 #define VIDEO_FMT_DROIDCAM 3
 #define VIDEO_FMT_DROIDCAMX 18
 
-int find_droidcam_v4l();
-void query_droidcam_v4l(int droidcam_device_fd, int *WEBCAM_W, int *WEBCAM_H);
+int find_v4l2_device(const char* bus_info);
+void query_v4l_device(int droidcam_device_fd, int *WEBCAM_W, int *WEBCAM_H);
 
 snd_pcm_t *find_snd_device(void);
 int snd_transfer_check(snd_pcm_t *handle, struct snd_transfer_s *transfer);
