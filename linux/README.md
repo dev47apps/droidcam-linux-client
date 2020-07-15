@@ -17,7 +17,7 @@ The official binaries (.deb, .rpm) will automatically install into the correct d
 
 Install the following dependencies
 ```
-gtk+-3.0
+gtk+-3.0        # Only needed for GUI client
 libavutil-dev
 libswscale-dev
 libasound2-dev
@@ -26,6 +26,6 @@ libusbmuxd-dev
 libplist-dev
 ```
 
-Run `make`
+Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
 To install, run `sudo ./install`, or, `sudo ./install-dkms` [if your system supports DKMS](./README-DKMS.md).
