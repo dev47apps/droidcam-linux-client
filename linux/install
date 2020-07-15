@@ -68,8 +68,8 @@ cp uninstall /opt/droidcam-uninstall
 echo "Moving driver and executable to system folders"
 set -x
 cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
-cp droidcam /usr/bin/
-cp droidcam-cli /usr/bin/
+cp droidcam     /usr/bin/ || echo "warning: droidcam     exe not found"
+cp droidcam-cli /usr/bin/ || echo "warning: droidcam-cli exe not found"
 set +x
 
 echo "Registering webcam device"
