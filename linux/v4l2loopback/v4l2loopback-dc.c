@@ -146,6 +146,9 @@ MODULE_LICENSE("GPL");
 #define V4L2LOOPBACK_SIZE_DEFAULT_WIDTH   640
 #define V4L2LOOPBACK_SIZE_DEFAULT_HEIGHT  480
 
+
+#define V4L2LOOPBACK_VIDEO_NR_DEFAULT -1
+
 /* module parameters */
 static int width = V4L2LOOPBACK_SIZE_DEFAULT_WIDTH;
 module_param(width, int, S_IRUGO);
@@ -154,6 +157,11 @@ MODULE_PARM_DESC(width, "frame width");
 static int height = V4L2LOOPBACK_SIZE_DEFAULT_HEIGHT;
 module_param(height, int, S_IRUGO);
 MODULE_PARM_DESC(height, "frame height");
+
+static int video_nr = V4L2LOOPBACK_VIDEO_NR_DEFAULT;
+module_param(video_nr, int, S_IRUGO);
+MODULE_PARM_DESC(video_nr, "video device numbers (-1=auto, 0=/dev/video0, etc.)");
+
 
 /* control IDs */
 #define CID_KEEP_FORMAT        (V4L2_CID_PRIVATE_BASE+0)
@@ -2412,7 +2420,7 @@ init_module         (void)
 
   /* kfree on module release */
   for(i=0; i<DEVICES; i++) {
-    dprintk("creating v4l2loopback-device #%d\n", i);
+    dprintk("creating v4l2loopback-device #%d on device %d\n", i, video_nr);
     devs[i] = kzalloc(sizeof(*devs[i]), GFP_KERNEL);
     if (devs[i] == NULL) {
       free_devices();
@@ -2424,7 +2432,7 @@ init_module         (void)
       return ret;
     }
     /* register the device -> it creates /dev/video* */
-    if (video_register_device(devs[i]->vdev, VFL_TYPE_VIDEO, -1) < 0) {
+    if (video_register_device(devs[i]->vdev, VFL_TYPE_VIDEO, video_nr) < 0) {
       video_device_release(devs[i]->vdev);
       printk(KERN_ERR "v4l2loopback: failed video_register_device()\n");
       free_devices();
