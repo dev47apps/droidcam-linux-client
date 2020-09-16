@@ -37,6 +37,7 @@ struct settings g_settings = {0};
 extern char snd_device[32];
 extern char v4l2_device[32];
 
+
 void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
 void * DecodeThreadProc(void * args);
@@ -159,18 +160,6 @@ EARLY_OUT:
 }
 
 /* Messages */
-static gboolean
-accel_callback( GtkAccelGroup  *group,
-		  GObject		*obj,
-		  guint		   keyval,
-		  GdkModifierType mod,
-		  gpointer		user_data)
-{
-	if(v_running == 1 && thread_cmd ==0){
-		thread_cmd = (uintptr_t) user_data;
-	}
-	return TRUE;
-}
 
 static void the_callback(GtkWidget* widget, gpointer extra)
 {
@@ -230,6 +219,9 @@ _up:
 			thread_cmd =  cb - 10;
 		}
 		break;
+		case CB_CONTROL_H_FLIP:
+			decoder_horizontal_flip();
+		break;
 		case CB_AUDIO:
 			g_settings.audio = (int) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(audioCheckbox));
 			dbgprint("audio=%d\n", g_settings.audio);
@@ -249,6 +241,40 @@ _up:
 	}
 }
 
+// keyboard shortcuts callback
+static gboolean accel_callback(GtkAccelGroup  *group, GObject *obj, guint keyval,
+	GdkModifierType mod, gpointer extra)
+{
+	the_callback(NULL, extra);
+	return TRUE;
+}
+
+/* Main */
+static void add_indicator(GtkWidget *window) {
+	AppIndicator *indicator = app_indicator_new("droidcam", APP_ICON_FILE, APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+	GtkWidget *menu = gtk_menu_new();
+	GtkWidget *name_menu_item = gtk_menu_item_new_with_label("Droidcam");
+	GtkWidget *show_menu_item = gtk_menu_item_new_with_label("Show");
+	GtkWidget *hide_menu_item = gtk_menu_item_new_with_label("Hide");
+	GtkWidget *exit_menu_item = gtk_menu_item_new_with_label("Exit");
+
+	gtk_widget_set_sensitive(name_menu_item, 0);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), name_menu_item);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), show_menu_item);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), hide_menu_item);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), exit_menu_item);
+
+	gtk_widget_show_all(menu);
+	app_indicator_set_status(indicator, APP_INDICATOR_STATUS_ACTIVE);
+	app_indicator_set_menu(indicator, GTK_MENU(menu));
+
+	g_signal_connect(G_OBJECT(hide_menu_item), "activate", G_CALLBACK(hide_window), window);
+	g_signal_connect(G_OBJECT(show_menu_item), "activate", G_CALLBACK(show_window), window);
+	g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_window), window);
+}
+
 int main(int argc, char *argv[])
 {
 	char info[128];
@@ -259,7 +285,6 @@ int main(int argc, char *argv[])
 	GtkWidget *menuGrid;
 	GtkWidget *radios[CB_RADIO_COUNT];
 	GtkWidget *widget; // generic stuff
-
 	GClosure *closure;
 	GtkAccelGroup *gtk_accel;
 
@@ -275,24 +300,29 @@ int main(int argc, char *argv[])
 	gtk_container_set_border_width(GTK_CONTAINER(window), 4);
 	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_resource("/com/dev47apps/droidcam/icon2.png", NULL));
 
+	// keyboard shortcuts
 	gtk_accel = gtk_accel_group_new ();
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_AF-10), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_AF), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("a"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_LED-10), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_LED), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("l"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOUT-10), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOUT), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("minus"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN-10), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("plus"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN-10), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
+
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_H_FLIP), NULL);
+	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("m"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
 	gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel);
 
+	// gui
 	menu = gtk_menu_new();
 
 	widget = gtk_menu_item_new_with_label("DroidCamX Commands:");
@@ -319,6 +349,11 @@ int main(int argc, char *argv[])
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZOUT);
+
+	widget = gtk_menu_item_new_with_label("Mirror Video (Ctrl+M)");
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
+	gtk_widget_show (widget);
+	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_H_FLIP);
 
 	// Create main grid to create left and right column of the UI.
 	// +-----------------------------------+

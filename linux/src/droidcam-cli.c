@@ -148,6 +148,7 @@ void wait_command() {
         switch(buf[0]) {
             case '?':
                 printf("DroidCamX Commands:\n");
+                printf("M: Mirror Video\n");
                 printf("A: Auto-focus\n");
                 printf("L: Toggle Flash\n");
                 printf("+: Zoom In\n");
@@ -167,6 +168,10 @@ void wait_command() {
             case 'l':
             case 'L':
                 thread_cmd = (CB_CONTROL_LED-10);
+                break;
+            case 'm':
+            case 'M':
+                decoder_horizontal_flip();
                 break;
         }
     }
