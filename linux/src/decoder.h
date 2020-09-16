@@ -71,4 +71,6 @@ snd_pcm_t *find_snd_device(void);
 int snd_transfer_check(snd_pcm_t *handle, struct snd_transfer_s *transfer);
 int snd_transfer_commit(snd_pcm_t *handle, struct snd_transfer_s *transfer);
 
+extern int FLIP_STT;
+
 #endif

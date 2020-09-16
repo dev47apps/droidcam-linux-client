@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
+#include <unistd.h>
 
 #include "common.h"
 #include "settings.h"
@@ -36,6 +37,7 @@ struct settings g_settings = {0};
 
 extern char snd_device[32];
 extern char v4l2_device[32];
+
 
 void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
@@ -184,6 +186,18 @@ static void the_callback(GtkWidget* widget, gpointer extra)
 _up:
 	dbgprint("the_cb=%d\n", cb);
 	switch (cb) {
+		case CB_CONTROL_ROT90:
+			if (v_running || a_running) {
+				Stop();
+			}
+			if (FLIP_STT == 90)
+				FLIP_STT = 0;
+			else FLIP_STT = 90;
+			decoder_init();
+			sleep(1);
+			Start();
+			
+			break;
 		case CB_BUTTON:
 			if (v_running || a_running) {
 				Stop();
@@ -259,7 +273,7 @@ int main(int argc, char *argv[])
 	GtkWidget *menuGrid;
 	GtkWidget *radios[CB_RADIO_COUNT];
 	GtkWidget *widget; // generic stuff
-
+	FLIP_STT = 0;
 	GClosure *closure;
 	GtkAccelGroup *gtk_accel;
 
@@ -291,6 +305,11 @@ int main(int argc, char *argv[])
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN-10), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ROT90-10), NULL);
+	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
+
+	
+
 	gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel);
 
 	menu = gtk_menu_new();
@@ -319,6 +338,12 @@ int main(int argc, char *argv[])
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZOUT);
+
+
+	widget = gtk_menu_item_new_with_label("Rotate 90");
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
+	gtk_widget_show (widget);
+	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ROT90);
 
 	// Create main grid to create left and right column of the UI.
 	// +-----------------------------------+

@@ -22,6 +22,9 @@ enum control_code {
     CB_CONTROL_ZOUT,
     CB_CONTROL_AF,
     CB_CONTROL_LED,
+    CB_CONTROL_ROT90,
+    CB_CONTROL_ROT180,
+    CB_CONTROL_ROT270,
 };
 
 struct settings {
