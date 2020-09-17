@@ -196,7 +196,7 @@ _up:
 			decoder_init();
 			sleep(1);
 			Start();
-			
+
 			break;
 		case CB_BUTTON:
 			if (v_running || a_running) {
@@ -273,7 +273,6 @@ int main(int argc, char *argv[])
 	GtkWidget *menuGrid;
 	GtkWidget *radios[CB_RADIO_COUNT];
 	GtkWidget *widget; // generic stuff
-	FLIP_STT = 0;
 	GClosure *closure;
 	GtkAccelGroup *gtk_accel;
 
@@ -308,7 +307,7 @@ int main(int argc, char *argv[])
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ROT90-10), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
-	
+
 
 	gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel);
 
