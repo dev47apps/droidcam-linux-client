@@ -20,8 +20,6 @@
 #include "decoder.h"
 #include "queue.h"
 
-
-int FLIP_STT;
 extern "C" {
 #include "turbojpeg.h"
 #include "libswscale/swscale.h"
@@ -64,7 +62,7 @@ struct spx_decoder_s  spx_decoder;
 #define WEBCAM_Hf ((float)WEBCAM_H)
 static int WEBCAM_W, WEBCAM_H;
 
-static int AUX_H;
+int FLIP_STT = 0;
 static int droidcam_device_fd;
 static snd_output_t *output = NULL;
 
@@ -72,7 +70,34 @@ static void decoder_share_frame();
 
 #define FREE_OBJECT(obj, free_func) if(obj){dbgprint(" " #obj " %p\n", obj); free_func(obj); obj=NULL;}
 
-int decoder_setup(void){
+int decoder_init(void) {
+    WEBCAM_W = 0;
+    WEBCAM_H = 0;
+
+    droidcam_device_fd = find_droidcam_v4l();
+    if (droidcam_device_fd < 0) {
+        MSG_ERROR("Droidcam video device not found (/dev/video[0-9]).\n"
+                "Did it install correctly?\n"
+                "If you had a kernel update, you may need to re-install.");
+
+        WEBCAM_W = 320;
+        WEBCAM_H = 240;
+        droidcam_device_fd = 0;
+    } else {
+        query_droidcam_v4l(droidcam_device_fd, &WEBCAM_W, &WEBCAM_H);
+        dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
+        if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
+            MSG_ERROR("Unable to query droidcam device for parameters");
+            return 0;
+        }
+    }
+
+    if (FLIP_STT == 90){
+        int tmp = WEBCAM_W;
+        WEBCAM_W = WEBCAM_H;
+        WEBCAM_H = tmp;
+    }
+
     memset(&jpg_decoder, 0, sizeof(struct jpg_dec_ctx_s));
     jpg_decoder.tj = NULL;
     jpg_decoder.m_BufferLimit = 0;
@@ -101,39 +126,6 @@ int decoder_setup(void){
     dbgprint("decoder_init done\n");
     return 1;
 }
-
-int decoder_init(void) {
-    WEBCAM_W = 0;
-    WEBCAM_H = 0;
-
-    droidcam_device_fd = find_droidcam_v4l();
-    if (droidcam_device_fd < 0) {
-        MSG_ERROR("Droidcam video device not found (/dev/video[0-9]).\n"
-                "Did it install correctly?\n"
-                "If you had a kernel update, you may need to re-install.");
-
-        WEBCAM_W = 320;
-        WEBCAM_H = 240;
-        droidcam_device_fd = 0;
-    } else {
-        query_droidcam_v4l(droidcam_device_fd, &WEBCAM_W, &WEBCAM_H);
-        dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
-        if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
-            MSG_ERROR("Unable to query droidcam device for parameters");
-            return 0;
-        }
-    }
-
-    if (FLIP_STT == 90){
-        AUX_H = WEBCAM_W;
-        WEBCAM_W = WEBCAM_H;
-        WEBCAM_H = AUX_H;
-    }
-    
-    return decoder_setup();
-}
-
-
 
 void decoder_fini() {
     if (droidcam_device_fd) close(droidcam_device_fd);
@@ -222,8 +214,6 @@ void process_frame(JPGFrame *frame) {
     unsigned long len = (unsigned long)frame->length;
     BYTE *p = frame->data;
 
-
-
     if (jpg_decoder.subsamp == 0) {
         int width, height, subsamp, colorspace;
         if (tjDecompressHeader3(jpg_decoder.tj, p, len, &width, &height, &subsamp, &colorspace) < 0) {
@@ -247,18 +237,12 @@ void process_frame(JPGFrame *frame) {
         jpg_decoder.subsamp = subsamp;
     }
 
-    int sizebgo = jpg_decoder.m_width;
-
-    if (FLIP_STT == 90){
-        sizebgo = jpg_decoder.m_height;
-    }
-
-
+    int stride = (FLIP_STT == 0) ? jpg_decoder.m_width : jpg_decoder.m_height;
     BYTE* dstSlice[4];
     int dstStride[4] = {
-        sizebgo,
-        sizebgo>>1,
-        sizebgo>>1,
+        stride,
+        stride>>1,
+        stride>>1,
     0};
 
     dstSlice[0] = jpg_decoder.m_decodeBuf;
@@ -266,13 +250,13 @@ void process_frame(JPGFrame *frame) {
     dstSlice[2] = dstSlice[1] + jpg_decoder.m_uvSize;
     dstSlice[3] = NULL;
 
-
     if (FLIP_STT == 90){
         tjhandle tjHandle = tjInitTransform();
-        tjtransform *transform = new tjtransform();
-        transform->op = TJXOP_ROT270;
+        tjtransform transform;
+        memset(&transform, 0, sizeof(tjtransform))
+        transform.op = TJXOP_ROT270;
 
-        if (tjTransform(tjHandle, p, len, 1, &p, &len, transform, 0))
+        if (tjTransform(tjHandle, p, len, 1, &p, &len, &transform, 0))
         {
             errprint("tjTransform failure: %s\n", tjGetErrorStr());
             return;
@@ -309,23 +293,25 @@ static void decoder_share_frame() {
         uint8_t* srcSlice[4];
         uint8_t* dstSlice[4];
 
+        int srcLen, dstLen;
 
-        int size_pex = jpg_decoder.m_width;
-        int webcam_pex = WEBCAM_W;
-
-        if (FLIP_STT == 90){
-            size_pex = jpg_decoder.m_height;
-            webcam_pex = WEBCAM_H;
+        if (FLIP_STT == 0){
+            srcLen = jpg_decoder.m_width;
+            dstLen = WEBCAM_W;
+        } else {
+            srcLen = jpg_decoder.m_height;
+            dstLen = WEBCAM_H;
         }
+
         int srcStride[4] = {
-            size_pex,
-            size_pex>>1,
-            size_pex>>1,
+            srcLen,
+            srcLen>>1,
+            srcLen>>1,
         0};
         int dstStride[4] = {
-            webcam_pex,
-            webcam_pex>>1,
-            webcam_pex>>1,
+            dstLen,
+            dstLen>>1,
+            dstLen>>1,
         0};
 
         srcSlice[0] = &jpg_decoder.m_decodeBuf[0];
@@ -350,7 +336,7 @@ void decoder_show_test_image() {
     int m_height = WEBCAM_H * 2;
     int m_width  = WEBCAM_W * 2;
     char header[8];
- 
+
     header[0] = ( m_width >> 8  ) & 0xFF;
     header[1] = ( m_width >> 0  ) & 0xFF;
     header[2] = ( m_height >> 8 ) & 0xFF;
