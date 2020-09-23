@@ -10,7 +10,6 @@
 #include <sys/types.h>
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
-#include <unistd.h>
 
 #include "common.h"
 #include "settings.h"
@@ -186,18 +185,6 @@ static void the_callback(GtkWidget* widget, gpointer extra)
 _up:
 	dbgprint("the_cb=%d\n", cb);
 	switch (cb) {
-		case CB_CONTROL_ROT90:
-			if (v_running || a_running) {
-				Stop();
-			}
-			if (FLIP_STT == 90)
-				FLIP_STT = 0;
-			else FLIP_STT = 90;
-			decoder_init();
-			sleep(1);
-			Start();
-
-			break;
 		case CB_BUTTON:
 			if (v_running || a_running) {
 				Stop();
@@ -244,6 +231,9 @@ _up:
 			thread_cmd =  cb - 10;
 		}
 		break;
+		case CB_CONTROL_H_FLIP:
+			decoder_horizontal_flip();
+		break;
 		case CB_AUDIO:
 			g_settings.audio = (int) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(audioCheckbox));
 			dbgprint("audio=%d\n", g_settings.audio);
@@ -288,6 +278,7 @@ int main(int argc, char *argv[])
 	gtk_container_set_border_width(GTK_CONTAINER(window), 4);
 	gtk_window_set_icon(GTK_WINDOW(window), gdk_pixbuf_new_from_resource("/com/dev47apps/droidcam/icon2.png", NULL));
 
+	// keyboard shortcuts
 	gtk_accel = gtk_accel_group_new ();
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_AF-10), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("a"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
@@ -304,13 +295,9 @@ int main(int argc, char *argv[])
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN-10), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ROT90-10), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
-
-
-
 	gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel);
 
+	// gui
 	menu = gtk_menu_new();
 
 	widget = gtk_menu_item_new_with_label("DroidCamX Commands:");
@@ -338,11 +325,10 @@ int main(int argc, char *argv[])
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZOUT);
 
-
-	widget = gtk_menu_item_new_with_label("Rotate 90");
+	widget = gtk_menu_item_new_with_label("Flip");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
-	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ROT90);
+	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_H_FLIP);
 
 	// Create main grid to create left and right column of the UI.
 	// +-----------------------------------+
