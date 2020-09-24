@@ -46,6 +46,7 @@ void push_jpg_frame(JPGFrame*, bool empty);
 void process_frame(JPGFrame*);
 int decoder_get_video_width();
 int decoder_get_video_height();
+void decoder_horizontal_flip();
 void decoder_show_test_image();
 
 /* 20ms 16hkz 16 bit */
@@ -70,7 +71,5 @@ void query_droidcam_v4l(int droidcam_device_fd, int *WEBCAM_W, int *WEBCAM_H);
 snd_pcm_t *find_snd_device(void);
 int snd_transfer_check(snd_pcm_t *handle, struct snd_transfer_s *transfer);
 int snd_transfer_commit(snd_pcm_t *handle, struct snd_transfer_s *transfer);
-
-extern int FLIP_STT;
 
 #endif

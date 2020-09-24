@@ -6,6 +6,8 @@ enum radios {
     CB_RADIO_ADB,
     CB_RADIO_IOS,
     CB_WIFI_SRVR,
+    CB_H_FLIP,
+    CB_V_FLIP,
     CB_RADIO_COUNT
 };
 
@@ -22,9 +24,6 @@ enum control_code {
     CB_CONTROL_ZOUT,
     CB_CONTROL_AF,
     CB_CONTROL_LED,
-    CB_CONTROL_ROT90,
-    CB_CONTROL_ROT180,
-    CB_CONTROL_ROT270,
 };
 
 struct settings {
