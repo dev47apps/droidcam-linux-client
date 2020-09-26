@@ -26,6 +26,8 @@ libusbmuxd-dev
 libplist-dev
 ```
 
+Set path to the libjpeg’s pkg-config directory, for example using `export PKG_CONFIG_PATH=/opt/libjpeg-turbo/lib64/pkgconfig`.
+
 Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
 To install, run `sudo ./install`, or, `sudo ./install-dkms` [if your system supports DKMS](./README-DKMS.md).

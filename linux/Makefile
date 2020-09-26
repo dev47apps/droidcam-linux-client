@@ -6,39 +6,36 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # Use at your own risk. See README file for more details.
 
-JPEG_DIR ?= /opt/libjpeg-turbo
-JPEG_INCLUDE ?= $(JPEG_DIR)/include
-JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
+ifeq "$(RELEASE)" "1"
+PC_STATIC = --static
+LINK_NEXT_STATICALLY = -Wl,-Bstatic
+LINK_REST_DYNAMICALLY = -Wl,-Bdynamic
+endif
 
 GXX   = g++
 CC    = -std=c++11 -x c++ -Wall -fPIC -no-pie
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
-LIBAV = `pkg-config --libs --cflags libswscale libavutil`
-LIBS  =  -lspeex -lasound -lpthread -lm
-JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
+LIBAV = `pkg-config --libs --cflags libswscale libavutil` # Do not use $(PC_STATIC) here since forces us to link against ton of unnecessary libraries that are not available statically on Ubuntu.
+LIBS  = `pkg-config --libs --cflags speex alsa` -lpthread -lm
+JPEG  = `pkg-config $(PC_STATIC) --libs --cflags 'libturbojpeg >= 2.0.5'`
 SRC      = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c
-USBMUXD = -lusbmuxd
+USBMUXD = `pkg-config $(PC_STATIC) --libs --cflags libusbmuxd`
 
 all: droidcam-cli droidcam
 
 ifeq "$(RELEASE)" "1"
-LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
-SRC  += /usr/lib/x86_64-linux-gnu/libusbmuxd.a /usr/lib/x86_64-linux-gnu/libxml2.a src/libplist-2.0.a
 package: clean all
 	zip -x *.png src/ src/* Makefile -r droidcam_`date +%s`.zip ./*
-
-else
-LIBS += $(USBMUXD)
 endif
 
 gresource: .gresource.xml icon2.png
 	glib-compile-resources .gresource.xml --generate-source --target=src/resources.c
 
 droidcam-cli: src/droidcam-cli.c $(SRC)
-	$(GXX) $(CC) $^ $(JPEG) $(LIBAV) $(LIBS) -o droidcam-cli
+	$(GXX) $(CC) $^ $(LINK_NEXT_STATICALLY) $(JPEG) $(LIBAV) $(USBMUXD) $(LINK_REST_DYNAMICALLY) $(LIBS) -o droidcam-cli
 
 droidcam: src/droidcam.c src/resources.c $(SRC)
-	$(GXX) $(CC) $^ $(GTK) $(JPEG) $(LIBAV) $(LIBS) -o droidcam
+	$(GXX) $(CC) $^ $(LINK_NEXT_STATICALLY) $(JPEG) $(LIBAV) $(USBMUXD) $(LINK_REST_DYNAMICALLY) $(GTK) $(LIBS) -o droidcam
 
 clean:
 	rm droidcam || true
