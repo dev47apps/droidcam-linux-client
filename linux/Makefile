@@ -25,11 +25,15 @@ all: droidcam-cli droidcam
 ifeq "$(RELEASE)" "1"
 LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
 SRC  += /usr/lib/x86_64-linux-gnu/libusbmuxd.a /usr/lib/x86_64-linux-gnu/libxml2.a src/libplist-2.0.a
+CC += -DIS_OFFICIAL_BUILD=1
 package: clean all
 	zip -x icon.png src/ src/* Makefile -r droidcam_`date +%s`.zip ./*
 
 else
 LIBS += $(USBMUXD)
+ifneq "$(DISTRO_SUPPORT_LINK)" ""
+CC += -DIS_OFFICIAL_BUILD=0 '-DDISTRO_SUPPORT_LINK="$(DISTRO_SUPPORT_LINK)"'
+endif
 endif
 
 gresource: .gresource.xml icon2.png

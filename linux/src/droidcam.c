@@ -294,7 +294,7 @@ static void add_indicator(GtkWidget *window) {
 
 int main(int argc, char *argv[])
 {
-	char info[128];
+	char *info;
 	char port[16];
 	GtkWidget *window;
 	GtkWidget *grid;
@@ -488,9 +488,18 @@ int main(int argc, char *argv[])
 	if ( decoder_init() )
 	{
 		// add info about devices
-		snprintf(info, sizeof(info), "Client v" APP_VER_STR ", Video: %s, Audio: %s",
-			v4l2_device, snd_device);
-		gtk_label_set_text(GTK_LABEL(infoText), info);
+#if IS_OFFICIAL_BUILD
+		info = g_markup_printf_escaped ("Client v%s, Video: %s, Audio: %s", APP_VER_STR, v4l2_device, snd_device);
+#else
+	#ifdef DISTRO_SUPPORT_LINK
+		g_autofree char *support_text = g_markup_printf_escaped(", please visit <a href=\"%s\">%s</a> for support", DISTRO_SUPPORT_LINK, DISTRO_SUPPORT_LINK);
+	#else
+		char support_text[] = "";
+	#endif
+		info = g_strdup_printf("Client v%s, unofficial build%s\nVideo: %s, Audio: %s", APP_VER_STR, support_text, v4l2_device, snd_device);
+#endif
+		gtk_label_set_markup(GTK_LABEL(infoText), info);
+		g_free (info);
 
 		// set the font size
 		PangoAttrList *attrlist = pango_attr_list_new();

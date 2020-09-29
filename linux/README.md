@@ -31,3 +31,5 @@ libappindicator3-dev   # Only needed for GUI client
 Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
 To install, run `sudo ./install`, or, `sudo ./install-dkms` [if your system supports DKMS](./README-DKMS.md).
+
+Linux distribution should rum `make DISTRO_SUPPORT_LINK='https://url-of-your-issue-tracker/'`.
