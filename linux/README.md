@@ -16,6 +16,7 @@ The libjpeg-turbo package should go into `/opt/libjpeg-turbo`.
 The official binaries (.deb, .rpm) will automatically install into the correct directory.
 
 Install the following dependencies
+(the package names are for Debian based systems, adjust as needed for other distros)
 ```
 libavutil-dev
 libswscale-dev
@@ -30,4 +31,7 @@ libappindicator3-dev   # Only needed for GUI client
 
 Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
-To install, run `sudo ./install`, or, `sudo ./install-dkms` [if your system supports DKMS](./README-DKMS.md).
+To install, run `sudo ./install`.
+
+Debian/Ubuntu and RHEL (Fedora/SUSE) based distros:
+[If your system supports DKMS](./README-DKMS.md), you can also use `sudo ./install-dkms`.
