@@ -396,11 +396,40 @@ int decoder_get_video_height() {
 
 void decoder_horizontal_flip() {
     if ((jpg_decoder.transform.op & TJXOP_HFLIP) == 0) {
+        jpg_decoder.transform.op &= (~TJXOP_VFLIP);
+        jpg_decoder.transform.op &= (~TJXOP_ROT180);
+
         jpg_decoder.transform.op |= TJXOP_HFLIP;
         dbgprint("hflip enabled");
     } else {
         jpg_decoder.transform.op &= (~TJXOP_HFLIP);
         dbgprint("hflip disabled");
+    }
+}
+
+void decoder_vertical_flip() {
+    if ((jpg_decoder.transform.op & TJXOP_VFLIP) == 0) {
+        jpg_decoder.transform.op &= (~TJXOP_HFLIP);
+        jpg_decoder.transform.op &= (~TJXOP_ROT180);
+
+        jpg_decoder.transform.op |= TJXOP_VFLIP;
+        dbgprint("vflip enabled");
+    } else {
+        jpg_decoder.transform.op &= (~TJXOP_VFLIP);
+        dbgprint("vflip disabled");
+    }
+}
+
+void decoder_rotate_180() {
+    if ((jpg_decoder.transform.op & TJXOP_ROT180) == 0) {
+        jpg_decoder.transform.op &= (~TJXOP_HFLIP);
+        jpg_decoder.transform.op &= (~TJXOP_VFLIP);
+
+        jpg_decoder.transform.op |= TJXOP_ROT180;
+        dbgprint("rotation enabled");
+    } else {
+        jpg_decoder.transform.op &= (~TJXOP_ROT180);
+        dbgprint("rotation disabled");
     }
 }
 

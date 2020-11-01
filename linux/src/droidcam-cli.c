@@ -148,7 +148,9 @@ void wait_command() {
         switch(buf[0]) {
             case '?':
                 printf("DroidCamX Commands:\n");
-                printf("M: Mirror Video\n");
+                printf("H: Mirror Video Horizontally\n");
+                printf("V: Mirror Video Vertically\n");
+                printf("R: Rotate Video by 180°\n");
                 printf("A: Auto-focus\n");
                 printf("L: Toggle Flash\n");
                 printf("+: Zoom In\n");
@@ -169,9 +171,17 @@ void wait_command() {
             case 'L':
                 thread_cmd = (CB_CONTROL_LED-10);
                 break;
-            case 'm':
-            case 'M':
+            case 'h':
+            case 'H':
                 decoder_horizontal_flip();
+                break;
+            case 'v':
+            case 'V':
+                decoder_vertical_flip();
+                break;
+            case 'r':
+            case 'R':
+                decoder_rotate_180();
                 break;
         }
     }
