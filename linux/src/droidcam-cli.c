@@ -231,6 +231,7 @@ int main(int argc, char *argv[]) {
     if (vthread.rc == 0) pthread_join(vthread.t, NULL);
     if (dthread.rc == 0) pthread_join(dthread.t, NULL);
     decoder_fini();
+    FreeUSB();
     dbgprint("exit\n");
     return 0;
 }

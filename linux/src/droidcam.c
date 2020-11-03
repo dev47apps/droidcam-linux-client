@@ -79,6 +79,7 @@ static void Stop(void)
 		g_thread_join(hDecodeThread);
 		hDecodeThread = NULL;
 	}
+	FreeUSB();
 }
 
 static void Start(void)
@@ -491,6 +492,7 @@ int main(int argc, char *argv[])
 		snprintf(info, sizeof(info), "Client v" APP_VER_STR ", Video: %s, Audio: %s",
 			v4l2_device, snd_device);
 		gtk_label_set_text(GTK_LABEL(infoText), info);
+		printf("Audio: %s\n", snd_device);
 
 		// set the font size
 		PangoAttrList *attrlist = pango_attr_list_new();

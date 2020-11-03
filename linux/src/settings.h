@@ -44,5 +44,6 @@ void SaveSettings(struct settings* settings);
 #define ERROR_DEVICE_NOTAUTH  -5
 int CheckAdbDevices(int port);
 int CheckiOSDevices(int port);
+void FreeUSB();
 
 #endif
