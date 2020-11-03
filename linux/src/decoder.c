@@ -72,7 +72,7 @@ struct spx_decoder_s  spx_decoder;
 
 #define WEBCAM_Wf ((float)WEBCAM_W)
 #define WEBCAM_Hf ((float)WEBCAM_H)
-static int WEBCAM_W, WEBCAM_H;
+static unsigned int WEBCAM_W, WEBCAM_H;
 
 static int droidcam_device_fd;
 static snd_output_t *output = NULL;
@@ -81,9 +81,9 @@ static void decoder_share_frame();
 
 #define FREE_OBJECT(obj, free_func) if(obj){dbgprint(" " #obj " %p\n", obj); free_func(obj); obj=NULL;}
 
-int decoder_init(void) {
-    WEBCAM_W = 0;
-    WEBCAM_H = 0;
+int decoder_init(unsigned v4l2_width, unsigned v4l2_height) {
+    WEBCAM_W = v4l2_width;
+    WEBCAM_H = v4l2_height;
 
     droidcam_device_fd = find_v4l2_device("platform:v4l2loopback_dc");
 

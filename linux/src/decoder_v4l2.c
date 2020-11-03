@@ -58,32 +58,37 @@ int find_v4l2_device(const char* bus_info) {
     return -1;
 }
 
-void query_v4l_device(int droidcam_device_fd, int *WEBCAM_W, int *WEBCAM_H) {
+void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBCAM_H) {
     struct v4l2_format vid_format = {0};
     vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     vid_format.fmt.pix.width = 0;
     vid_format.fmt.pix.height = 0;
 
+    int in_width = *WEBCAM_W;
+    int in_height = *WEBCAM_H;
+    *WEBCAM_W = 0;
+    *WEBCAM_H = 0;
+
     int ret = xioctl(droidcam_device_fd, VIDIOC_G_FMT, &vid_format);
     if (ret < 0 && errno == EINVAL) {
-        fprintf(stderr, "No format set, querying default format\n");
+        dbgprint("Got no format, trying to set %dx%d\n", in_width, in_height);
         vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-        vid_format.fmt.pix.width = 0;
-        vid_format.fmt.pix.height = 0;
+        vid_format.fmt.pix.width = in_width;
+        vid_format.fmt.pix.height = in_height;
         vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
         vid_format.fmt.pix.field = V4L2_FIELD_ANY;
 
         ret = xioctl(droidcam_device_fd, VIDIOC_TRY_FMT, &vid_format);
         if (ret >= 0) {
             if (xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format) < 0) {
-                fprintf(stderr, "Fatal: Unable to set v4l2loopback device format. errno=%d\n", errno);
+                errprint("Fatal: Unable to set v4l2loopback device format. errno=%d\n", errno);
                 return;
             }
         }
     }
 
     if (ret < 0) {
-        fprintf(stderr, "Fatal: Unable to query video device. errno=%d\n", errno);
+        errprint("Fatal: Unable to query video device. errno=%d\n", errno);
         return;
     }
 

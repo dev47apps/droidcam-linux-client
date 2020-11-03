@@ -92,6 +92,7 @@ static void Start(void)
 		MSG_ERROR("Invalid Port value");
 		return;
 	}
+	g_settings.port = port;
 
 	if (g_settings.connection == CB_WIFI_SRVR) {
 		v_running = 1;
@@ -136,7 +137,6 @@ static void Start(void)
 		}
 		strncpy(g_settings.ip, ip, sizeof(g_settings.ip));
 	}
-	g_settings.port = port;
 
 	if (g_settings.video) {
 		v_running = 1;
@@ -486,7 +486,7 @@ int main(int argc, char *argv[])
 	if (g_settings.video)
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(videoCheckbox), TRUE);
 
-	if ( decoder_init() )
+	if (decoder_init(g_settings.v4l2_width, g_settings.v4l2_height))
 	{
 		// add info about devices
 		snprintf(info, sizeof(info), "Client v" APP_VER_STR ", Video: %s, Audio: %s",

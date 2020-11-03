@@ -18,11 +18,10 @@ void LoadSettings(struct settings* settings) {
     FILE * fp = GetFile("r");
 
     // set defaults
-    settings->audio = 0;
+    memset(settings, 0, sizeof(struct settings));
     settings->video = 1;
-    settings->connection = CB_RADIO_WIFI;
-    settings->ip[0] = 0;
     settings->port = 4747;
+    settings->connection = CB_RADIO_WIFI;
 
     if (!fp) {
         return;
@@ -63,6 +62,24 @@ void LoadSettings(struct settings* settings) {
             sscanf(buf, "%d", &settings->connection);
         }
     }
+    else if (version == 4) {
+        int arg1, arg2;
+        while (fgets(buf, sizeof(buf), fp)) {
+            if (1 == sscanf(buf, "ip=%16s\n", settings->ip))    continue;
+            if (1 == sscanf(buf, "port=%d\n", &settings->port)) continue;
+
+            if (1 == sscanf(buf, "audio=%d\n", &settings->audio)) continue;
+            if (1 == sscanf(buf, "video=%d\n", &settings->video)) continue;
+
+            if (2 == sscanf(buf, "size=%dx%d\n", &arg1, &arg2)) {
+                settings->v4l2_width = arg1;
+                settings->v4l2_height = arg2;
+                continue;
+            }
+
+            if (1 == sscanf(buf, "type=%d\n",&settings->connection)) continue;
+        }
+    }
 
     fclose(fp);
     dbgprint(
@@ -70,33 +87,37 @@ void LoadSettings(struct settings* settings) {
         "settings: port=%d\n"
         "settings: audio=%d\n"
         "settings: video=%d\n"
+        "settings: size=%dx%d\n"
         "settings: connection=%d\n"
         ,
         settings->ip,
         settings->port,
         settings->audio,
         settings->video,
+        settings->v4l2_width, settings->v4l2_height,
         settings->connection);
 }
 
 void SaveSettings(struct settings* settings) {
-    int version = 3;
+    int version = 4;
     FILE * fp = GetFile("w");
     if (!fp) return;
 
     fprintf(fp,
         "v%d\n"
-        "%s\n"
-        "%d\n"
-        "%d\n"
-        "%d\n"
-        "%d\n"
+        "ip=%s\n"
+        "port=%d\n"
+        "audio=%d\n"
+        "video=%d\n"
+        "size=%dx%d\n"
+        "type=%d\n"
         ,
         version,
         settings->ip,
         settings->port,
         settings->audio,
         settings->video,
+        settings->v4l2_width, settings->v4l2_height,
         settings->connection);
     fclose(fp);
 }

@@ -26,11 +26,12 @@ enum control_code {
 };
 
 struct settings {
-    char ip[16];
+    char ip[32];
     int port;
     int audio;
     int video;
     int connection; // Connection type
+    unsigned v4l2_width, v4l2_height;
 };
 }
 void LoadSettings(struct settings* settings);
