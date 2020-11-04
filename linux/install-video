@@ -1,13 +1,10 @@
 #!/bin/bash
-#
-# Usage: ./install [640 480]
-# Dev47Apps.com
-#
 set -e
 
 REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
 source "${REPO_PATH}/install.common"
 
+check_if_installed
 check_module_options "$1" "$2"
 check_if_loaded
 
@@ -34,7 +31,6 @@ if mokutil --sb-state | grep -qF enabled; then
 		read -rp "Enter the path of the private key: " PRIV
 	fi
 
-
 	SIGNER_BIN="/usr/src/linux-headers-`uname -r`/scripts/sign-file"
 	[ -e "$SIGNER_BIN" ] || SIGNER_BIN="/usr/src/kernels/`uname -r`/scripts/sign-file"
 	[ -e "$SIGNER_BIN" ] || SIGNER_BIN="kmodsign"
@@ -46,33 +42,11 @@ if mokutil --sb-state | grep -qF enabled; then
 fi
 set -e
 
-if [ -z "$SUDO_USER" ]; then
-	USER_HOME=~
-else
-	USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
-fi
+mkdir -p $DRIVER_LOCATION || true
 
-[ -d /opt ]               || mkdir -p /opt
-[ -d $DRIVER_LOCATION ]   || mkdir -p $DRIVER_LOCATION
-[ -d "$USER_HOME/.config" ] || mkdir -p "$USER_HOME/.config"
-
-# remove old settings
-if [ -f "$USER_HOME/.droidcam/settings" ]; then
-	mv "$USER_HOME/.droidcam/settings" "$USER_HOME/.config/droidcam"
-	rm -rf "$USER_HOME/.droidcam"
-fi
-
-echo "Adding uninstall script"
-cp uninstall /opt/droidcam-uninstall
-
-echo "Adding icon"
-cp icon2.png /opt/droidcam-icon.png
-
-echo "Moving driver and executable to system folders"
+echo "Copying file"
 set -x
 cp "$V4L2_LOOPBACK_DIR/$V4L2_LOOPBACK_KO" $DRIVER_LOCATION
-cp droidcam     /usr/bin/ || echo "warning: droidcam     exe not found"
-cp droidcam-cli /usr/bin/ || echo "warning: droidcam-cli exe not found"
 set +x
 
 echo "Registering webcam device"
@@ -83,7 +57,6 @@ echo "Running depmod"
 depmod -a
 make -C $V4L2_LOOPBACK_DIR clean
 
-create_v4l2loopback_dc_conf
-register_module_at_boot_time
+register_video_module_at_boot_time
 
 echo "Done"

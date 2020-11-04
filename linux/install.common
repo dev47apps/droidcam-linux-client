@@ -13,63 +13,82 @@ WIDTH="640"
 HEIGHT="480"
 
 check_if_loaded() {
-    if lsmod | grep -q $V4L2_LOOPBACK_DC; then
-        echo "Looks like the DroidCam driver ($V4L2_LOOPBACK_DC) is currently loaded."
-        echo "Close any programs that might be using it, and press enter to try to unload."
-        echo "Press Ctrl+C to cancel."
-        read -rp "Continue?" X
-        rmmod $V4L2_LOOPBACK_DC || exit 1
-    fi
+	if lsmod | grep -q $V4L2_LOOPBACK_DC; then
+		echo "Looks like the DroidCam driver ($V4L2_LOOPBACK_DC) is currently loaded."
+		echo "Close any programs that might be using it, and press enter to try to unload."
+		echo "Press Ctrl+C to cancel."
+		[ -t 0 ] && read -rp "Continue?" X
+		rmmod $V4L2_LOOPBACK_DC || exit 1
+	fi
+}
+
+check_if_installed() {
+	if [ ! -s "/opt/droidcam-uninstall" ]
+	then
+		echo "Error: droidcam not installed. Run 'sudo ./install-client' first."
+		exit 1
+	fi
 }
 
 check_module_options() {
-    if [[ "$1" != "" && "$2" != "" ]]
-    then
-    	WIDTH=$1
-    	HEIGHT=$2
-    fi
+	if [[ "$1" != "" && "$2" != "" ]]
+	then
+		WIDTH=$1
+		HEIGHT=$2
+	fi
 
-    if [[ ! $(echo "$WIDTH" | grep -E "^[0-9]+$") || ! $(echo "$HEIGHT" | grep -E "^[0-9]+$") ]]
-    then
-    	echo "Invalid parameters: '$WIDTH' and '$HEIGHT'"
-    	exit 1
-    fi
+	if [[ ! $(echo "$WIDTH" | grep -E "^[0-9]+$") || ! $(echo "$HEIGHT" | grep -E "^[0-9]+$") ]]
+	then
+		echo "Invalid parameters: '$WIDTH' and '$HEIGHT'"
+		exit 1
+	fi
 
-    if [[ $WIDTH -lt 240 || $HEIGHT -lt 160 ]]
-    then
-    	echo "Parameters too low: '$WIDTH' and '$HEIGHT'"
-    	exit 1
-    fi
+	if [[ $WIDTH -lt 240 || $HEIGHT -lt 160 ]]
+	then
+		echo "Parameters too low: '$WIDTH' and '$HEIGHT'"
+		exit 1
+	fi
 
-    echo "Webcam parameters: '$WIDTH' and '$HEIGHT'"
+	echo "Webcam parameters: '$WIDTH' and '$HEIGHT'"
 }
 
-create_v4l2loopback_dc_conf() {
-    [[ -d "/etc/modprobe.d/" ]] && echo "options $V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT" > /etc/modprobe.d/droidcam.conf
+add_line() {
+	conf="$1"
+	line="$2"
+	prevperm=
+
+	if [ -f "$conf" ]; then
+		cp "$conf" \
+			"/tmp/$(echo $conf|tr '/' '.')-$(cat /proc/sys/kernel/random/uuid)"
+		prevperm=$(stat -c %a "$conf")
+		chmod 666 "$conf"
+	else
+		touch "$conf"
+	fi
+
+	if ! grep -qE "^$line\$" "$conf"
+	then
+		echo "Adding $line to $conf"
+		echo "$line" >> "$conf"
+	fi
+
+	if [ "$prevperm" != "" ]; then
+		chmod $prevperm "$conf"
+	fi
 }
 
-etc_modules() {
-	echo "Adding driver to /etc/modules"
-	cp /etc/modules /tmp/etc_modules_bak
-	prevperm=`stat -c %a /etc/modules`
-	chmod 666 /etc/modules
-	[[ ! $(egrep "^videodev$" /etc/modules) ]] && echo "videodev" >> /etc/modules
-	[[ ! $(egrep "^$V4L2_LOOPBACK_DC" /etc/modules) ]] && echo "$V4L2_LOOPBACK_DC" >> /etc/modules
-	chmod $prevperm /etc/modules
-}
+register_video_module_at_boot_time() {
+	if [ -d "/etc/modprobe.d/" ]; then
+		add_line "/etc/modprobe.d/droidcam.conf" "options $V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT"
+	fi
 
-etc_modules_load_d() {
-	printf "videodev\n$V4L2_LOOPBACK_DC\n" \
-		 > /etc/modules-load.d/droidcam.conf
-
-}
-
-register_module_at_boot_time() {
-    if [ -d "/etc/modules-load.d" ]; then
-        etc_modules_load_d
-    elif [ -e "/etc/modules" ]; then
-        etc_modules
-    else
-        echo "Warning: Unknown distro. Webcam module may not load after a reboot :("
-    fi
+	if [ -d "/etc/modules-load.d" ]; then
+		add_line "/etc/modules-load.d/droidcam.conf" "videodev"
+		add_line "/etc/modules-load.d/droidcam.conf" "$V4L2_LOOPBACK_DC"
+	elif [ -e "/etc/modules" ]; then
+		add_line "/etc/modules" "videodev"
+		add_line "/etc/modules" "$V4L2_LOOPBACK_DC"
+	else
+		echo "Warning: Unknown distro. Webcam module may not load after a reboot."
+	fi
 }

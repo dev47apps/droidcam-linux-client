@@ -31,7 +31,21 @@ libappindicator3-dev   # Only needed for GUI client
 
 Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
-To install, run `sudo ./install`.
+To install, run `sudo ./install-client`.
+
+## V4L2 Loopback (webcam driver)
+
+DroidCam comes with its own version of v4l2loopback, v4l2loopback-dc, which makes the app
+[a little more user-friendly](https://github.com/aramg/droidcam/issues/56#issuecomment-626795824).
+
+As of version 1.6 the droidcam client works with the standard v4l2loopback module,
+and installing v4l2loopback-dc is optional.
+
+To install v4l2loopback-dc, run `sudo ./install-video`.
 
 Debian/Ubuntu and RHEL (Fedora/SUSE) based distros:
-[If your system supports DKMS](./README-DKMS.md), you can also use `sudo ./install-dkms`.
+[If your system supports DKMS](./README-DKMS.md), you can instead use `sudo ./install-dkms`.
+
+## Sound
+
+Run `sudo ./install-sound` to load the Linux ALSA Loopback sound card which the Droidcam client will use for audio input.

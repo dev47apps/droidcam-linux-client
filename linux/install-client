@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+if [ -z "$SUDO_USER" ]; then
+	USER_HOME=~
+else
+	USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+fi
+
+[ -d /opt ] || mkdir -p /opt
+[ -d "$USER_HOME/.config" ] || mkdir -p "$USER_HOME/.config"
+
+# remove old settings
+if [ -f "$USER_HOME/.droidcam/settings" ]; then
+	mv "$USER_HOME/.droidcam/settings" "$USER_HOME/.config/droidcam"
+	rm -rf "$USER_HOME/.droidcam"
+fi
+
+echo "Copying files"
+set -x
+cp uninstall    /opt/droidcam-uninstall
+cp icon2.png    /opt/droidcam-icon.png
+cp droidcam     /usr/bin/
+cp droidcam-cli /usr/bin/
+
+set +x
+echo "Done"

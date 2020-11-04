@@ -5,6 +5,7 @@
 set -e
 REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
 source "${REPO_PATH}/install.common"
+check_if_installed
 
 generate_dkms_conf() {
     local target="$*"
@@ -17,24 +18,6 @@ BUILT_MODULE_NAME[0]="${V4L2_LOOPBACK_KM}"
 DEST_MODULE_LOCATION[0]="/updates"
 AUTOINSTALL="yes"
 EOF
-}
-
-install_droidcam_binaries() {
-    # Installing droidcam binaries. Requires make to have succeeded.
-    # But testing if the binaries are present, to avoid failing because we want to be able
-    # to build and deploy the module in any case.
-    if [ -f "${REPO_PATH}/droidcam" ]; then
-        echo "Installing droidcam in /usr/bin"
-        cp "${REPO_PATH}/droidcam" /usr/bin/
-    else
-        echo "droidcam was not previously built. Installation skip."
-    fi
-    if [ -f "${REPO_PATH}/droidcam-cli" ]; then
-        echo "Installing droidcam-cli in /usr/bin"
-        cp "${REPO_PATH}/droidcam-cli" /usr/bin/
-    else
-        echo "droidcam-cli was not previously built. Installation skip."
-    fi
 }
 
 setup_dkms_module() {
@@ -50,8 +33,11 @@ setup_dkms_module() {
     dkms install -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
     if [ -f /etc/redhat-release ]; then
         dkms mkrpm -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
-    else
+    elif [ -f /etc/debian_version ]; then
         dkms mkdeb -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
+    else
+        echo "unsupported distro"
+        exit 1
     fi
 }
 
@@ -59,17 +45,14 @@ copy_uninstall_script() {
     echo "Adding uninstall script in '/opt/droidcam-uninstall'"
     mkdir -p /opt || true
     cp "${REPO_PATH}/uninstall-dkms" /opt/droidcam-uninstall
-    cp "${REPO_PATH}/icon2.png"     /opt/droidcam-icon.png
 }
 
 # Here we go
 check_module_options "$1" "$2"
 
 copy_uninstall_script
-install_droidcam_binaries
 setup_dkms_module
-create_v4l2loopback_dc_conf
-register_module_at_boot_time
+register_video_module_at_boot_time
 
 # Finally let's load the module
 modprobe ${V4L2_LOOPBACK_DC}
