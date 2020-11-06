@@ -7,6 +7,11 @@
 #include "settings.h"
 
 int CheckAdbDevices(int port) {
+	const char *serial = "";
+	return CheckAdbDevices(port, serial);
+}
+
+int CheckAdbDevices(int port, const char *serial) {
 	char buf[256];
 	FILE* pipe;
 	int rc = system("adb start-server");
@@ -48,7 +53,7 @@ EXIT:
 	dbgprint("CheckAdbDevices rc=%d\n", rc);
 
 	if (rc == NO_ERROR) {
-		sprintf(buf, "adb forward tcp:%d tcp:%d", port, port);
+		sprintf(buf, "adb %s forward tcp:%d tcp:%d", serial, port, port);
 		rc = system(buf);
 		if (WEXITSTATUS(rc) != 0){
 			rc = ERROR_ADDING_FORWARD;

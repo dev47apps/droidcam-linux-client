@@ -28,6 +28,7 @@ enum control_code {
 struct settings {
     char ip[32];
     int port;
+    char serial_number[32];
     int audio;
     int video;
     int connection; // Connection type
@@ -44,6 +45,7 @@ void SaveSettings(struct settings* settings);
 #define ERROR_DEVICE_OFFLINE  -4
 #define ERROR_DEVICE_NOTAUTH  -5
 int CheckAdbDevices(int port);
+int CheckAdbDevices(int port, const char *serial);
 int CheckiOSDevices(int port);
 void FreeUSB();
 
