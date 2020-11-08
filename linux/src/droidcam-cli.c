@@ -63,6 +63,10 @@ static inline void usage(int argc, char *argv[]) {
     " %s [options] adb <port>\n"
     "   Connect via adb to Android device\n"
     "\n"
+    " env ANDROID_SERIAL=<serial> %s [options] adb <port>\n"
+    "   Connect via adb to Android device with serial number <serial>\n"
+    "   (use `adb devices` to find serial number)\n"
+    "\n"
     " %s [options] ios <port>\n"
     "   Connect via usbmuxd to iDevice\n"
     "\n"
@@ -76,6 +80,7 @@ static inline void usage(int argc, char *argv[]) {
     "\n"
     "Enter '?' for list of commands while streaming.\n"
     ,
+    argv[0],
     argv[0],
     argv[0],
     argv[0],
