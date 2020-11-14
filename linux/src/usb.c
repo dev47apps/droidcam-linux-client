@@ -75,10 +75,15 @@ EXIT:
 	return rc;
 }
 
+// free-ing this list causes a connection reset on some systems
+usbmuxd_device_info_t *deviceList = NULL;
+int deviceCount = 0;
+
 int CheckiOSDevices(int port) {
-	usbmuxd_device_info_t *deviceList;
-	int deviceCount = usbmuxd_get_device_list(&deviceList);
-	dbgprint("CheckiOSDevices: found %d devices\n", deviceCount);
+	if (!deviceList) {
+		deviceCount = usbmuxd_get_device_list(&deviceList);
+		dbgprint("CheckiOSDevices: found %d devices\n", deviceCount);
+	}
 	if (deviceCount < 0) {
 		MSG_ERROR("Error loading devices.\n"
 			"Make sure usbmuxd service is installed and running.");
@@ -98,6 +103,11 @@ int CheckiOSDevices(int port) {
 			"Make sure DroidCam app is open,\nor try re-attaching device.");
 	}
 
-	usbmuxd_device_list_free(&deviceList);
 	return rc;
+}
+
+void FreeUSB() {
+	if (deviceList) usbmuxd_device_list_free(&deviceList);
+	deviceList = NULL;
+	deviceCount = 0;
 }

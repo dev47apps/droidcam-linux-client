@@ -1,11 +1,14 @@
 #!/bin/bash
 #
 
-echo "Un-loading driver module"
-sudo rmmod v4l2loopback_dc
+if (lsmod | grep v4l2loopback_dc); then
+    echo "Removing video device"
+    rmmod v4l2loopback_dc
+    rm -f /lib/modules/`uname -r`/kernel/drivers/media/video/v4l2loopback-dc.ko
+fi
+
 echo "Removing files"
 sudo rm -f /usr/bin/droidcam*
-sudo rm -f /lib/modules/`uname -r`/kernel/drivers/media/video/v4l2loopback-dc.ko
 
 etc_modules() {
 	# Remove droidcam reference in /etc/modules

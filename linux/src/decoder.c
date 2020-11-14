@@ -72,7 +72,7 @@ struct spx_decoder_s  spx_decoder;
 
 #define WEBCAM_Wf ((float)WEBCAM_W)
 #define WEBCAM_Hf ((float)WEBCAM_H)
-static int WEBCAM_W, WEBCAM_H;
+static unsigned int WEBCAM_W, WEBCAM_H;
 
 static int droidcam_device_fd;
 static snd_output_t *output = NULL;
@@ -81,13 +81,19 @@ static void decoder_share_frame();
 
 #define FREE_OBJECT(obj, free_func) if(obj){dbgprint(" " #obj " %p\n", obj); free_func(obj); obj=NULL;}
 
-int decoder_init(void) {
-    WEBCAM_W = 0;
-    WEBCAM_H = 0;
+int decoder_init(unsigned v4l2_width, unsigned v4l2_height) {
+    WEBCAM_W = v4l2_width;
+    WEBCAM_H = v4l2_height;
 
-    droidcam_device_fd = find_droidcam_v4l();
+    droidcam_device_fd = find_v4l2_device("platform:v4l2loopback_dc");
+
     if (droidcam_device_fd < 0) {
-        MSG_ERROR("Droidcam video device not found (/dev/video[0-9]).\n"
+        // check for generic v4l2loopback device
+        droidcam_device_fd = find_v4l2_device("platform:v4l2loopback");
+    }
+
+    if (droidcam_device_fd < 0) {
+        MSG_ERROR("Droidcam/v4l2loopback device not found (/dev/video[0-9]).\n"
                 "Did it install correctly?\n"
                 "If you had a kernel update, you may need to re-install.");
 
@@ -95,10 +101,10 @@ int decoder_init(void) {
         WEBCAM_H = 240;
         droidcam_device_fd = 0;
     } else {
-        query_droidcam_v4l(droidcam_device_fd, &WEBCAM_W, &WEBCAM_H);
+        query_v4l_device(droidcam_device_fd, &WEBCAM_W, &WEBCAM_H);
         dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
         if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
-            MSG_ERROR("Unable to query droidcam device for parameters");
+            MSG_ERROR("Unable to query v4l2 device for correct parameters");
             return 0;
         }
     }

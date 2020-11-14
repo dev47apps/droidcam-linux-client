@@ -29,6 +29,7 @@ struct Thread {
 
 Thread athread, vthread, dthread;
 
+unsigned v4l2_width = 0, v4l2_height = 0;
 int v_running = 0;
 int a_running = 0;
 int thread_cmd = 0;
@@ -56,17 +57,30 @@ static inline void usage(int argc, char *argv[]) {
     " %s -l <port>\n"
     "   Listen on 'port' for connections (video only)\n"
     "\n"
-    " %s [-a] [-v] <ip> <port>\n"
-    "   Connect to ip:port with audio and/or video\n"
+    " %s [options] <ip> <port>\n"
+    "   Connect via ip\n"
     "\n"
-    " %s [-a] [-v] adb <port>\n"
-    "   Connect via adb with audio and/or video\n"
+    " %s [options] adb <port>\n"
+    "   Connect via adb to Android device\n"
     "\n"
-    " %s [-a] [-v] ios <port>\n"
-    "   Connect via usbmuxd with audio and/or video\n"
+    " env ANDROID_SERIAL=<serial> %s [options] adb <port>\n"
+    "   Connect via adb to Android device with serial number <serial>\n"
+    "   (use `adb devices` to find serial number)\n"
     "\n"
-    "Input '?' for list of commands while streaming.\n"
+    " %s [options] ios <port>\n"
+    "   Connect via usbmuxd to iDevice\n"
+    "\n"
+    "Options:\n"
+    " -a          Enable Audio\n"
+    " -v          Enable Video\n"
+    "             (only -v by default)\n"
+    "\n"
+    " -size=WxH   Specify video size (when using the regular v4l2loopback module)\n"
+    "             Ex: 640x480, 1280x720, 1920x1080\n"
+    "\n"
+    "Enter '?' for list of commands while streaming.\n"
     ,
+    argv[0],
     argv[0],
     argv[0],
     argv[0],
@@ -90,6 +104,11 @@ static void parse_args(int argc, char *argv[]) {
             }
             if (argv[i][0] == '-' && argv[i][1] == 'v') {
                 v_running = 1;
+                continue;
+            }
+            if (argv[i][0] == '-' && argv[i][1] == 's' && argv[i][3] == 'z') {
+                if (sscanf(argv[i], "-size=%dx%d", &v4l2_width, &v4l2_height) != 2)
+                    goto ERROR;
                 continue;
             }
             break;
@@ -190,7 +209,7 @@ void wait_command() {
 int main(int argc, char *argv[]) {
     parse_args(argc, argv);
 
-    if (!decoder_init()) {
+    if (!decoder_init(v4l2_width, v4l2_height)) {
         return 2;
     }
 
@@ -241,6 +260,7 @@ int main(int argc, char *argv[]) {
     if (vthread.rc == 0) pthread_join(vthread.t, NULL);
     if (dthread.rc == 0) pthread_join(dthread.t, NULL);
     decoder_fini();
+    FreeUSB();
     dbgprint("exit\n");
     return 0;
 }

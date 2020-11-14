@@ -1,19 +1,9 @@
 #!/bin/bash
 #
-etc_modules() {
-	echo "Adding driver to /etc/modules"
-	cp /etc/modules /tmp/etc_modules_bak
-	prevperm=`stat -c %a /etc/modules`
-	chmod 666 /etc/modules
-	[[ ! $(egrep "^snd-aloop$" /etc/modules) ]] && echo "snd-aloop" >> /etc/modules
-	chmod $prevperm /etc/modules
-}
+REPO_PATH="$(/usr/bin/dirname $([ -L $0 ] && /bin/readlink -f $0 || echo $0))"
+source "${REPO_PATH}/install.common"
 
-if [ ! -s "/etc/modprobe.d/droidcam.conf" ]
-then
-	echo "Error: droidcam not installed"
-	exit 1
-fi
+check_if_installed
 
 echo "Loading Loopback device"
 modprobe snd-aloop || exit 1
@@ -24,17 +14,18 @@ then
 	echo "Error: Could not determine Loopback card number"
 	exit 1
 fi
-grep -v "snd-aloop" < /etc/modprobe.d/droidcam.conf > /tmp/modprobe.d_droidcam.conf
-echo "options snd-aloop index=$LOOPBACK_CARD_ID" >> /tmp/modprobe.d_droidcam.conf
-mv /tmp/modprobe.d_droidcam.conf /etc/modprobe.d/droidcam.conf
 
-if [ -f "/etc/modules-load.d/droidcam.conf" ]
-then
-	echo "snd-aloop" >> /etc/modules-load.d/droidcam.conf
-elif [ -e "/etc/modules" ]; then
-    etc_modules
-else
-    echo "Warning: Unknown distro. Sound card may not load after a reboot."
+if [ -d "/etc/modprobe.d/" ]; then
+	add_line "/etc/modprobe.d/droidcam.conf" "options snd-aloop index=$LOOPBACK_CARD_ID"
 fi
+
+if [ -d "/etc/modules-load.d" ]; then
+	add_line "/etc/modules-load.d/droidcam.conf" "snd-aloop"
+elif [ -e "/etc/modules" ]; then
+	add_line "/etc/modules" "snd-aloop"
+else
+	echo "Warning: Unknown distro. Sound card may not load after a reboot."
+fi
+
 echo "Done"
 echo "Use 'pacmd load-module module-alsa-source device=hw:Loopback,1,0' to load the card into PulseAudio while droidcam is running"
