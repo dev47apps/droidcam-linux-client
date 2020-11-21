@@ -24,7 +24,7 @@ all: droidcam-cli droidcam
 
 ifeq "$(RELEASE)" "1"
 LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
-SRC  += /usr/lib/x86_64-linux-gnu/libusbmuxd.a /usr/lib/x86_64-linux-gnu/libxml2.a src/libplist-2.0.a
+SRC  += src/libusbmuxd.a src/libxml2.a src/libplist-2.0.a
 package: clean all
 	zip -x icon.png src/ src/* Makefile -r droidcam_`date +%s`.zip ./*
 
