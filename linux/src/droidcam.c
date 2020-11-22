@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_H_FLIP), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("h"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("m"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_V_FLIP), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("v"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZOUT);
 
-	widget = gtk_menu_item_new_with_label("Mirror Video Horizontally (Ctrl+H)");
+	widget = gtk_menu_item_new_with_label("Mirror Video Horizontally (Ctrl+M)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_H_FLIP);
