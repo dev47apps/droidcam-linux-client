@@ -3,9 +3,11 @@ Linux Client
 
 ## Download and Install
 
-You can download and install the latest release from the official website at https://www.dev47apps.com/droidcam/linuxx/, along with instructions on how to update the webcam resolution and other info.
+You can download and install the latest release from the official website at https://www.dev47apps.com/droidcam/linux/, along with instructions on how to update the webcam resolution and other info.
 
-All releases are also available here on GitHub at https://github.com/aramg/droidcam/releases
+x64 releases are also available here on GitHub at https://github.com/aramg/droidcam/releases
+
+Raspberry-PI instructions can be found here: https://github.com/dev47apps/droidcam/wiki/Raspberry-PI
 
 ## Building
 
@@ -49,3 +51,4 @@ Debian/Ubuntu and RHEL (Fedora/SUSE) based distros:
 ## Sound
 
 Run `sudo ./install-sound` to load the Linux ALSA Loopback sound card which the Droidcam client will use for audio input.
+
