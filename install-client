@@ -22,6 +22,8 @@ cp uninstall    /opt/droidcam-uninstall
 cp icon2.png    /opt/droidcam-icon.png
 cp droidcam     /usr/bin/
 cp droidcam-cli /usr/bin/
-
 set +x
+if [ -d "/usr/share/applications" ]; then
+	cp droidcam.desktop /usr/share/applications/
+fi
 echo "Done"

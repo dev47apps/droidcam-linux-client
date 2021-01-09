@@ -9,6 +9,7 @@ fi
 
 echo "Removing files"
 sudo rm -f /usr/bin/droidcam*
+sudo rm -f /usr/share/applications/droidcam.desktop
 
 etc_modules() {
 	# Remove droidcam reference in /etc/modules

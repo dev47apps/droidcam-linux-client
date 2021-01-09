@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=DroidCam
+Comment=Use your phone as a webcam
+TryExec=/usr/bin/droidcam
+Exec=/usr/bin/droidcam
+Icon=/opt/droidcam-icon.png
+Terminal=false
+Type=Application
+Categories=Video;AudioVideo;
