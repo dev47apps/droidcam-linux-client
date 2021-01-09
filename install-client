@@ -18,10 +18,10 @@ fi
 
 echo "Copying files"
 set -x
-cp uninstall    /opt/droidcam-uninstall
-cp icon2.png    /opt/droidcam-icon.png
-cp droidcam     /usr/bin/
-cp droidcam-cli /usr/bin/
-
+cp uninstall        /opt/droidcam-uninstall
+cp icon2.png        /opt/droidcam-icon.png
+cp droidcam         /usr/bin/
+cp droidcam-cli     /usr/bin/
+cp droidcam.desktop /usr/share/applications/
 set +x
 echo "Done"
