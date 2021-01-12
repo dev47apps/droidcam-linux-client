@@ -33,6 +33,8 @@ struct settings {
     int video;
     int connection; // Connection type
     unsigned v4l2_width, v4l2_height;
+
+    int confirm_close;
 };
 }
 void LoadSettings(struct settings* settings);

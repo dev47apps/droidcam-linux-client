@@ -49,7 +49,9 @@ char msg[256];
 
 gboolean ShowError_GTK(gpointer data)
 {
-	GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "%s", msg);
+	GtkWidget *dialog = gtk_message_dialog_new(NULL,
+		(GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL),
+		GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "%s", msg);
 	gtk_window_set_title(GTK_WINDOW(dialog), title);
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
@@ -269,6 +271,24 @@ static gboolean accel_callback(GtkAccelGroup  *group, GObject *obj, guint keyval
 {
 	the_callback(NULL, extra);
 	return TRUE;
+}
+
+static gboolean delete_window_callback(GtkWidget *widget, GdkEvent *event, gpointer extra)
+{
+	if ((v_running || a_running) && g_settings.confirm_close) {
+		GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(extra),
+			(GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL),
+			GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+			"Connection will be lost.");
+
+		gtk_window_set_title(GTK_WINDOW(dialog), "Are you sure?");
+		int rc = gtk_dialog_run(GTK_DIALOG(dialog));
+		gtk_widget_destroy(dialog);
+		if (rc == GTK_RESPONSE_NO)
+			return TRUE; // dont quit
+	}
+
+	return FALSE;
 }
 
 /* Main */
@@ -519,6 +539,7 @@ int main(int argc, char *argv[])
 	gtk_grid_attach(GTK_GRID(grid), widget, 2, 2, 1, 1);
 
 	g_signal_connect(window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
+	g_signal_connect(window, "delete-event", G_CALLBACK(delete_window_callback), window);
 	gtk_widget_show_all(window);
 
 	LoadSettings(&g_settings);

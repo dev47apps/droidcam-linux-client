@@ -22,6 +22,7 @@ void LoadSettings(struct settings* settings) {
     settings->video = 1;
     settings->port = 4747;
     settings->connection = CB_RADIO_WIFI;
+    settings->confirm_close = 1;
 
     if (!fp) {
         return;
@@ -78,6 +79,7 @@ void LoadSettings(struct settings* settings) {
             }
 
             if (1 == sscanf(buf, "type=%d\n",&settings->connection)) continue;
+            if (1 == sscanf(buf, "confirm_close=%d\n",&settings->confirm_close)) continue;
         }
     }
 
@@ -88,6 +90,7 @@ void LoadSettings(struct settings* settings) {
         "settings: audio=%d\n"
         "settings: video=%d\n"
         "settings: size=%dx%d\n"
+        "settings: confirm_close=%d\n"
         "settings: connection=%d\n"
         ,
         settings->ip,
@@ -95,6 +98,7 @@ void LoadSettings(struct settings* settings) {
         settings->audio,
         settings->video,
         settings->v4l2_width, settings->v4l2_height,
+        settings->confirm_close,
         settings->connection);
 }
 
@@ -110,6 +114,7 @@ void SaveSettings(struct settings* settings) {
         "audio=%d\n"
         "video=%d\n"
         "size=%dx%d\n"
+        "confirm_close=%d\n"
         "type=%d\n"
         ,
         version,
@@ -118,6 +123,7 @@ void SaveSettings(struct settings* settings) {
         settings->audio,
         settings->video,
         settings->v4l2_width, settings->v4l2_height,
+        settings->confirm_close,
         settings->connection);
     fclose(fp);
 }
