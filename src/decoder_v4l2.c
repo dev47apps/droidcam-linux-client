@@ -17,45 +17,61 @@ static int xioctl(int fd, int request, void *arg){
     return r;
 }
 
-int find_v4l2_device(const char* bus_info) {
-	int droidcam_device_fd;
-    int crt_video_dev = 0;
-    int bus_info_len = strlen(bus_info);
+int open_v4l2_device(void) {
+    int fd;
     struct stat st;
+
+    if (stat(v4l2_device, &st) < 0)
+        return 0;
+
+    if (!S_ISCHR(st.st_mode))
+        return 0;
+
+    fd = open(v4l2_device, O_RDWR | O_NONBLOCK, 0);
+    if (fd <= 0) {
+        errprint("Error opening '%s': %d '%s'\n", v4l2_device, errno, strerror(errno));
+        return 0;
+    }
+
+    printf("Opened %s, fd:%d\n", v4l2_device, fd);
+    return fd;
+}
+
+int find_v4l2_device(const char* bus_info) {
+    int bus_info_len = strlen(bus_info);
+    int video_dev_fd;
+    int video_dev_nr = 0;
     struct v4l2_capability v4l2cap;
 
     dbgprint("Looking for v4l2 card: %s\n", bus_info);
-    for(crt_video_dev = 0; crt_video_dev < 99; crt_video_dev++) {
-        snprintf(v4l2_device, sizeof(v4l2_device), "/dev/video%d", crt_video_dev);
-        if (-1 == stat(v4l2_device, &st))
+    for (video_dev_nr = 0; video_dev_nr < 99; video_dev_nr++) {
+        snprintf(v4l2_device, sizeof(v4l2_device), "/dev/video%d", video_dev_nr);
+
+        video_dev_fd = open_v4l2_device();
+        if (video_dev_fd <= 0)
             continue;
 
-        if (!S_ISCHR(st.st_mode))
-            continue;
-
-        droidcam_device_fd = open(v4l2_device, O_RDWR | O_NONBLOCK, 0);
-        if (-1 == droidcam_device_fd) {
-            printf("Error opening '%s': %d '%s'\n", v4l2_device, errno, strerror(errno));
-            continue;
-        }
-
-        if (-1 == xioctl(droidcam_device_fd, VIDIOC_QUERYCAP, &v4l2cap)) {
-            close(droidcam_device_fd);
+        if (xioctl(video_dev_fd, VIDIOC_QUERYCAP, &v4l2cap) < 0) {
+            close(video_dev_fd);
             continue;
         }
 
         printf("Device %s is '%s' @ %s\n", v4l2_device, v4l2cap.card, v4l2cap.bus_info);
         if (0 == strncmp(bus_info, (const char*) v4l2cap.bus_info, bus_info_len)) {
-            printf("Opened %s, fd:%d\n", v4l2_device, droidcam_device_fd);
-            return droidcam_device_fd;
+            return video_dev_fd;
         }
 
-        close(droidcam_device_fd);
+        close(video_dev_fd);
         continue;
     }
 
     v4l2_device[0] = 0;
     return -1;
+}
+
+void set_v4l2_device(const char* device) {
+    memset(v4l2_device, 0, sizeof(v4l2_device));
+    strncpy(v4l2_device, device, sizeof(v4l2_device)-1);
 }
 
 void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBCAM_H) {

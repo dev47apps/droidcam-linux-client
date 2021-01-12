@@ -30,7 +30,7 @@ struct JPGFrame {
 };
 
 
-int  decoder_init(unsigned v4l2_width, unsigned v4l2_height);
+int  decoder_init(const char* v4l2_device, unsigned v4l2_width, unsigned v4l2_height);
 void decoder_fini();
 
 snd_pcm_t * decoder_prepare_audio(void);
@@ -66,6 +66,8 @@ void decoder_show_test_image();
 #define VIDEO_FMT_DROIDCAM 3
 #define VIDEO_FMT_DROIDCAMX 18
 
+void set_v4l2_device(const char* device);
+int open_v4l2_device(void);
 int find_v4l2_device(const char* bus_info);
 void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBCAM_H);
 

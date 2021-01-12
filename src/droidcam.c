@@ -29,6 +29,7 @@ GThread* hVideoThread;
 GThread* hAudioThread;
 GThread* hDecodeThread;
 
+char *v4l2_dev = 0;
 int a_running = 0;
 int v_running = 0;
 int thread_cmd = 0;
@@ -271,6 +272,43 @@ static gboolean accel_callback(GtkAccelGroup  *group, GObject *obj, guint keyval
 }
 
 /* Main */
+static void usage(int argc, char *argv[]) {
+	fprintf(stderr, "Options:\n"
+	" -dev=PATH   Specify v4l2loopback device to use, instead of first available.\n"
+	"             Ex: /dev/video5\n"
+	"\n"
+	" -size=WxH   Specify video size (when using the regular v4l2loopback module)\n"
+	"             Ex: 640x480, 1280x720, 1920x1080\n"
+	);
+}
+
+static void parse_args(int argc, char *argv[]) {
+	int i = 1;
+	for (; i < argc; i++) {
+		if (argv[i][0] == '-' && argv[i][1] == 'd' && argv[i][3] == 'v') {
+			if (argv[i][4] != '=' || argv[i][5] == 0)
+				goto ERROR;
+
+			v4l2_dev = &argv[i][5];
+			continue;
+		}
+		if (argv[i][0] == '-' && argv[i][1] == 's' && argv[i][3] == 'z') {
+			if (sscanf(argv[i], "-size=%dx%d", &g_settings.v4l2_width, &g_settings.v4l2_height) != 2)
+				goto ERROR;
+
+			continue;
+		}
+
+		if (argv[i][0] == '-' && argv[i][1] == 'h')
+			goto ERROR;
+	}
+	return;
+
+ERROR:
+	usage(argc, argv);
+	exit(1);
+}
+
 static void add_indicator(GtkWidget *window) {
 	AppIndicator *indicator = app_indicator_new("droidcam", APP_ICON_FILE, APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 	GtkWidget *menu = gtk_menu_new();
@@ -484,6 +522,10 @@ int main(int argc, char *argv[])
 	gtk_widget_show_all(window);
 
 	LoadSettings(&g_settings);
+	if (argc >= 1) {
+		parse_args(argc, argv);
+	}
+
 	snprintf(port, sizeof(port), "%d", g_settings.port);
 	gtk_entry_set_text(ipEntry, g_settings.ip);
 	gtk_entry_set_text(portEntry, port);
@@ -497,7 +539,7 @@ int main(int argc, char *argv[])
 	if (g_settings.video)
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(videoCheckbox), TRUE);
 
-	if (decoder_init(g_settings.v4l2_width, g_settings.v4l2_height))
+	if (decoder_init(v4l2_dev, g_settings.v4l2_width, g_settings.v4l2_height))
 	{
 		// add info about devices
 		snprintf(info, sizeof(info), "Client v" APP_VER_STR ", Video: %s, Audio: %s",

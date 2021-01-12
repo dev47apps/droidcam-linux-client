@@ -29,6 +29,7 @@ struct Thread {
 
 Thread athread, vthread, dthread;
 
+char *v4l2_dev = 0;
 unsigned v4l2_width = 0, v4l2_height = 0;
 int v_running = 0;
 int a_running = 0;
@@ -75,6 +76,9 @@ static inline void usage(int argc, char *argv[]) {
     " -v          Enable Video\n"
     "             (only -v by default)\n"
     "\n"
+    " -dev=PATH   Specify v4l2loopback device to use, instead of first available.\n"
+    "             Ex: /dev/video5\n"
+    "\n"
     " -size=WxH   Specify video size (when using the regular v4l2loopback module)\n"
     "             Ex: 640x480, 1280x720, 1920x1080\n"
     "\n"
@@ -104,6 +108,13 @@ static void parse_args(int argc, char *argv[]) {
             }
             if (argv[i][0] == '-' && argv[i][1] == 'v') {
                 v_running = 1;
+                continue;
+            }
+            if (argv[i][0] == '-' && argv[i][1] == 'd' && argv[i][3] == 'v') {
+                if (argv[i][4] != '=' || argv[i][5] == 0)
+                    goto ERROR;
+
+                v4l2_dev = &argv[i][5];
                 continue;
             }
             if (argv[i][0] == '-' && argv[i][1] == 's' && argv[i][3] == 'z') {
@@ -204,7 +215,7 @@ void wait_command() {
 int main(int argc, char *argv[]) {
     parse_args(argc, argv);
 
-    if (!decoder_init(v4l2_width, v4l2_height)) {
+    if (!decoder_init(v4l2_dev, v4l2_width, v4l2_height)) {
         return 2;
     }
 

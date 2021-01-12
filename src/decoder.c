@@ -81,15 +81,19 @@ static void decoder_share_frame();
 
 #define FREE_OBJECT(obj, free_func) if(obj){dbgprint(" " #obj " %p\n", obj); free_func(obj); obj=NULL;}
 
-int decoder_init(unsigned v4l2_width, unsigned v4l2_height) {
+int decoder_init(const char* v4l2_device, unsigned v4l2_width, unsigned v4l2_height) {
     WEBCAM_W = v4l2_width;
     WEBCAM_H = v4l2_height;
 
-    droidcam_device_fd = find_v4l2_device("platform:v4l2loopback_dc");
-
-    if (droidcam_device_fd < 0) {
-        // check for generic v4l2loopback device
-        droidcam_device_fd = find_v4l2_device("platform:v4l2loopback");
+    if (v4l2_device) {
+        set_v4l2_device(v4l2_device);
+        droidcam_device_fd = open_v4l2_device();
+    } else {
+        droidcam_device_fd = find_v4l2_device("platform:v4l2loopback_dc");
+        if (droidcam_device_fd < 0) {
+            // check for generic v4l2loopback device
+            droidcam_device_fd = find_v4l2_device("platform:v4l2loopback");
+        }
     }
 
     if (droidcam_device_fd < 0) {
