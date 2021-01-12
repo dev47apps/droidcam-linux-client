@@ -47,6 +47,7 @@ void process_frame(JPGFrame*);
 int decoder_get_video_width();
 int decoder_get_video_height();
 void decoder_horizontal_flip();
+void decoder_vertical_flip();
 void decoder_show_test_image();
 
 /* 20ms 16hkz 16 bit */

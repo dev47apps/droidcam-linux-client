@@ -240,6 +240,9 @@ _up:
 		case CB_H_FLIP:
 			decoder_horizontal_flip();
 		break;
+		case CB_V_FLIP:
+			decoder_vertical_flip();
+		break;
 		case CB_AUDIO:
 			g_settings.audio = (int) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(audioCheckbox));
 			dbgprint("audio=%d\n", g_settings.audio);
@@ -338,6 +341,9 @@ int main(int argc, char *argv[])
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_H_FLIP), NULL);
 	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("m"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_V_FLIP), NULL);
+	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("v"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
+
 	gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel);
 
 	// gui
@@ -368,10 +374,15 @@ int main(int argc, char *argv[])
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZOUT);
 
-	widget = gtk_menu_item_new_with_label("Mirror Video (Ctrl+M)");
+	widget = gtk_menu_item_new_with_label("Horizontal Flip / Mirror (Ctrl+M)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
 	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_H_FLIP);
+
+	widget = gtk_menu_item_new_with_label("Vertical Flip (Ctrl+V)");
+	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
+	gtk_widget_show (widget);
+	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_V_FLIP);
 
 	// Create main grid to create left and right column of the UI.
 	// +-----------------------------------+
