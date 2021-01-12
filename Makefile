@@ -22,11 +22,14 @@ USBMUXD = -lusbmuxd
 
 all: droidcam-cli droidcam
 
-ifeq "$(RELEASE)" "1"
+ifneq "$(RELEASE)" ""
 LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
 SRC  += src/libusbmuxd.a src/libxml2.a src/libplist-2.0.a
 package: clean all
-	zip -x icon.png src/ src/* Makefile -r droidcam_`date +%s`.zip ./*
+	zip "droidcam_$(RELEASE).zip" \
+		LICENSE README* icon2.png  \
+		droidcam* install* uninstall* \
+		v4l2loopback/*
 
 else
 LIBS += $(USBMUXD)
