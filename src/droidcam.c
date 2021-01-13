@@ -10,7 +10,6 @@
 #include <sys/types.h>
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
-#include <libappindicator/app-indicator.h>
 
 #include "common.h"
 #include "settings.h"
@@ -329,6 +328,10 @@ ERROR:
 	exit(1);
 }
 
+// TODO: this is broken on Debian
+// Seems AppIndicator's deprecated and there is no real alternatives
+// Example discussion: https://github.com/dino/dino/issues/98
+#if 0
 static void add_indicator(GtkWidget *window) {
 	AppIndicator *indicator = app_indicator_new("droidcam", APP_ICON_FILE, APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 	GtkWidget *menu = gtk_menu_new();
@@ -353,6 +356,7 @@ static void add_indicator(GtkWidget *window) {
 	g_signal_connect(G_OBJECT(show_menu_item), "activate", G_CALLBACK(show_window), window);
 	g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_window), window);
 }
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -566,6 +570,7 @@ int main(int argc, char *argv[])
 		snprintf(info, sizeof(info), "Client v" APP_VER_STR ", Video: %s, Audio: %s",
 			v4l2_device, snd_device);
 		gtk_label_set_text(GTK_LABEL(infoText), info);
+		printf("Video: %s\n", v4l2_device);
 		printf("Audio: %s\n", snd_device);
 
 		// set the font size
@@ -576,7 +581,7 @@ int main(int argc, char *argv[])
 		pango_attr_list_unref(attrlist);
 
 		// add taskbar widget
-		add_indicator(window);
+		// add_indicator(window);
 
 		// main loop
 		gtk_main();

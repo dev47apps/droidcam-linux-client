@@ -33,7 +33,7 @@ int open_v4l2_device(void) {
         return 0;
     }
 
-    printf("Opened %s, fd:%d\n", v4l2_device, fd);
+    dbgprint("Opened %s, fd:%d\n", v4l2_device, fd);
     return fd;
 }
 
@@ -56,7 +56,7 @@ int find_v4l2_device(const char* bus_info) {
             continue;
         }
 
-        printf("Device %s is '%s' @ %s\n", v4l2_device, v4l2cap.card, v4l2cap.bus_info);
+        dbgprint("Device %s is '%s' @ %s\n", v4l2_device, v4l2cap.card, v4l2cap.bus_info);
         if (0 == strncmp(bus_info, (const char*) v4l2cap.bus_info, bus_info_len)) {
             return video_dev_fd;
         }
