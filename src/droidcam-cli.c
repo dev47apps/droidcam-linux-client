@@ -34,6 +34,7 @@ unsigned v4l2_width = 0, v4l2_height = 0;
 int v_running = 0;
 int a_running = 0;
 int thread_cmd = 0;
+int no_controls = 0;
 struct settings g_settings = {0};
 
 
@@ -75,6 +76,9 @@ static inline void usage(int argc, char *argv[]) {
     " -a          Enable Audio\n"
     " -v          Enable Video\n"
     "             (only -v by default)\n"
+    "\n"
+    " -nocontrols Disable controls to avoid reading from stdin\n"
+    "             Only use this if reading from stdin is causing problems!"
     "\n"
     " -dev=PATH   Specify v4l2loopback device to use, instead of first available.\n"
     "             Ex: /dev/video5\n"
@@ -120,6 +124,10 @@ static void parse_args(int argc, char *argv[]) {
             if (argv[i][0] == '-' && argv[i][1] == 's' && argv[i][3] == 'z') {
                 if (sscanf(argv[i], "-size=%dx%d", &v4l2_width, &v4l2_height) != 2)
                     goto ERROR;
+                continue;
+            }
+            if (argv[i][0] == '-' && strstr(&argv[i][1], "nocontrols") != NULL) {
+                no_controls = 1;
                 continue;
             }
             break;
@@ -256,7 +264,11 @@ int main(int argc, char *argv[]) {
 
     signal(SIGINT, sig_handler);
     signal(SIGHUP, sig_handler);
-    wait_command();
+
+    if (!no_controls){
+        wait_command();
+    }
+
     while (v_running || a_running)
         usleep(2000);
 
