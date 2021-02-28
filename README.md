@@ -39,12 +39,19 @@ To install, run `sudo ./install-client`.
 DroidCam comes with its own version of v4l2loopback, v4l2loopback-dc, which makes the app
 [a little more user-friendly](https://github.com/aramg/droidcam/issues/56#issuecomment-626795824).
 
-As of version 1.6 the droidcam client works with the standard v4l2loopback module,
+As of version 1.6 the droidcam client works with the standard [v4l2loopback](https://github.com/umlaeute/v4l2loopback) module,
 and installing v4l2loopback-dc is optional.
 
-To install v4l2loopback-dc, run `sudo ./install-video`.
+The standard v4l2loopback module is already available on most distros.
+
+To install v4l2loopback-dc, make sure you have these dependencies installed
+```
+linux-headers-`uname -r` gcc make
+```
+then run `sudo ./install-video`.
 
 Debian/Ubuntu and RHEL (Fedora/SUSE) based distros:
+
 [If your system supports DKMS](./README-DKMS.md), you can instead use `sudo ./install-dkms`.
 
 ## Sound
