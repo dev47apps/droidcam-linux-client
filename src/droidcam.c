@@ -386,25 +386,31 @@ int main(int argc, char *argv[])
 	// keyboard shortcuts
 	gtk_accel = gtk_accel_group_new ();
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_AF), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("a"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_A, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_LED), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("l"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_L, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOUT), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("minus"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_minus, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
+
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOUT), NULL);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_KP_Subtract, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("plus"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_plus, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("equal"), (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_KP_Add, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
+
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN), NULL);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_equal, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_H_FLIP), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("m"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_M, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_V_FLIP), NULL);
-	gtk_accel_group_connect(gtk_accel, gdk_keyval_from_name("v"), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
+	gtk_accel_group_connect(gtk_accel, GDK_KEY_V, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
 	gtk_window_add_accel_group(GTK_WINDOW(window), gtk_accel);
 
