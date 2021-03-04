@@ -193,7 +193,6 @@ EARLY_OUT:
 	gtk_widget_set_sensitive(GTK_WIDGET(elButton), TRUE);
 	gtk_widget_set_sensitive(GTK_WIDGET(wbButton), TRUE);
 	gtk_widget_set_sensitive(GTK_WIDGET(menuButton), TRUE);
-	SaveSettings(&g_settings);
 }
 
 /* Messages */
@@ -311,10 +310,10 @@ static void controls_callback(GtkWidget* widget, gpointer extra) {
 			thread_cmd = cb;
 		break;
 		case CB_H_FLIP:
-			decoder_horizontal_flip();
+			g_settings.horizontal_flip = decoder_horizontal_flip();
 		break;
 		case CB_V_FLIP:
-			decoder_vertical_flip();
+			g_settings.vertical_flip = decoder_vertical_flip();
 		break;
 	}
 }
@@ -665,6 +664,13 @@ int main(int argc, char *argv[])
 		printf("Video: %s\n", v4l2_device);
 		printf("Audio: %s\n", snd_device);
 
+		// re-load flip values from last run
+		if (g_settings.horizontal_flip)
+			decoder_horizontal_flip();
+
+		if (g_settings.vertical_flip)
+			decoder_vertical_flip();
+
 		// set the font size
 		PangoAttrList *attrlist = pango_attr_list_new();
 		PangoAttribute *attr = pango_attr_size_new_absolute(12 * PANGO_SCALE);
@@ -680,6 +686,7 @@ int main(int argc, char *argv[])
 		Stop();
 		decoder_fini();
 		connection_cleanup();
+		SaveSettings(&g_settings);
 	}
 
 	return 0;

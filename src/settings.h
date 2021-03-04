@@ -45,6 +45,8 @@ struct settings {
     unsigned v4l2_width, v4l2_height;
 
     int confirm_close;
+    int horizontal_flip;
+    int vertical_flip;
 };
 }
 void LoadSettings(struct settings* settings);

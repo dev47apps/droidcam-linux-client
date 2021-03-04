@@ -88,6 +88,8 @@ void LoadSettings(struct settings* settings) {
 
             if (1 == sscanf(buf, "type=%d\n",&settings->connection)) continue;
             if (1 == sscanf(buf, "confirm_close=%d\n",&settings->confirm_close)) continue;
+            if (1 == sscanf(buf, "vertical_flip=%d\n",&settings->vertical_flip)) continue;
+            if (1 == sscanf(buf, "horizontal_flip=%d\n",&settings->horizontal_flip)) continue;
         }
     }
 
@@ -99,6 +101,8 @@ void LoadSettings(struct settings* settings) {
         "settings: video=%d\n"
         "settings: size=%dx%d\n"
         "settings: confirm_close=%d\n"
+        "settings: vertical_flip=%d\n"
+        "settings: horizontal_flip=%d\n"
         "settings: connection=%d\n"
         ,
         settings->ip,
@@ -107,6 +111,8 @@ void LoadSettings(struct settings* settings) {
         settings->video,
         settings->v4l2_width, settings->v4l2_height,
         settings->confirm_close,
+        settings->vertical_flip,
+        settings->horizontal_flip,
         settings->connection);
 }
 
@@ -123,6 +129,8 @@ void SaveSettings(struct settings* settings) {
         "video=%d\n"
         "size=%dx%d\n"
         "confirm_close=%d\n"
+        "vertical_flip=%d\n"
+        "horizontal_flip=%d\n"
         "type=%d\n"
         ,
         version,
@@ -132,6 +140,8 @@ void SaveSettings(struct settings* settings) {
         settings->video,
         settings->v4l2_width, settings->v4l2_height,
         settings->confirm_close,
+        settings->vertical_flip,
+        settings->horizontal_flip,
         settings->connection);
     fclose(fp);
 }

@@ -404,7 +404,7 @@ int decoder_get_video_height() {
     return WEBCAM_H;
 }
 
-void decoder_horizontal_flip() {
+int decoder_horizontal_flip() {
     int h_flip  = (jpg_decoder.transform.op == TJXOP_HFLIP);
     int v_flip  = (jpg_decoder.transform.op == TJXOP_VFLIP);
     int hv_flip = (jpg_decoder.transform.op == TJXOP_ROT180);
@@ -414,9 +414,11 @@ void decoder_horizontal_flip() {
     } else {
         jpg_decoder.transform.op = v_flip ? TJXOP_ROT180 : TJXOP_HFLIP;
     }
+
+    return jpg_decoder.transform.op == TJXOP_HFLIP || jpg_decoder.transform.op == TJXOP_ROT180;
 }
 
-void decoder_vertical_flip() {
+int decoder_vertical_flip() {
     int h_flip  = (jpg_decoder.transform.op == TJXOP_HFLIP);
     int v_flip  = (jpg_decoder.transform.op == TJXOP_VFLIP);
     int hv_flip = (jpg_decoder.transform.op == TJXOP_ROT180);
@@ -426,6 +428,8 @@ void decoder_vertical_flip() {
     } else {
         jpg_decoder.transform.op = h_flip ? TJXOP_ROT180 : TJXOP_VFLIP;
     }
+
+    return jpg_decoder.transform.op == TJXOP_VFLIP || jpg_decoder.transform.op == TJXOP_ROT180;
 }
 
 int decoder_get_audio_frame_size(void) {
