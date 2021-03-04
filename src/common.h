@@ -18,8 +18,10 @@ void ShowError(const char*, const char*);
 
 #define ADB_LOCALHOST_IP "127.0.0.1"
 
-#define VIDEO_REQ "CMD /v2/video.4?%dx%d"
-#define OTHER_REQ "CMD /v1/ctl?%d"
+#define VIDEO_REQ      "CMD /v2/video.4?%dx%d"
+#define OTHER_REQ      "CMD /v1/ctl?%d"
+#define OTHER_REQ_INT  "CMD /v1/ctl?%d=%d"
+#define OTHER_REQ_STR  "CMD /v1/ctl?%d=%s"
 
 #define AUDIO_REQ "CMD /v2/audio"
 #define STOP_REQ  "CMD /v1/stop"
@@ -27,6 +29,7 @@ void ShowError(const char*, const char*);
 #define PING_REQ "CMD /ping"
 
 #define CSTR_LEN(x) (sizeof(x)-1)
+#define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
 #define make_int(num, b1, b2)	num = 0; num |=(b1&0xFF); num <<= 8; num |= (b2&0xFF);
 #define make_int4(num, b0, b1, b2, b3) \

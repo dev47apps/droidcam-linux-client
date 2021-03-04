@@ -16,6 +16,8 @@ extern int v_running;
 extern int thread_cmd;
 extern struct settings g_settings;
 
+const char *thread_cmd_val_str;
+
 void * DecodeThreadProc(void * args) {
     dbgprint("Decode Thread Start\n");
     while (v_running != 0){
@@ -34,6 +36,7 @@ void * DecodeThreadProc(void * args) {
 void * VideoThreadProc(void * args) {
     char buf[32];
     SOCKET videoSocket = (SOCKET_PTR) args;
+    int len;
     int keep_waiting = 0;
     dbgprint("Video Thread Started s=%d\n", videoSocket);
 
@@ -45,7 +48,7 @@ server_wait:
     }
 
     {
-        int len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
+        len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
         if (SendRecv(1, buf, len, videoSocket) <= 0){
             MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
             goto early_out;
@@ -64,17 +67,24 @@ server_wait:
 
     while (v_running != 0){
         if (thread_cmd != 0) {
-            int len = sprintf(buf, OTHER_REQ, thread_cmd);
-            SendRecv(1, buf, len, videoSocket);
+            len = 0;
+            if (thread_cmd == CB_CONTROL_WB) {
+                len = sprintf(buf, OTHER_REQ_STR, thread_cmd, thread_cmd_val_str);
+            }
+            else {
+                len = sprintf(buf, OTHER_REQ, thread_cmd);
+            }
+            if (len) {
+                SendRecv(1, buf, len, videoSocket);
+            }
             thread_cmd = 0;
         }
 
-        int frameLen;
         JPGFrame *f = pull_empty_jpg_frame();
         if (SendRecv(0, buf, 4, videoSocket) == FALSE) break;
-        make_int4(frameLen, buf[0], buf[1], buf[2], buf[3]);
-        f->length = frameLen;
-        if (SendRecv(0, (char*)f->data, frameLen, videoSocket) == FALSE)
+        make_int4(len, buf[0], buf[1], buf[2], buf[3]);
+        f->length = len;
+        if (SendRecv(0, (char*)f->data, len, videoSocket) == FALSE)
             break;
 
         push_jpg_frame(f, false);

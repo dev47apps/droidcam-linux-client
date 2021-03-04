@@ -37,7 +37,7 @@ int thread_cmd = 0;
 int no_controls = 0;
 struct settings g_settings = {0};
 
-
+extern const char *thread_cmd_val_str;
 extern char snd_device[32];
 extern char v4l2_device[32];
 void * AudioThreadProc(void * args);
@@ -194,18 +194,18 @@ void wait_command() {
                 break;
             case '=':
             case '+':
-                thread_cmd = (CB_CONTROL_ZIN-10);
+                thread_cmd = CB_CONTROL_ZOOM_IN;
                 break;
             case '-':
-                thread_cmd = (CB_CONTROL_ZOUT-10);
+                thread_cmd = CB_CONTROL_ZOOM_OUT;
                 break;
             case 'a':
             case 'A':
-                thread_cmd = (CB_CONTROL_AF-10);
+                thread_cmd = CB_CONTROL_AF;
                 break;
             case 'l':
             case 'L':
-                thread_cmd = (CB_CONTROL_LED-10);
+                thread_cmd = CB_CONTROL_LED;
                 break;
             case 'm':
             case 'M':

@@ -7,8 +7,6 @@ enum radios {
     CB_RADIO_ADB,
     CB_RADIO_IOS,
     CB_WIFI_SRVR,
-    CB_H_FLIP,
-    CB_V_FLIP,
     CB_RADIO_COUNT
 };
 
@@ -16,15 +14,26 @@ enum widgets {
     CB_BUTTON = CB_RADIO_COUNT,
     CB_AUDIO,
     CB_VIDEO,
+    CB_BTN_EL,
+    CB_BTN_WB,
     CB_BTN_OTR,
     CB_WIDGETS_COUNT
 };
 
-enum control_code {
-    CB_CONTROL_ZIN = 16,
-    CB_CONTROL_ZOUT,
+
+enum control_codes {
+    CB_CONTROL_EMPTY_0 = 0,
+    CB_CONTROL_EL_OFF,
+    CB_CONTROL_EL_ON,
+    CB_CONTROL_WB,
+    CB_CONTROL_EV,
+    CB_CONTROL_EMPTY_5,
+    CB_CONTROL_ZOOM_IN,
+    CB_CONTROL_ZOOM_OUT,
     CB_CONTROL_AF,
     CB_CONTROL_LED,
+    CB_H_FLIP,
+    CB_V_FLIP,
 };
 
 struct settings {

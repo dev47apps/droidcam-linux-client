@@ -18,6 +18,10 @@
 
 /* Globals */
 GtkWidget *menu;
+GtkWidget *menuButton;
+GtkWidget *wbMenu;
+GtkWidget *wbButton;
+GtkWidget *elButton;
 GtkWidget *infoText;
 GtkWidget *audioCheckbox;
 GtkWidget *videoCheckbox;
@@ -32,8 +36,10 @@ char *v4l2_dev = 0;
 int a_running = 0;
 int v_running = 0;
 int thread_cmd = 0;
+
 struct settings g_settings = {0};
 
+extern const char *thread_cmd_val_str;
 extern char snd_device[32];
 extern char v4l2_device[32];
 const char *APP_ICON_FILE = "/opt/droidcam-icon.png";
@@ -41,6 +47,28 @@ const char *APP_ICON_FILE = "/opt/droidcam-icon.png";
 void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
 void * DecodeThreadProc(void * args);
+
+const char* wb_options[] = {
+	"Automatic",
+	"Incandescent",
+	"Warm Fluorescent",
+	"Twilight",
+	"Fluorescent",
+	"Daylight",
+	"Cloudy Daylight",
+	"Shade",
+};
+
+const char* wb_values[] = {
+	"auto",
+	"incandescent",
+	"warm-fluorescent",
+	"twilight",
+	"fluorescent",
+	"daylight",
+	"cloudy-daylight",
+	"shade",
+};
 
 /* Helper Functions */
 char title[256];
@@ -82,6 +110,9 @@ static void Stop(void)
 		hDecodeThread = NULL;
 	}
 	FreeUSB();
+	gtk_widget_set_sensitive(GTK_WIDGET(elButton), FALSE);
+	gtk_widget_set_sensitive(GTK_WIDGET(wbButton), FALSE);
+	gtk_widget_set_sensitive(GTK_WIDGET(menuButton), FALSE);
 }
 
 static void Start(void)
@@ -159,6 +190,9 @@ EARLY_OUT:
 	gtk_widget_set_sensitive(GTK_WIDGET(portEntry), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(audioCheckbox), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(videoCheckbox), FALSE);
+	gtk_widget_set_sensitive(GTK_WIDGET(elButton), TRUE);
+	gtk_widget_set_sensitive(GTK_WIDGET(wbButton), TRUE);
+	gtk_widget_set_sensitive(GTK_WIDGET(menuButton), TRUE);
 	SaveSettings(&g_settings);
 }
 
@@ -188,10 +222,11 @@ static void the_callback(GtkWidget* widget, gpointer extra)
 	gboolean portEdit = TRUE;
 	gboolean audioBox = TRUE;
 	gboolean videoBox = TRUE;
+	gboolean active = FALSE;
 	const char* text = NULL;
 
 _up:
-	dbgprint("the_cb=%d\n", cb);
+	dbgprint("the_callback=%d\n", cb);
 	switch (cb) {
 		case CB_BUTTON:
 			if (v_running || a_running) {
@@ -231,19 +266,17 @@ _up:
 			// TODO drop support for older OSs and use
 			// gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
 		break;
-		case CB_CONTROL_ZIN  :
-		case CB_CONTROL_ZOUT :
-		case CB_CONTROL_AF   :
-		case CB_CONTROL_LED  :
-		if(v_running == 1 && thread_cmd ==0){
-			thread_cmd =  cb - 10;
-		}
+		case CB_BTN_WB:
+			gtk_menu_popup(GTK_MENU(wbMenu), NULL, NULL, NULL, NULL, 0, 0);
 		break;
-		case CB_H_FLIP:
-			decoder_horizontal_flip();
-		break;
-		case CB_V_FLIP:
-			decoder_vertical_flip();
+		case CB_BTN_EL:
+			if (v_running != 1 || thread_cmd != 0) {
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(elButton), FALSE);
+				break;
+			}
+
+			active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(elButton));
+			thread_cmd = (active) ? CB_CONTROL_EL_ON : CB_CONTROL_EL_OFF;
 		break;
 		case CB_AUDIO:
 			g_settings.audio = (int) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(audioCheckbox));
@@ -264,11 +297,43 @@ _up:
 	}
 }
 
+static void controls_callback(GtkWidget* widget, gpointer extra) {
+	int cb = (uintptr_t) extra;
+	dbgprint("controls_callback=%d\n", cb);
+	if (v_running == 0 || thread_cmd != 0) {
+		return;
+	}
+	switch (cb) {
+		case CB_CONTROL_ZOOM_IN:
+		case CB_CONTROL_ZOOM_OUT:
+		case CB_CONTROL_AF:
+		case CB_CONTROL_LED:
+			thread_cmd = cb;
+		break;
+		case CB_H_FLIP:
+			decoder_horizontal_flip();
+		break;
+		case CB_V_FLIP:
+			decoder_vertical_flip();
+		break;
+	}
+}
+
+// wbMenu callback
+static void wb_callback(GtkWidget* widget, gpointer extra) {
+	int cb = (uintptr_t) extra;
+	dbgprint("wb_callback=%d\n", cb);
+	if (cb < ARRAY_LEN(wb_options) && v_running == 1 && thread_cmd == 0) {
+		thread_cmd_val_str = wb_values[cb];
+		thread_cmd = CB_CONTROL_WB;
+	}
+}
+
 // keyboard shortcuts callback
 static gboolean accel_callback(GtkAccelGroup  *group, GObject *obj, guint keyval,
 	GdkModifierType mod, gpointer extra)
 {
-	the_callback(NULL, extra);
+	controls_callback(NULL, extra);
 	return TRUE;
 }
 
@@ -391,19 +456,19 @@ int main(int argc, char *argv[])
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_LED), NULL);
 	gtk_accel_group_connect(gtk_accel, GDK_KEY_L, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOUT), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOOM_OUT), NULL);
 	gtk_accel_group_connect(gtk_accel, GDK_KEY_minus, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOUT), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOOM_OUT), NULL);
 	gtk_accel_group_connect(gtk_accel, GDK_KEY_KP_Subtract, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOOM_IN), NULL);
 	gtk_accel_group_connect(gtk_accel, GDK_KEY_plus, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOOM_IN), NULL);
 	gtk_accel_group_connect(gtk_accel, GDK_KEY_KP_Add, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
-	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZIN), NULL);
+	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_CONTROL_ZOOM_IN), NULL);
 	gtk_accel_group_connect(gtk_accel, GDK_KEY_equal, (GdkModifierType)0, GTK_ACCEL_VISIBLE, closure);
 
 	closure = g_cclosure_new(G_CALLBACK(accel_callback), (gpointer)(CB_H_FLIP), NULL);
@@ -416,41 +481,44 @@ int main(int argc, char *argv[])
 
 	// gui
 	menu = gtk_menu_new();
-
-	widget = gtk_menu_item_new_with_label("DroidCamX Commands:");
-	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
-	gtk_widget_show (widget);
-	gtk_widget_set_sensitive(widget, 0);
-
 	widget = gtk_menu_item_new_with_label("Auto-Focus (Ctrl+A)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
-	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_AF);
+	g_signal_connect(widget, "activate", G_CALLBACK(controls_callback), (gpointer)CB_CONTROL_AF);
 
 	widget = gtk_menu_item_new_with_label("Toggle LED Flash (Ctrl+L)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
-	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_LED);
+	g_signal_connect(widget, "activate", G_CALLBACK(controls_callback), (gpointer)CB_CONTROL_LED);
 
 	widget = gtk_menu_item_new_with_label("Zoom In (+)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
-	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZIN);
+	g_signal_connect(widget, "activate", G_CALLBACK(controls_callback), (gpointer)CB_CONTROL_ZOOM_IN);
 
 	widget = gtk_menu_item_new_with_label("Zoom Out (-)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
-	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_CONTROL_ZOUT);
+	g_signal_connect(widget, "activate", G_CALLBACK(controls_callback), (gpointer)CB_CONTROL_ZOOM_OUT);
 
 	widget = gtk_menu_item_new_with_label("Horizontal Flip / Mirror (Ctrl+M)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
-	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_H_FLIP);
+	g_signal_connect(widget, "activate", G_CALLBACK(controls_callback), (gpointer)CB_H_FLIP);
 
 	widget = gtk_menu_item_new_with_label("Vertical Flip (Ctrl+V)");
 	gtk_menu_shell_append (GTK_MENU_SHELL(menu), widget);
 	gtk_widget_show (widget);
-	g_signal_connect(widget, "activate", G_CALLBACK(the_callback), (gpointer)CB_V_FLIP);
+	g_signal_connect(widget, "activate", G_CALLBACK(controls_callback), (gpointer)CB_V_FLIP);
+
+	// white-balance menu
+	wbMenu = gtk_menu_new();
+	for (size_t i = 0; i < ARRAY_LEN(wb_options); i++) {
+		widget = gtk_menu_item_new_with_label(wb_options[i]);
+		gtk_menu_shell_append (GTK_MENU_SHELL(wbMenu), widget);
+		gtk_widget_show(widget);
+		g_signal_connect(widget, "activate", G_CALLBACK(wb_callback), (gpointer)i);
+	}
 
 	// Create main grid to create left and right column of the UI.
 	// +-----------------------------------+
@@ -501,19 +569,36 @@ int main(int argc, char *argv[])
 	gtk_grid_attach(GTK_GRID(grid), widget, 0, 3, 1, 1);
 	videoCheckbox = widget;
 
-	// Add toggle button to enable audio as 3nd element of left column.
+	// Add toggle button to enable audio as 3rd element of left column.
 	widget = gtk_check_button_new_with_label("Enable Audio");
 	g_signal_connect(widget, "toggled", G_CALLBACK(the_callback), (gpointer)CB_AUDIO);
 	gtk_grid_attach(GTK_GRID(grid), widget, 0, 4, 1, 1);
 	audioCheckbox = widget;
 
-	// Add [...] Menu button
-	widget = gtk_button_new_with_label("...");
-	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_OTR);
+	// Add [WB] Menu button
+	widget = gtk_button_new_with_label("WB");
+	gtk_widget_set_tooltip_text(widget, "White-balance");
+	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_WB);
+	wbButton = widget;
 
 	// Put menu button in the grid, so it's not full column width, but smaller.
 	menuGrid = gtk_grid_new();
 	gtk_grid_attach(GTK_GRID(menuGrid), widget, 0, 0, 1, 1);
+
+	// Add [EL] Menu button
+	widget = gtk_toggle_button_new_with_label("EL");
+	gtk_widget_set_tooltip_text(widget, "Exposure Locked");
+	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_EL);
+	gtk_grid_attach(GTK_GRID(menuGrid), widget, 1, 0, 1, 1);
+	elButton = widget;
+
+	// Add [...] Menu button
+	widget = gtk_button_new_with_label("...");
+	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_OTR);
+	gtk_grid_attach(GTK_GRID(menuGrid), widget, 2, 0, 1, 1);
+	menuButton = widget;
+
+	// attach the buttons to the column
 	gtk_grid_attach(GTK_GRID(grid), menuGrid, 0, 5, 1, 1);
 
 	// Info text goes as last element of left column.
@@ -552,6 +637,7 @@ int main(int argc, char *argv[])
 	g_signal_connect(window, "delete-event", G_CALLBACK(delete_window_callback), window);
 	gtk_widget_show_all(window);
 
+	Stop(); // reset the UI
 	LoadSettings(&g_settings);
 	if (argc >= 1) {
 		parse_args(argc, argv);
