@@ -5,7 +5,7 @@ Linux Client
 
 You can download and install the latest release from the official website at https://www.dev47apps.com/droidcam/linux/, along with instructions on how to update the webcam resolution and other info.
 
-x64 releases are also available here on GitHub at https://github.com/aramg/droidcam/releases
+x64 releases are also available here on GitHub at https://github.com/dev47apps/droidcam/releases
 
 Raspberry-PI instructions can be found here: https://github.com/dev47apps/droidcam/wiki/Raspberry-PI
 
@@ -37,7 +37,7 @@ To install, run `sudo ./install-client`.
 ## V4L2 Loopback (webcam driver)
 
 DroidCam comes with its own version of v4l2loopback, v4l2loopback-dc, which makes the app
-[a little more user-friendly](https://github.com/aramg/droidcam/issues/56#issuecomment-626795824).
+[a little more user-friendly](https://github.com/dev47apps/droidcam/issues/56#issuecomment-626795824).
 
 As of version 1.6 the droidcam client works with the standard [v4l2loopback](https://github.com/umlaeute/v4l2loopback) module,
 and installing v4l2loopback-dc is optional.

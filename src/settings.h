@@ -1,3 +1,4 @@
+// Copyright (C) 2020 github.com/dev47apps
 #ifndef _SETTINGS_H_
 #define _SETTINGS_H_
 extern "C" {

@@ -1,5 +1,5 @@
-/* DroidCam & DroidCamX (C) 2010-
- * https://github.com/aramg
+/* DroidCam & DroidCamX (C) 2010-2021
+ * https://github.com/dev47apps
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of

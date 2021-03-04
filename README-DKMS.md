@@ -22,7 +22,7 @@ By properly declaring the `v4l2loopback_dc` module as a [DKMS] module, future in
 
 First clone the `droidcam` Github repo anywhere you want (in `/opt` for example):
 
-    $ git clone https://github.com/aramg/droidcam.git
+    $ git clone https://github.com/dev47apps/droidcam.git
 
 Build it following the standard procedure described [here][droidcam build procedure].
 
@@ -54,7 +54,7 @@ Both methods will remove the binaries `droidcam` and `droidcam-cli` from `/usr/b
 
 
 [DKMS]: https://github.com/dell/dkms "DKMS source code page on Github"
-[Droidcam]: https://github.com/aramg/droidcam "Droid source code page on Github"
-[droidcam build procedure]: https://github.com/aramg/droidcam/tree/master/linux "droidcam build procedure"
-[webcam resolutions]: http://www.dev47apps.com/droidcam/linuxx/ "Supported webcams resolutions"
+[Droidcam]: https://github.com/dev47apps/droidcam "Droid source code page on Github"
+[droidcam build procedure]: https://github.com/dev47apps/droidcam/tree/master/linux "droidcam build procedure"
+[webcam resolutions]: http://www.dev47apps.com/droidcam/linux/ "Supported webcams resolutions"
 

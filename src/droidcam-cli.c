@@ -1,5 +1,5 @@
-/* DroidCam & DroidCamX (C) 2010-
- * https://github.com/aramg
+/* DroidCam & DroidCamX (C) 2010-2021
+ * https://github.com/dev47apps
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -77,16 +77,15 @@ static inline void usage(int argc, char *argv[]) {
     " -v          Enable Video\n"
     "             (only -v by default)\n"
     "\n"
-    " -nocontrols Disable controls to avoid reading from stdin\n"
-    "             Only use this if reading from stdin is causing problems!"
+    " -nocontrols Disable controls and avoid reading from stdin.\n"
+    "             Otherwise, enter '?' for list of commands while streaming.\n"
     "\n"
     " -dev=PATH   Specify v4l2loopback device to use, instead of first available.\n"
-    "             Ex: /dev/video5\n"
+    "             Ex: -dev=/dev/video5\n"
     "\n"
     " -size=WxH   Specify video size (when using the regular v4l2loopback module)\n"
     "             Ex: 640x480, 1280x720, 1920x1080\n"
     "\n"
-    "Enter '?' for list of commands while streaming.\n"
     ,
     argv[0],
     argv[0],
