@@ -184,7 +184,6 @@ void wait_command() {
 
         switch(buf[0]) {
             case '?':
-                printf("DroidCamX Commands:\n");
                 printf("M: Horizontal Flip / Mirror\n");
                 printf("V: Vertical Flip\n");
                 printf("A: Auto-focus\n");
