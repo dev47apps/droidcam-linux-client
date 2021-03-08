@@ -58,3 +58,14 @@ Debian/Ubuntu and RHEL (Fedora/SUSE) based distros:
 
 Run `sudo ./install-sound` to load the Linux ALSA Loopback sound card which the Droidcam client will use for audio input.
 
+To get the mic to show up in PulseAudio you can either run `pacmd load-module module-alsa-source device=hw:Loopback,1,0` (you may need to adjust the last number),
+or by editing /etc/pulse/default.pa [as described here](https://wiki.archlinux.org/index.php/PulseAudio/Troubleshooting#Microphone).
+On some systems you need to do this after launching the droidcam client.
+
+To use DroidCam with Pipewire ([Source](https://gitlab.freedesktop.org/pipewire/pipewire/-/issues/713))
+* Open pavucontrol, Configuration tab
+* There's probably multiple devices called "Built-in Audio", one of them is droidcam. Try with the bottom device maybe.
+* Choose the profile Pro Audio
+* Go to the Input Devices tab
+* Check which VU meter reacts to the phone's audio input (eg. Built-in Audio Pro 1), this is the desired audio input device.
+* Inside pavucontrol you can now set this device as default input or choose it as the input device for individual apps etc.
