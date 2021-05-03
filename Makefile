@@ -13,7 +13,7 @@ JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 CXX   = g++
 CXXFLAGS = -std=c++11 -Wall -fPIC -no-pie
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
-#GTK  += `pkg-config --cflags --libs appindicator3-0.1`
+GTK  += `pkg-config --cflags --libs appindicator3-0.1`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a

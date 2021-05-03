@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
+#include <libappindicator/app-indicator.h>
 
 #include "common.h"
 #include "settings.h"
@@ -395,7 +396,7 @@ ERROR:
 // TODO: this is broken on Debian
 // Seems AppIndicator's deprecated and there is no real alternatives
 // Example discussion: https://github.com/dino/dino/issues/98
-#if 0
+#if 1
 static void add_indicator(GtkWidget *window) {
 	AppIndicator *indicator = app_indicator_new("droidcam", APP_ICON_FILE, APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 	GtkWidget *menu = gtk_menu_new();
@@ -679,7 +680,7 @@ int main(int argc, char *argv[])
 		pango_attr_list_unref(attrlist);
 
 		// add taskbar widget
-		// add_indicator(window);
+		add_indicator(window);
 
 		// main loop
 		gtk_main();

@@ -5,13 +5,13 @@ Linux Client
 
 You can download and install the latest release from the official website at https://www.dev47apps.com/droidcam/linux/, along with instructions on how to update the webcam resolution and other info.
 
-x64 releases are also available here on GitHub at https://github.com/dev47apps/droidcam/releases
+Releases are also available here on GitHub at https://github.com/dev47apps/droidcam/releases
 
 Raspberry-PI instructions can be found here: https://github.com/dev47apps/droidcam/wiki/Raspberry-PI
 
 ## Building
 
-Download and install latest libjpeg-turbo 2.0.X via:
+Download and install latest libjpeg-turbo release via
 https://github.com/libjpeg-turbo/libjpeg-turbo/releases
 
 The libjpeg-turbo package should go into `/opt/libjpeg-turbo`.
@@ -28,21 +28,22 @@ libusbmuxd-dev
 libplist-dev
 
 gtk+-3.0               # Only needed for GUI client
+libappindicator3-dev   # Only needed for GUI client**
+
 ```
+** Debian Bullseye has removed libappindicator. You can [download it manually](https://github.com/signalapp/Signal-Desktop/issues/4761#issuecomment-778144713).
+
 
 Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
 To install, run `sudo ./install-client`.
 
-## V4L2 Loopback (webcam driver)
+## V4L2 Loopback (Webcam driver)
 
 DroidCam comes with its own version of v4l2loopback, v4l2loopback-dc, which makes the app
 [a little more user-friendly](https://github.com/dev47apps/droidcam/issues/56#issuecomment-626795824).
 
-The client works with the standard [v4l2loopback](https://github.com/umlaeute/v4l2loopback) module,
-and installing v4l2loopback-dc is optional. [v4l2loopback usage examples](https://github.com/dev47apps/droidcam/releases/tag/v1.7).
-
-The standard v4l2loopback module is already available on most distros.
+The client works with the standard v4l2loopback module, and installing v4l2loopback-dc is optional. Standard [v4l2loopback usage examples](https://github.com/dev47apps/droidcam/releases/tag/v1.7). The standard v4l2loopback module is already available on most distros.
 
 To install v4l2loopback-dc, make sure you have these dependencies installed
 ```
