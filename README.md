@@ -31,19 +31,32 @@ gtk+-3.0               # Only needed for GUI client
 libappindicator3-dev   # Only needed for GUI client**
 
 ```
-** Debian Bullseye has removed libappindicator. You can [download it manually](https://github.com/signalapp/Signal-Desktop/issues/4761#issuecomment-778144713).
-
 
 Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
 To install, run `sudo ./install-client`.
 
+#### **libappindicator
+
+Some distros are removing libappindicator support, which is used for system tray icon.
+
+Debian Bullseye: you can download the package and install using `dpkg -i ...`
+```
+http://ftp.de.debian.org/debian/pool/main/libi/libindicator/libindicator7_0.5.0-4_amd64.deb
+http://ftp.de.debian.org/debian/pool/main/liba/libappindicator/libappindicator1_0.4.92-8_amd64.deb
+```
+
+Fedora: use `sudo dnf install libappindicator-gtk3`
+
+
 ## V4L2 Loopback (Webcam driver)
 
-DroidCam comes with its own version of v4l2loopback, v4l2loopback-dc, which makes the app
-[a little more user-friendly](https://github.com/dev47apps/droidcam/issues/56#issuecomment-626795824).
+DroidCam has its own version of v4l2loopback, v4l2loopback-dc, which makes the app a little more user-friendly.
+It also works with the standard v4l2loopback module, so installing v4l2loopback-dc is optional.
 
-The client works with the standard v4l2loopback module, and installing v4l2loopback-dc is optional. Standard [v4l2loopback usage examples](https://github.com/dev47apps/droidcam/releases/tag/v1.7). The standard v4l2loopback module is already available on most distros.
+The standard v4l2loopback module is already available on most distros as v4l2loopback-dkms. See [v4l2loopback usage examples](https://github.com/dev47apps/droidcam/releases/tag/v1.7).
+
+With v4l2loopback-dc you’ll see "DroidCam" in the list of webcams, it works with Skype+Chrome without needing exclusive_caps=1, and the install scripts will make sure v4l2loopback-dc stays loaded after reboot.
 
 To install v4l2loopback-dc, make sure you have these dependencies installed
 ```
