@@ -20,10 +20,16 @@
 #include "decoder.h"
 #include "queue.h"
 
-extern "C" {
 #include "turbojpeg.h"
-#include "libswscale/swscale.h"
 #include "speex/speex.h"
+#ifndef __cplusplus
+#include "libswscale/swscale.h"
+#else
+extern "C"
+{
+#include "libswscale/swscale.h"
+}
+#endif
 
 struct spx_decoder_s {
  snd_pcm_t *snd_handle;
@@ -60,12 +66,10 @@ struct jpg_dec_ctx_s {
  int swcDstStride[4];
 };
 
-}
-
 #define JPG_BACKBUF_MAX 3
 JPGFrame jpg_frames[JPG_BACKBUF_MAX];
-Queue<JPGFrame*> decodeQueue;
-Queue<JPGFrame*> recieveQueue;
+queue decode_queue;
+queue receive_queue;
 
 struct jpg_dec_ctx_s  jpg_decoder;
 struct spx_decoder_s  spx_decoder;
@@ -142,6 +146,8 @@ int decoder_init(const char* v4l2_device, unsigned v4l2_width, unsigned v4l2_hei
     speex_decoder_ctl(spx_decoder.state, SPEEX_GET_FRAME_SIZE, &spx_decoder.frame_size);
     dbgprint("spx_decoder.state=%p, frame_size=%d\n", spx_decoder.state, spx_decoder.frame_size);
 
+    queue_init(&decode_queue);
+    queue_init(&receive_queue);
     dbgprint("decoder_init done\n");
     return 1;
 }
@@ -151,6 +157,8 @@ void decoder_fini() {
     droidcam_device_fd = 0;
     decoder_cleanup();
 
+    queue_destroy(&decode_queue);
+    queue_destroy(&receive_queue);
     FREE_OBJECT(spx_decoder.snd_handle, snd_pcm_close);
     dbgprint("spx_decoder.state=%p\n", spx_decoder.state);
     if (spx_decoder.state != NULL) {
@@ -244,7 +252,7 @@ int decoder_prepare_video(char * header) {
         jpg_frames[i].data = &jpg_decoder.m_inBuf[i*jpg_decoder.m_Yuv420Size];
         jpg_frames[i].length = 0;
         dbgprint("jpg: jpg_frames[%d]: %p\n", i, jpg_frames[i].data);
-        recieveQueue.add_item(&jpg_frames[i]);
+        queue_add(&receive_queue, &jpg_frames[i]);
     }
 
     int stride = jpg_decoder.d_width;
@@ -275,8 +283,8 @@ void decoder_cleanup() {
     FREE_OBJECT(jpg_decoder.swc, sws_freeContext);
     FREE_OBJECT(jpg_decoder.tjXform, tjDestroy);
     FREE_OBJECT(jpg_decoder.tj, tjDestroy);
-    recieveQueue.clear();
-    decodeQueue.clear();
+    queue_clear(&receive_queue);
+    queue_clear(&decode_queue);
 }
 
 void process_frame(JPGFrame *frame) {
@@ -382,18 +390,18 @@ void decoder_show_test_image() {
 }
 
 void push_jpg_frame(JPGFrame* frame, bool empty) {
-    if (empty || recieveQueue.items.size() == 0 || decodeQueue.items.size() > jpg_decoder.m_BufferLimit)
-        recieveQueue.add_item(frame);
+    if (empty || receive_queue.size == 0 || decode_queue.size > jpg_decoder.m_BufferLimit)
+        queue_add(&receive_queue, frame);
     else
-        decodeQueue.add_item(frame);
+        queue_add(&decode_queue, frame);
 }
 
 JPGFrame* pull_empty_jpg_frame(void) {
-    return recieveQueue.next_item();
+    return (JPGFrame*) queue_next(&receive_queue, 0);
 }
 
 JPGFrame* pull_ready_jpg_frame(void) {
-    return decodeQueue.next_item(jpg_decoder.m_BufferLimit);
+    return (JPGFrame*) queue_next(&decode_queue, jpg_decoder.m_BufferLimit);
 }
 
 int decoder_get_video_width() {

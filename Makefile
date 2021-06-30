@@ -10,14 +10,14 @@ JPEG_DIR ?= /opt/libjpeg-turbo
 JPEG_INCLUDE ?= $(JPEG_DIR)/include
 JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 
-CXX   = g++
-CXXFLAGS = -std=c++11 -Wall -fPIC -no-pie
+CC   = gcc
+CFLAGS = -Wall -Wextra -O2
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
 GTK  += `pkg-config --cflags --libs appindicator3-0.1`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
-SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c
+SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
 USBMUXD = -lusbmuxd
 
 all: droidcam-cli droidcam
@@ -40,11 +40,11 @@ gresource: .gresource.xml icon2.png
 
 droidcam-cli: LDLIBS += $(JPEG) $(LIBAV) $(LIBS)
 droidcam-cli: src/droidcam-cli.c $(SRC)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 droidcam: LDLIBS += $(GTK) $(JPEG) $(LIBAV) $(LIBS)
 droidcam: src/droidcam.c src/resources.c $(SRC)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f droidcam

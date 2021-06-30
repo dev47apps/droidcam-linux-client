@@ -19,15 +19,12 @@
 #include "connection.h"
 #include "decoder.h"
 
-struct Thread {
+typedef struct Thread {
     pthread_t t;
     int rc;
-    Thread() {
-        rc = -1;
-    }
-};
+} Thread;
 
-Thread athread, vthread, dthread;
+Thread athread = {0, -1}, vthread = {0, -1}, dthread = {0, -1};
 
 char *v4l2_dev = 0;
 unsigned v4l2_width = 0, v4l2_height = 0;

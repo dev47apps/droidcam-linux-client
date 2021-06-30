@@ -1,44 +1,31 @@
-/* DroidCam & DroidCamX (C) 2010-2021
- * https://github.com/dev47apps
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- */
+// SPDX-FileCopyrightText: 2021 Keno Hassler
+//
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef __QUEUE_H__
 #define __QUEUE_H__
 
-#include <vector>
-#include <mutex>
+#include <pthread.h>
 
-template<typename T>
-struct Queue {
-	std::mutex items_lock;
-	std::vector<T> items;
+typedef struct queue_elem_s
+{
+    void *payload;
+    struct queue_elem_s *next;
+} queue_elem;
 
-	void clear(void) {
-		items_lock.lock();
-		items.clear();
-		items_lock.unlock();
-	}
+typedef struct queue_s
+{
+    pthread_mutex_t mutex;
+    size_t size;
+    queue_elem *last;
+    queue_elem *first;
+} queue;
 
-	void add_item(T item) {
-		items_lock.lock();
-		items.push_back(item);
-		items_lock.unlock();
-	}
+void queue_init(queue *q);
+void queue_destroy(queue *q);
 
-	T next_item(size_t backbuffer = 0) {
-		T item{};
-		if (items.size() > backbuffer) {
-			items_lock.lock();
-			item = items.front();
-			items.erase(items.begin());
-			items_lock.unlock();
-		}
-		return item;
-	}
-};
+void queue_clear(queue *q);
+void queue_add(queue *q, void *item);
+void *queue_next(queue *q, size_t backbuffer);
 
 #endif

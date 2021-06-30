@@ -9,7 +9,7 @@
 #ifndef __DECODR_H__
 #define __DECODR_H__
 
-extern "C" {
+#include <stdbool.h>
 #include <alsa/asoundlib.h>
 struct snd_transfer_s {
     int first;
@@ -17,17 +17,14 @@ struct snd_transfer_s {
     snd_pcm_uframes_t frames;
     const snd_pcm_channel_area_t *my_areas;
 };
-}
 
 typedef unsigned char BYTE;
 
-struct JPGFrame {
+typedef struct JPGFrame {
     BYTE *data;
     unsigned length;
-    JPGFrame(void) {
-        data = 0; length = 0;
-    }
-};
+} JPGFrame;
+
 
 
 int  decoder_init(const char* v4l2_device, unsigned v4l2_width, unsigned v4l2_height);

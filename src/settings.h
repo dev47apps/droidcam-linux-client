@@ -1,7 +1,7 @@
 // Copyright (C) 2020 github.com/dev47apps
 #ifndef _SETTINGS_H_
 #define _SETTINGS_H_
-extern "C" {
+
 enum radios {
     CB_RADIO_WIFI,
     CB_RADIO_ADB,
@@ -48,7 +48,7 @@ struct settings {
     int horizontal_flip;
     int vertical_flip;
 };
-}
+
 void LoadSettings(struct settings* settings);
 void SaveSettings(struct settings* settings);
 
