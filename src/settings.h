@@ -2,6 +2,8 @@
 #ifndef _SETTINGS_H_
 #define _SETTINGS_H_
 
+#include <netinet/in.h>
+
 enum radios {
     CB_RADIO_WIFI,
     CB_RADIO_ADB,
@@ -37,7 +39,7 @@ enum control_codes {
 };
 
 struct settings {
-    char ip[32];
+    char ip[INET_ADDRSTRLEN];
     int port;
     int audio;
     int video;

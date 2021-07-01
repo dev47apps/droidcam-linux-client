@@ -56,7 +56,7 @@ EXIT:
 	dbgprint("CheckAdbDevices rc=%d\n", rc);
 
 	if (rc == NO_ERROR) {
-		sprintf(buf, "adb forward tcp:%d tcp:%d", port, port);
+		snprintf(buf, sizeof(buf), "adb forward tcp:%d tcp:%d", port, port);
 		rc = system(buf);
 		if (WEXITSTATUS(rc) != 0){
 			rc = ERROR_ADDING_FORWARD;

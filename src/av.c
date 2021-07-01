@@ -69,10 +69,10 @@ server_wait:
         if (thread_cmd != 0) {
             len = 0;
             if (thread_cmd == CB_CONTROL_WB) {
-                len = sprintf(buf, OTHER_REQ_STR, thread_cmd, thread_cmd_val_str);
+                len = snprintf(buf, sizeof(buf), OTHER_REQ_STR, thread_cmd, thread_cmd_val_str);
             }
             else {
-                len = sprintf(buf, OTHER_REQ, thread_cmd);
+                len = snprintf(buf, sizeof(buf), OTHER_REQ, thread_cmd);
             }
             if (len) {
                 SendRecv(1, buf, len, videoSocket);

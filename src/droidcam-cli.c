@@ -93,7 +93,7 @@ static inline void usage(int argc, char *argv[]) {
 
 static void parse_args(int argc, char *argv[]) {
     if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'l') {
-        g_settings.port = atoi(argv[2]);
+        g_settings.port = strtoul(argv[2], NULL, 10);
         g_settings.connection = CB_WIFI_SRVR;
         v_running = 1;
         return;
@@ -131,11 +131,13 @@ static void parse_args(int argc, char *argv[]) {
         if (i > (argc - 2))
             goto ERROR;
 
-        strncpy(g_settings.ip, argv[i], sizeof(g_settings.ip));
-        g_settings.port = atoi(argv[i+1]);
+        strncpy(g_settings.ip, argv[i], sizeof(g_settings.ip) - 1);
+        g_settings.ip[sizeof(g_settings.ip) - 1] = '\0';
+        g_settings.port = strtoul(argv[i+1], NULL, 10);
 
         if (strcmp(g_settings.ip, "adb") == 0) {
-            strcpy(g_settings.ip, ADB_LOCALHOST_IP);
+            strncpy(g_settings.ip, ADB_LOCALHOST_IP, sizeof(g_settings.ip) - 1);
+            g_settings.ip[sizeof(g_settings.ip) - 1] = '\0';
             g_settings.connection = CB_RADIO_ADB;
         }
         else if (strcmp(g_settings.ip, "ios") == 0) {

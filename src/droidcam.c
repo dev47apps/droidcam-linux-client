@@ -88,8 +88,10 @@ gboolean ShowError_GTK(gpointer data)
 
 void ShowError(const char* in_title, const char* in_msg)
 {
-	strncpy(msg, in_msg, sizeof(msg));
-	strncpy(title, in_title, sizeof(title));
+	strncpy(msg, in_msg, sizeof(msg) - 1);
+	msg[sizeof(msg) - 1] = '\0';
+	strncpy(title, in_title, sizeof(title) - 1);
+	title[sizeof(title) - 1] = '\0';
 	gdk_threads_add_idle(ShowError_GTK, NULL);
 }
 
@@ -120,7 +122,7 @@ static void Start(void)
 {
 	const char* ip = NULL;
 	SOCKET s = INVALID_SOCKET;
-	int port = atoi(gtk_entry_get_text(portEntry));
+	int port = strtoul(gtk_entry_get_text(portEntry), NULL, 10);
 
 	if (port <= 0 || port > 65535) {
 		MSG_ERROR("Invalid Port value");
@@ -169,7 +171,8 @@ static void Start(void)
 			gtk_button_set_label(start_button, "Connect");
 			return;
 		}
-		strncpy(g_settings.ip, ip, sizeof(g_settings.ip));
+		strncpy(g_settings.ip, ip, sizeof(g_settings.ip) - 1);
+		g_settings.ip[sizeof(g_settings.ip) - 1] = '\0';
 	}
 
 	if (g_settings.video) {

@@ -78,8 +78,8 @@ int find_v4l2_device(const char* bus_info) {
 }
 
 void set_v4l2_device(const char* device) {
-    memset(v4l2_device, 0, sizeof(v4l2_device));
-    strncpy(v4l2_device, device, sizeof(v4l2_device)-1);
+    strncpy(v4l2_device, device, sizeof(v4l2_device) - 1);
+    v4l2_device[sizeof(v4l2_device) - 1] = '\0';
 }
 
 void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBCAM_H) {

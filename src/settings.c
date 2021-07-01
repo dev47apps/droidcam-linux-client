@@ -42,19 +42,18 @@ void LoadSettings(struct settings* settings) {
 
     if (version == 1) {
         if (fgets(buf, sizeof(buf), fp)){
-            buf[strlen(buf)-1] = '\0';
-            strncpy(settings->ip, buf, sizeof(settings->ip));
+            strncpy(settings->ip, buf, sizeof(settings->ip) - 1);
+            settings->ip[sizeof(settings->ip) - 1] = '\0';
         }
 
         if (fgets(buf, sizeof(buf), fp)) {
-            buf[strlen(buf)-1] = '\0';
-            settings->port = atoi(buf);
+            settings->port = strtoul(buf, NULL, 10);
         }
     }
     else if (version == 2 || version == 3) {
         if (fgets(buf, sizeof(buf), fp)){
-            buf[strlen(buf)-1] = '\0';
-            strncpy(settings->ip, buf, sizeof(settings->ip));
+            strncpy(settings->ip, buf, sizeof(settings->ip) - 1);
+            settings->ip[sizeof(settings->ip) - 1] = '\0';
         }
         if (fgets(buf, sizeof(buf), fp)) {
             sscanf(buf, "%d", &settings->port);
