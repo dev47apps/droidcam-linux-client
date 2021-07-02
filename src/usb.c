@@ -83,15 +83,11 @@ EXIT:
 	return rc;
 }
 
-// free-ing this list causes a connection reset on some systems
-usbmuxd_device_info_t *deviceList = NULL;
-int deviceCount = 0;
-
 int CheckiOSDevices(int port) {
-	if (!deviceList) {
-		deviceCount = usbmuxd_get_device_list(&deviceList);
-		dbgprint("CheckiOSDevices: found %d devices\n", deviceCount);
-	}
+	usbmuxd_device_info_t *deviceList = NULL;
+	const int deviceCount = usbmuxd_get_device_list(&deviceList);
+	dbgprint("CheckiOSDevices: found %d devices\n", deviceCount);
+
 	if (deviceCount < 0) {
 		MSG_ERROR("Error loading devices.\n"
 			"Make sure usbmuxd service is installed and running.");
@@ -103,19 +99,35 @@ int CheckiOSDevices(int port) {
 		return ERROR_NO_DEVICES;
 	}
 
-	int rc = usbmuxd_connect(deviceList[0].handle, (short) port);
+	const int rc = usbmuxd_connect(deviceList[0].handle, (short)port);
 	if (rc <= 0) {
-		dbgprint("usbmuxd_connect failed: %d\n", rc);
-		rc = ERROR_ADDING_FORWARD;
 		MSG_ERROR("Error getting a connection.\n"
 			"Make sure DroidCam app is open,\nor try re-attaching device.");
+		return ERROR_ADDING_FORWARD;
+	}
+
+	if (usbmuxd_device_list_free(&deviceList) != 0) {
+		errprint("CheckiOSDevices: freeing device list failed.\n");
 	}
 
 	return rc;
 }
 
-void FreeUSB() {
-	if (deviceList) usbmuxd_device_list_free(&deviceList);
-	deviceList = NULL;
-	deviceCount = 0;
+int SendRecviOS(const bool doSend, char *data, uint32_t len, int sfd) {
+	uint32_t transferred_bytes = 0;
+	int retval;
+
+	while (len > 0)	{
+		retval = (doSend)
+					 ? usbmuxd_send(sfd, data, len, &transferred_bytes)
+					 : usbmuxd_recv(sfd, data, len, &transferred_bytes);
+		if (retval != 0) {
+			// usbmuxd returns negative errno on failure
+			return retval;
+		}
+		data += transferred_bytes;
+		len -= transferred_bytes;
+	}
+
+	return transferred_bytes;
 }

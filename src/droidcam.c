@@ -112,7 +112,7 @@ static void Stop(void)
 		g_thread_join(hDecodeThread);
 		hDecodeThread = NULL;
 	}
-	FreeUSB();
+
 	gtk_widget_set_sensitive(GTK_WIDGET(elButton), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(wbButton), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(menuButton), FALSE);

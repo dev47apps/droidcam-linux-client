@@ -18,6 +18,13 @@ extern struct settings g_settings;
 
 const char *thread_cmd_val_str;
 
+static inline int SendRecvUSB(const bool doSend, char *data, uint32_t len, int sfd) {
+    if (g_settings.connection == CB_RADIO_IOS)
+        return SendRecviOS(doSend, data, len, sfd);
+    else
+        return SendRecv(doSend, data, len, sfd);
+}
+
 void * DecodeThreadProc(void * args) {
     dbgprint("Decode Thread Start\n");
     while (v_running != 0){
@@ -47,21 +54,19 @@ server_wait:
         keep_waiting = 1;
     }
 
-    {
-        len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
-        if (SendRecv(1, buf, len, videoSocket) <= 0){
-            MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
-            goto early_out;
-        }
+    len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
+    if (SendRecvUSB(true, buf, len, videoSocket) <= 0){
+        MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
+        goto early_out;
     }
 
     memset(buf, 0, sizeof(buf));
-    if (SendRecv(0, buf, 9, videoSocket) <= 0) {
+    if (SendRecvUSB(false, buf, 9, videoSocket) <= 0) {
         MSG_ERROR("Connection reset!\nIs the app running?");
         goto early_out;
     }
 
-    if (decoder_prepare_video(buf) == FALSE) {
+    if (decoder_prepare_video(buf) == 0) {
         goto early_out;
     }
 
@@ -75,16 +80,17 @@ server_wait:
                 len = snprintf(buf, sizeof(buf), OTHER_REQ, thread_cmd);
             }
             if (len) {
-                SendRecv(1, buf, len, videoSocket);
+                SendRecvUSB(true, buf, len, videoSocket);
             }
             thread_cmd = 0;
         }
 
         JPGFrame *f = pull_empty_jpg_frame();
-        if (SendRecv(0, buf, 4, videoSocket) == FALSE) break;
-        make_int4(len, buf[0], buf[1], buf[2], buf[3]);
-        f->length = len;
-        if (SendRecv(0, (char*)f->data, len, videoSocket) == FALSE)
+        if (SendRecvUSB(false, buf, 4, videoSocket) <= 0)
+            break;
+
+        f->length = le32toh(*(uint32_t*) buf);
+        if (SendRecvUSB(false, (char*)f->data, f->length, videoSocket) <= 0)
             break;
 
         push_jpg_frame(f, false);
@@ -164,13 +170,13 @@ TCP_ONLY:
         return 0;
     }
 
-    if (SendRecv(1, AUDIO_REQ, CSTR_LEN(AUDIO_REQ), socket) <= 0) {
+    if (SendRecvUSB(true, (char*) AUDIO_REQ, CSTR_LEN(AUDIO_REQ), socket) <= 0) {
         MSG_ERROR("Error sending audio request");
         goto early_out;
     }
 
     memset(stream_buf, 0, 6);
-    if (SendRecv(0, stream_buf, 6, socket) <= 0) {
+    if (SendRecvUSB(false, stream_buf, 6, socket) <= 0) {
         MSG_ERROR("Audio connection reset!");
         goto early_out;
     }

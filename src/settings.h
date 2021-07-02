@@ -3,6 +3,7 @@
 #define _SETTINGS_H_
 
 #include <netinet/in.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 enum radios {
@@ -63,6 +64,6 @@ void SaveSettings(struct settings* settings);
 #define ERROR_DEVICE_NOTAUTH  -5
 int CheckAdbDevices(int port);
 int CheckiOSDevices(int port);
-void FreeUSB();
+int SendRecviOS(const bool doSend, char *data, uint32_t len, int sfd);
 
 #endif

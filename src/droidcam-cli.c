@@ -274,8 +274,8 @@ int main(int argc, char *argv[]) {
     if (athread.rc == 0) pthread_join(athread.t, NULL);
     if (vthread.rc == 0) pthread_join(vthread.t, NULL);
     if (dthread.rc == 0) pthread_join(dthread.t, NULL);
+    
     decoder_fini();
-    FreeUSB();
     dbgprint("exit\n");
     return 0;
 }
