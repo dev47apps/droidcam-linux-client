@@ -6,17 +6,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # Use at your own risk. See README file for more details.
 
-JPEG_DIR ?= /opt/libjpeg-turbo
-JPEG_INCLUDE ?= $(JPEG_DIR)/include
-JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
-
 CC   = gcc
 CFLAGS = -Wall -Wextra -O2
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
 GTK  += `pkg-config --cflags --libs appindicator3-0.1`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
-JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
+JPEG  = -lturbojpeg
 SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
 USBMUXD = -lusbmuxd-2.0
 
