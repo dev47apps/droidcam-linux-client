@@ -88,9 +88,9 @@ server_wait:
         JPGFrame *f = pull_empty_jpg_frame();
         if (SendRecvUSB(false, buf, 4, videoSocket) <= 0)
             break;
-        make_int4(len, buf[0], buf[1], buf[2], buf[3]);
-        f->length = len;
-        if (SendRecvUSB(false, (char*)f->data, len, videoSocket) <= 0)
+
+        f->length = le32toh(*(uint32_t*) buf);
+        if (SendRecvUSB(false, (char*)f->data, f->length, videoSocket) <= 0)
             break;
 
         push_jpg_frame(f, false);

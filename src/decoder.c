@@ -169,30 +169,29 @@ void decoder_fini() {
 }
 
 int decoder_prepare_video(char * header) {
-    int i;
-    make_int(jpg_decoder.m_width,  header[0], header[1]);
-    make_int(jpg_decoder.m_height, header[2], header[3]);
+    jpg_decoder.m_width = be16toh(*(uint16_t*) &header[0]);
+    jpg_decoder.m_height = be16toh(*(uint16_t*) &header[2]);
 
     if (droidcam_device_fd <= 0) {
         MSG_ERROR("Missing video device");
-        return FALSE;
+        return 0;
     }
 
     if (jpg_decoder.m_width <= 0 || jpg_decoder.m_height <= 0) {
         MSG_ERROR("Invalid data stream!");
-        return FALSE;
+        return 0;
     }
 
     jpg_decoder.tj = tjInitDecompress();
     if (!jpg_decoder.tj) {
         MSG_ERROR("Error creating decoder!");
-        return FALSE;
+        return 0;
     }
 
     jpg_decoder.tjXform = tjInitTransform();
     if (!jpg_decoder.tjXform) {
         MSG_ERROR("Error creating transform!");
-        return FALSE;
+        return 0;
     }
 
     if (jpg_decoder.invert) {
@@ -248,7 +247,7 @@ int decoder_prepare_video(char * header) {
     dbgprint("jpg: decodebuf: %p\n", jpg_decoder.m_decodeBuf);
     dbgprint("jpg: inbuf    : %p\n", jpg_decoder.m_inBuf);
 
-    for (i = 0; i < JPG_BACKBUF_MAX; i++) {
+    for (int i = 0; i < JPG_BACKBUF_MAX; i++) {
         jpg_frames[i].data = &jpg_decoder.m_inBuf[i*jpg_decoder.m_Yuv420Size];
         jpg_frames[i].length = 0;
         dbgprint("jpg: jpg_frames[%d]: %p\n", i, jpg_frames[i].data);
@@ -266,7 +265,7 @@ int decoder_prepare_video(char * header) {
     jpg_decoder.tjDstSlice[2] = jpg_decoder.tjDstSlice[1] + jpg_decoder.m_uvSize;
     jpg_decoder.tjDstSlice[3] = NULL;
 
-    return TRUE;
+    return 1;
 }
 
 snd_pcm_t * decoder_prepare_audio(void) {

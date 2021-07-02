@@ -31,14 +31,6 @@ void ShowError(const char*, const char*);
 #define CSTR_LEN(x) (sizeof(x)-1)
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
-#define make_int(num, b1, b2)	num = 0; num |=(b1&0xFF); num <<= 8; num |= (b2&0xFF);
-#define make_int4(num, b0, b1, b2, b3) \
-    num = 0; \
-    num |= (b3&0xFF); num <<= 8; \
-    num |= (b2&0xFF); num <<= 8; \
-    num |= (b1&0xFF); num <<= 8; \
-    num |= (b0&0xFF)
-
 #define errprint(...) fprintf(stderr, __VA_ARGS__)
 #define voidprint(...) /* */
 #define dbgprint      voidprint
