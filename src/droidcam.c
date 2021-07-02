@@ -324,8 +324,8 @@ static void controls_callback(GtkWidget* widget, gpointer extra) {
 
 // wbMenu callback
 static void wb_callback(GtkWidget* widget, gpointer extra) {
-	int cb = (uintptr_t) extra;
-	dbgprint("wb_callback=%d\n", cb);
+	uintptr_t cb = (uintptr_t) extra;
+	dbgprint("wb_callback=%lu\n", cb);
 	if (cb < ARRAY_LEN(wb_options) && v_running == 1 && thread_cmd == 0) {
 		thread_cmd_val_str = wb_values[cb];
 		thread_cmd = CB_CONTROL_WB;
