@@ -41,7 +41,7 @@ void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
 void * DecodeThreadProc(void * args);
 
-void sig_handler(int sig) {
+void sig_handler(__attribute__((__unused__)) int sig) {
     a_running = 0;
     v_running = 0;
     return;
@@ -51,7 +51,7 @@ void ShowError(const char * title, const char * msg) {
     errprint("%s: %s\n", title, msg);
 }
 
-static inline void usage(int argc, char *argv[]) {
+static inline void usage(__attribute__((__unused__)) int argc, char *argv[]) {
     fprintf(stderr, "Usage: \n"
     " %s -l <port>\n"
     "   Listen on 'port' for connections (video only)\n"

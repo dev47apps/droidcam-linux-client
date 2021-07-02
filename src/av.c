@@ -25,16 +25,19 @@ static inline int SendRecvUSB(const bool doSend, char *data, uint32_t len, int s
         return SendRecv(doSend, data, len, sfd);
 }
 
-void * DecodeThreadProc(void * args) {
+void *DecodeThreadProc(__attribute__((__unused__)) void *args)
+{
     dbgprint("Decode Thread Start\n");
-    while (v_running != 0){
-       JPGFrame *f = pull_ready_jpg_frame();
-       if (!f) {
+    while (v_running != 0)
+    {
+        JPGFrame *f = pull_ready_jpg_frame();
+        if (!f)
+        {
             usleep(2000);
             continue;
-       }
-       process_frame(f);
-       push_jpg_frame(f, true);
+        }
+        process_frame(f);
+        push_jpg_frame(f, true);
     }
     dbgprint("Decode Thread End\n");
     return 0;
