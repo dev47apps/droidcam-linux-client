@@ -33,7 +33,8 @@ void *DecodeThreadProc(__attribute__((__unused__)) void *args)
         JPGFrame *f = pull_ready_jpg_frame();
         if (!f)
         {
-            usleep(2000);
+            struct timespec delay = {0, 2000000};
+            while (nanosleep(&delay, &delay));
             continue;
         }
         process_frame(f);
@@ -147,7 +148,8 @@ void *AudioThreadProc(void *arg) {
         dbgprint("Audio Thread UDP try #%d\n", tries);
         SendUDPMessage(socket, AUDIO_REQ, CSTR_LEN(AUDIO_REQ), g_settings.ip, g_settings.port + 1);
         for (int i = 0; i < 12; i++) {
-            usleep(32000);
+            struct timespec delay = {0, 32000000};
+            while (nanosleep(&delay, &delay));
             int len = RecvNonBlockUDP(stream_buf, STREAM_BUF_SIZE, socket);
             if (len < 0) { goto TCP_ONLY; }
             if (len > 0) {
@@ -227,7 +229,8 @@ STREAM:
             goto early_out;
         }
         if (err == 0) {
-            usleep(1000);
+            struct timespec delay = {0, 1000000};
+            while (nanosleep(&delay, &delay));
             continue;
         }
 
@@ -256,7 +259,8 @@ STREAM:
             dbgprint("audio keepalive\n");
             SendUDPMessage(socket, AUDIO_REQ, CSTR_LEN(AUDIO_REQ), g_settings.ip, g_settings.port + 1);
         }
-        usleep(2000);
+        struct timespec delay = {0, 2000000};
+        while (nanosleep(&delay, &delay));
     }
 
 early_out:

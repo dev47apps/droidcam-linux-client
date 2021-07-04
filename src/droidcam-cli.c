@@ -175,7 +175,8 @@ void wait_command() {
 
         if (len < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                usleep(2000);
+                struct timespec delay = {0, 2000000};
+                while (nanosleep(&delay, &delay));
                 continue;
             }
             return;
@@ -266,8 +267,10 @@ int main(int argc, char *argv[]) {
         wait_command();
     }
 
-    while (v_running || a_running)
-        usleep(2000);
+    while (v_running || a_running) {
+        struct timespec delay = {0, 2000000};
+        while (nanosleep(&delay, &delay));
+    }
 
     dbgprint("joining\n");
     sig_handler(SIGHUP);

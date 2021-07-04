@@ -15,6 +15,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <time.h>
 
 #include "common.h"
 #include "connection.h"
@@ -186,7 +187,8 @@ SOCKET accept_connection(int port)
     while(v_running && (client = accept(wifiServerSocket, NULL, NULL)) == INVALID_SOCKET)
     {
         if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR){
-            usleep(50000);
+            struct timespec delay = {0, 50000000};
+            while (nanosleep(&delay, &delay));
             continue;
         }
         MSG_LASTERROR("Accept Failed");

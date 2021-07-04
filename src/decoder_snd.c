@@ -9,7 +9,6 @@
 #include "common.h"
 #include "decoder.h"
 
-
 #define AUDIO_RATE     16000
 #define AUDIO_CHANNELS     1
 #define PERIOD_TIME    (DROIDCAM_CHUNK_MS_2 * 1000)
@@ -151,7 +150,9 @@ static int xrun_recovery(snd_pcm_t *handle, int err) {
     else if (err == -ESTRPIPE) {
         int limit = 60000;
         while ((err = snd_pcm_resume(handle)) == -EAGAIN) {
-            usleep(1000);   /* wait until the suspend flag is released */
+            /* wait until the suspend flag is released */
+            struct timespec delay = {0, 1000000};
+            while (nanosleep(&delay, &delay)); 
             if (--limit == 0) break;
         }
 
