@@ -105,7 +105,7 @@ int RecvNonBlockUDP(char * buffer, int bytes, SOCKET s) {
 
 int SendUDPMessage(SOCKET s, const char *message, int length, char *ip, int port) {
     struct sockaddr_in sin;
-    sin.sin_port = htons((uint16_t)port);
+    sin.sin_port = htons(port);
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = inet_addr(ip);
     return sendto(s, message, length, 0, (struct sockaddr *)&sin, sizeof(sin));

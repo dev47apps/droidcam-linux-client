@@ -56,7 +56,7 @@ void LoadSettings(struct settings* settings) {
             settings->ip[sizeof(settings->ip) - 1] = '\0';
         }
         if (fgets(buf, sizeof(buf), fp)) {
-            sscanf(buf, "%d", &settings->port);
+            sscanf(buf, "%hu", &settings->port);
         }
         if (fgets(buf, sizeof(buf), fp)) {
             sscanf(buf, "%d", &settings->audio);
@@ -71,17 +71,14 @@ void LoadSettings(struct settings* settings) {
         }
     }
     else if (version == 4) {
-        int arg1, arg2;
         while (fgets(buf, sizeof(buf), fp)) {
             if (1 == sscanf(buf, "ip=%16s\n", settings->ip))    continue;
-            if (1 == sscanf(buf, "port=%d\n", &settings->port)) continue;
+            if (1 == sscanf(buf, "port=%hu\n", &settings->port)) continue;
 
             if (1 == sscanf(buf, "audio=%d\n", &settings->audio)) continue;
             if (1 == sscanf(buf, "video=%d\n", &settings->video)) continue;
 
-            if (2 == sscanf(buf, "size=%dx%d\n", &arg1, &arg2)) {
-                settings->v4l2_width = arg1;
-                settings->v4l2_height = arg2;
+            if (2 == sscanf(buf, "size=%ux%u\n", &settings->v4l2_width, &settings->v4l2_height)) {
                 continue;
             }
 
