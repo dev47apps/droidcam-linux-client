@@ -6,13 +6,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
 #include <pthread.h>
 #include <signal.h>
-#include <linux/limits.h>
 
 #include "common.h"
 #include "settings.h"

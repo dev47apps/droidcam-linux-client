@@ -18,7 +18,7 @@ LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
 SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
-USBMUXD = -lusbmuxd-2.0
+USBMUXD = -lusbmuxd
 
 all: droidcam-cli droidcam
 
