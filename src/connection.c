@@ -6,16 +6,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <arpa/inet.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/select.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "common.h"
 #include "connection.h"

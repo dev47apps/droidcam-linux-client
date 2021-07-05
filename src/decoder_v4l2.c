@@ -6,12 +6,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <linux/videodev2.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
 
 #include "common.h"
 #include "decoder.h"

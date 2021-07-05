@@ -6,11 +6,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <string.h>
-#include <sys/types.h>
 #include <gtk/gtk.h>
-#include <X11/Xlib.h>
 #include <libappindicator/app-indicator.h>
+#include <X11/Xlib.h>
 
 #include "common.h"
 #include "settings.h"

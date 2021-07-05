@@ -6,8 +6,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <stdint.h>
-
 #ifndef __CONN_H__
 #define __CONN_H__
 
