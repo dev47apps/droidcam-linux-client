@@ -97,6 +97,7 @@ int CheckiOSDevices(uint16_t port) {
 	if (deviceCount == 0) {
 		MSG_ERROR("No devices detected.\n"
 			"Make sure usbmuxd service running and this computer is trusted.");
+		usbmuxd_device_list_free(&deviceList);
 		return ERROR_NO_DEVICES;
 	}
 
@@ -104,11 +105,8 @@ int CheckiOSDevices(uint16_t port) {
 	if (sfd <= 0) {
 		MSG_ERROR("Error getting a connection.\n"
 			"Make sure DroidCam app is open,\nor try re-attaching device.");
+		usbmuxd_device_list_free(&deviceList);
 		return ERROR_ADDING_FORWARD;
-	}
-
-	if (usbmuxd_device_list_free(&deviceList) != 0) {
-		errprint("CheckiOSDevices: freeing device list failed.\n");
 	}
 
 	// remove the NONBLOCK flag
@@ -116,5 +114,6 @@ int CheckiOSDevices(uint16_t port) {
 	flags &= ~O_NONBLOCK;
 	fcntl(sfd, F_SETFL, flags);
 
+	usbmuxd_device_list_free(&deviceList);
 	return sfd;
 }
