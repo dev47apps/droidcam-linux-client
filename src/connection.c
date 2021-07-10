@@ -67,6 +67,10 @@ SOCKET Connect(const char* ip, int port) {
     flags &= ~O_NONBLOCK;
     fcntl(sock, F_SETFL, flags);
 
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0
+    || setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
+        perror("setsockopt failed");
+
 _error_out:
     dbgprint(" - return fd: %d\n", sock);
     return sock;
@@ -105,7 +109,7 @@ int RecvNonBlockUDP(char * buffer, int bytes, SOCKET s) {
 
 int SendUDPMessage(SOCKET s, const char *message, int length, char *ip, int port) {
     struct sockaddr_in sin;
-    sin.sin_port = htons(port);
+    sin.sin_port = htons((uint16_t)port);
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = inet_addr(ip);
     return sendto(s, message, length, 0, (struct sockaddr *)&sin, sizeof(sin));

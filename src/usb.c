@@ -6,6 +6,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -96,38 +97,23 @@ int CheckiOSDevices(int port) {
 	if (deviceCount == 0) {
 		MSG_ERROR("No devices detected.\n"
 			"Make sure usbmuxd service running and this computer is trusted.");
+		usbmuxd_device_list_free(&deviceList);
 		return ERROR_NO_DEVICES;
 	}
 
-	const int rc = usbmuxd_connect(deviceList[0].handle, (short)port);
-	if (rc <= 0) {
+	const int sfd = usbmuxd_connect(deviceList[0].handle, port);
+	if (sfd <= 0) {
 		MSG_ERROR("Error getting a connection.\n"
 			"Make sure DroidCam app is open,\nor try re-attaching device.");
+		usbmuxd_device_list_free(&deviceList);
 		return ERROR_ADDING_FORWARD;
 	}
 
-	if (usbmuxd_device_list_free(&deviceList) != 0) {
-		errprint("CheckiOSDevices: freeing device list failed.\n");
-	}
+	// remove the NONBLOCK flag
+	int flags = fcntl(sfd, F_GETFL, NULL);
+	flags &= ~O_NONBLOCK;
+	fcntl(sfd, F_SETFL, flags);
 
-	return rc;
-}
-
-int SendRecviOS(const bool doSend, char *data, uint32_t len, int sfd) {
-	uint32_t transferred_bytes = 0;
-	int retval;
-
-	while (len > 0)	{
-		retval = (doSend)
-					 ? usbmuxd_send(sfd, data, len, &transferred_bytes)
-					 : usbmuxd_recv(sfd, data, len, &transferred_bytes);
-		if (retval != 0) {
-			// usbmuxd returns negative errno on failure
-			return retval;
-		}
-		data += transferred_bytes;
-		len -= transferred_bytes;
-	}
-
-	return transferred_bytes;
+	usbmuxd_device_list_free(&deviceList);
+	return sfd;
 }

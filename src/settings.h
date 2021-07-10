@@ -3,8 +3,6 @@
 #define _SETTINGS_H_
 
 #include <netinet/in.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 enum radios {
     CB_RADIO_WIFI,
@@ -42,7 +40,7 @@ enum control_codes {
 
 struct settings {
     char ip[INET_ADDRSTRLEN];
-    uint16_t port;
+    int port;
     int audio;
     int video;
     int connection; // Connection type
@@ -64,6 +62,5 @@ void SaveSettings(struct settings* settings);
 #define ERROR_DEVICE_NOTAUTH  -5
 int CheckAdbDevices(int port);
 int CheckiOSDevices(int port);
-int SendRecviOS(const bool doSend, char *data, uint32_t len, int sfd);
 
 #endif
