@@ -67,6 +67,10 @@ SOCKET Connect(const char* ip, int port) {
     flags &= ~O_NONBLOCK;
     fcntl(sock, F_SETFL, flags);
 
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0
+    || setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
+        perror("setsockopt failed");
+
 _error_out:
     dbgprint(" - return fd: %d\n", sock);
     return sock;
