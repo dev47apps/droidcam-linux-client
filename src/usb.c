@@ -111,8 +111,10 @@ int CheckiOSDevices(uint16_t port) {
 		errprint("CheckiOSDevices: freeing device list failed.\n");
 	}
 
+	// remove the NONBLOCK flag
 	int flags = fcntl(sfd, F_GETFL, NULL);
-    flags &= ~O_NONBLOCK;
-    fcntl(sfd, F_SETFL, flags);
+	flags &= ~O_NONBLOCK;
+	fcntl(sfd, F_SETFL, flags);
+
 	return sfd;
 }
