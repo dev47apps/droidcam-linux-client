@@ -62,8 +62,7 @@ void SaveSettings(struct settings* settings);
 #define ERROR_ADDING_FORWARD  -3
 #define ERROR_DEVICE_OFFLINE  -4
 #define ERROR_DEVICE_NOTAUTH  -5
-int CheckAdbDevices(int port);
-int CheckiOSDevices(int port);
-int SendRecviOS(const bool doSend, char *data, uint32_t len, int sfd);
+int CheckAdbDevices(uint16_t port);
+int CheckiOSDevices(uint16_t port);
 
 #endif
