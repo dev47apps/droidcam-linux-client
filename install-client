@@ -15,15 +15,17 @@ if [ -f "$USER_HOME/.droidcam/settings" ]; then
 	mv "$USER_HOME/.droidcam/settings" "$USER_HOME/.config/droidcam"
 	rm -rf "$USER_HOME/.droidcam"
 fi
+# remove old-old binaries
+rm -f /usr/bin/droidcam*
 
 echo "Copying files"
 set -x
 cp uninstall    /opt/droidcam-uninstall
 cp icon2.png    /opt/droidcam-icon.png
-cp droidcam     /usr/bin/
-cp droidcam-cli /usr/bin/
+cp droidcam     /usr/local/bin/
+cp droidcam-cli /usr/local/bin/
 set +x
-if [ -d "/usr/share/applications" ]; then
-	cp droidcam.desktop /usr/share/applications/
+if [ "$(command -v xdg-desktop-menu)" != "" ]; then
+	xdg-desktop-menu install --novendor droidcam.desktop
 fi
 echo "Done"
