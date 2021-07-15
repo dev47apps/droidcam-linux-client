@@ -11,7 +11,7 @@
 
 #define INVALID_SOCKET -1
 typedef int SOCKET;
-typedef intptr_t SOCKET_PTR;
+typedef long int SOCKET_PTR;
 
 SOCKET Connect(const char* ip, int port);
 void connection_cleanup();

@@ -69,11 +69,11 @@ EXIT:
 			"Reconnect device and try running `adb devices` in Terminal.");
 	}
 	else if (rc == ERROR_DEVICE_OFFLINE) {
-		system("adb kill-server");
+		if (system("adb kill-server") < 0){}
 		MSG_ERROR("Device is offline. Try re-attaching device.");
 	}
 	else if (rc == ERROR_DEVICE_NOTAUTH) {
-		system("adb kill-server");
+		if (system("adb kill-server") < 0){}
 		MSG_ERROR("Device is in unauthorized state.");
 	}
 	else {

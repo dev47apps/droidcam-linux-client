@@ -347,7 +347,9 @@ static void decoder_share_frame() {
         p = jpg_decoder.m_webcamBuf;
     }
 
-    write(droidcam_device_fd, p, jpg_decoder.m_webcamYuvSize);
+    if (write(droidcam_device_fd, p, jpg_decoder.m_webcamYuvSize) < 0) {
+        errprint("error: write() failed for video device\n");
+    }
 }
 
 
