@@ -9,6 +9,7 @@
 #include <gtk/gtk.h>
 #include <libappindicator/app-indicator.h>
 #include <X11/Xlib.h>
+#include <stdint.h>
 
 #include "common.h"
 #include "settings.h"
@@ -149,7 +150,7 @@ static void Start(void) {
 
 	if (g_settings.connection == CB_RADIO_ADB) {
 		if (CheckAdbDevices(port) < 0) return;
-		ip = "127.0.0.1";
+		ip = ADB_LOCALHOST_IP;
 	} else if (g_settings.connection == CB_RADIO_IOS) {
 		s = CheckiOSDevices(port);
 		if (s <= 0) {

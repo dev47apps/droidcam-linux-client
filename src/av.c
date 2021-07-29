@@ -10,6 +10,7 @@
 #include "settings.h"
 #include "connection.h"
 #include "decoder.h"
+#include <stdint.h>
 
 extern int a_running;
 extern int v_running;
