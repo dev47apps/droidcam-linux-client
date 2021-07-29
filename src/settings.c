@@ -86,6 +86,7 @@ void LoadSettings(struct settings* settings) {
             }
 
             if (1 == sscanf(buf, "type=%d\n",&settings->connection)) continue;
+            if (1 == sscanf(buf, "adb_auto_start=%d\n",&settings->adb_auto_start)) continue;
             if (1 == sscanf(buf, "confirm_close=%d\n",&settings->confirm_close)) continue;
             if (1 == sscanf(buf, "vertical_flip=%d\n",&settings->vertical_flip)) continue;
             if (1 == sscanf(buf, "horizontal_flip=%d\n",&settings->horizontal_flip)) continue;
@@ -99,6 +100,7 @@ void LoadSettings(struct settings* settings) {
         "settings: audio=%d\n"
         "settings: video=%d\n"
         "settings: size=%dx%d\n"
+        "settings: adb_auto_start=%d\n"
         "settings: confirm_close=%d\n"
         "settings: vertical_flip=%d\n"
         "settings: horizontal_flip=%d\n"
@@ -109,6 +111,7 @@ void LoadSettings(struct settings* settings) {
         settings->audio,
         settings->video,
         settings->v4l2_width, settings->v4l2_height,
+        settings->adb_auto_start,
         settings->confirm_close,
         settings->vertical_flip,
         settings->horizontal_flip,
@@ -127,6 +130,7 @@ void SaveSettings(struct settings* settings) {
         "audio=%d\n"
         "video=%d\n"
         "size=%dx%d\n"
+        // TODO "adb_auto_start=%d\n"
         "confirm_close=%d\n"
         "vertical_flip=%d\n"
         "horizontal_flip=%d\n"

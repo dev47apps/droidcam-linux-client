@@ -27,6 +27,7 @@ void ShowError(const char*, const char*);
 #define STOP_REQ  "CMD /v1/stop"
 
 #define PING_REQ "CMD /ping"
+#define BATTERY_REQ "GET /battery HTTP/1.0\r\n\r\n"
 
 #define CSTR_LEN(x) (sizeof(x)-1)
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))

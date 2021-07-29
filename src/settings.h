@@ -2,8 +2,6 @@
 #ifndef _SETTINGS_H_
 #define _SETTINGS_H_
 
-#include <netinet/in.h>
-
 enum radios {
     CB_RADIO_WIFI,
     CB_RADIO_ADB,
@@ -39,13 +37,14 @@ enum control_codes {
 };
 
 struct settings {
-    char ip[INET_ADDRSTRLEN];
+    char ip[16];
     int port;
     int audio;
     int video;
     int connection; // Connection type
     unsigned v4l2_width, v4l2_height;
 
+    int adb_auto_start;
     int confirm_close;
     int horizontal_flip;
     int vertical_flip;
@@ -62,5 +61,7 @@ void SaveSettings(struct settings* settings);
 #define ERROR_DEVICE_NOTAUTH  -5
 int CheckAdbDevices(int port);
 int CheckiOSDevices(int port);
+
+void UpdateBatteryLabel(char *battery_value);
 
 #endif

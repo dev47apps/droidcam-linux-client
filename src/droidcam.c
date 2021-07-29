@@ -22,6 +22,7 @@ GtkWidget *wbMenu;
 GtkWidget *wbButton;
 GtkWidget *elButton;
 GtkWidget *infoText;
+GtkWidget *batteryText;
 GtkWidget *audioCheckbox;
 GtkWidget *videoCheckbox;
 GtkEntry * ipEntry;
@@ -30,12 +31,12 @@ GtkButton *start_button;
 GThread* hVideoThread;
 GThread* hAudioThread;
 GThread* hDecodeThread;
+GThread* hBatteryThread;
 
 char *v4l2_dev = 0;
 int a_running = 0;
 int v_running = 0;
 int thread_cmd = 0;
-
 struct settings g_settings = {0};
 
 extern const char *thread_cmd_val_str;
@@ -46,6 +47,7 @@ const char *APP_ICON_FILE = "/opt/droidcam-icon.png";
 void * AudioThreadProc(void * args);
 void * VideoThreadProc(void * args);
 void * DecodeThreadProc(void * args);
+void * BatteryThreadProc(void * args);
 
 const char* wb_options[] = {
 	"Automatic",
@@ -73,8 +75,7 @@ const char* wb_values[] = {
 char title[256];
 char msg[256];
 
-gboolean ShowError_GTK(gpointer data)
-{
+gboolean ShowError_GTK(gpointer data) {
 	GtkWidget *dialog = gtk_message_dialog_new(NULL,
 		(GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL),
 		GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "%s", msg);
@@ -84,8 +85,7 @@ gboolean ShowError_GTK(gpointer data)
 	return FALSE;
 }
 
-void ShowError(const char* in_title, const char* in_msg)
-{
+void ShowError(const char* in_title, const char* in_msg) {
 	strncpy(msg, in_msg, sizeof(msg) - 1);
 	msg[sizeof(msg) - 1] = '\0';
 	strncpy(title, in_title, sizeof(title) - 1);
@@ -93,8 +93,11 @@ void ShowError(const char* in_title, const char* in_msg)
 	gdk_threads_add_idle(ShowError_GTK, NULL);
 }
 
-static void Stop(void)
-{
+void UpdateBatteryLabel(char *battery_value)  {
+	gtk_label_set_text(GTK_LABEL(batteryText), battery_value);
+}
+
+static void Stop(void) {
 	a_running = 0;
 	v_running = 0;
 	dbgprint("join\n");
@@ -110,14 +113,18 @@ static void Stop(void)
 		g_thread_join(hDecodeThread);
 		hDecodeThread = NULL;
 	}
+	if (hBatteryThread) {
+		g_thread_join(hBatteryThread);
+		hBatteryThread = NULL;
+	}
 
 	gtk_widget_set_sensitive(GTK_WIDGET(elButton), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(wbButton), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(menuButton), FALSE);
+	UpdateBatteryLabel("");
 }
 
-static void Start(void)
-{
+static void Start(void) {
 	const char* ip = NULL;
 	SOCKET s = INVALID_SOCKET;
 	int port = strtoul(gtk_entry_get_text(portEntry), NULL, 10);
@@ -185,6 +192,8 @@ static void Start(void)
 		a_running = 1;
 		hAudioThread = g_thread_new(NULL, AudioThreadProc, NULL);
 	}
+
+	hBatteryThread = g_thread_new(NULL, BatteryThreadProc, NULL);
 
 EARLY_OUT:
 	gtk_button_set_label(start_button, "Stop");
@@ -584,19 +593,23 @@ int main(int argc, char *argv[])
 
 	// Put menu button in the grid, so it's not full column width, but smaller.
 	menuGrid = gtk_grid_new();
-	gtk_grid_attach(GTK_GRID(menuGrid), widget, 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(menuGrid), widget, 0, 1, 1, 1);
+
+	// Battery level label
+	batteryText = gtk_label_new(NULL);
+	gtk_grid_attach(GTK_GRID(menuGrid), batteryText, 0, 0, 1, 1);
 
 	// Add [EL] Menu button
 	widget = gtk_toggle_button_new_with_label("EL");
 	gtk_widget_set_tooltip_text(widget, "Exposure Locked");
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_EL);
-	gtk_grid_attach(GTK_GRID(menuGrid), widget, 1, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(menuGrid), widget, 1, 1, 1, 1);
 	elButton = widget;
 
 	// Add [...] Menu button
 	widget = gtk_button_new_with_label("...");
 	g_signal_connect(widget, "clicked", G_CALLBACK(the_callback), (gpointer)CB_BTN_OTR);
-	gtk_grid_attach(GTK_GRID(menuGrid), widget, 2, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(menuGrid), widget, 2, 1, 1, 1);
 	menuButton = widget;
 
 	// attach the buttons to the column

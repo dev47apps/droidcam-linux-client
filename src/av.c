@@ -18,6 +18,75 @@ extern struct settings g_settings;
 
 const char *thread_cmd_val_str;
 
+SOCKET GetConnection(void) {
+    SOCKET socket = INVALID_SOCKET;
+
+    if (g_settings.connection == CB_RADIO_IOS) {
+        socket = CheckiOSDevices(g_settings.port);
+        if (socket <= 0) socket = INVALID_SOCKET;
+    } else {
+        socket = Connect(g_settings.ip, g_settings.port);
+    }
+
+    return socket;
+}
+
+// Battry Chcek thread
+void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
+    SOCKET socket = INVALID_SOCKET;
+    char buf[128];
+    char battery_value[32];
+    int i, j;
+
+    memset(battery_value, 0, sizeof(battery_value));
+    dbgprint("Battery Thread Start\n");
+
+    usleep(500000);
+    while (v_running || a_running) {
+        socket = GetConnection();
+        if (socket == INVALID_SOCKET) {
+            goto LOOP;
+        }
+
+        if (Send(BATTERY_REQ, CSTR_LEN(BATTERY_REQ), socket) <= 0) {
+            errprint("error sending battery status request\n");
+            goto LOOP;
+        }
+
+        memset(buf, 0, sizeof(buf));
+        if (Recv(buf, sizeof(buf), socket) <= 0) {
+            goto LOOP;
+        }
+
+        for (i = 0; i < (sizeof(buf)-4); i++) {
+            if (buf[i] == '\r' && buf[i+1] == '\n' && buf[i+2] == '\r' && buf[i+3] == '\n') {
+                    i += 4;
+                    break;
+            }
+        }
+
+        j = 0;
+        while (i < sizeof(buf) && j < (sizeof(battery_value)-2) && buf[i] >= '0' && buf[i] <= '9')
+                battery_value[j++] = buf[i++];
+
+        if (j == 0)
+            battery_value[j++] = '-';
+
+        battery_value[j++] = '%';
+        battery_value[sizeof(battery_value) - 1] = 0;
+        dbgprint("battery_value: %s\n", battery_value);
+        UpdateBatteryLabel(battery_value);
+
+    LOOP:
+        disconnect(socket);
+        for (j = 0; j < 30000 && (v_running || a_running); j++)
+            usleep(1000);
+    }
+
+    dbgprint("Battery Thread End\n");
+    return 0;
+}
+
 void *DecodeThreadProc(__attribute__((__unused__)) void *args) {
     dbgprint("Decode Thread Start\n");
     while (v_running != 0) {
@@ -48,13 +117,13 @@ server_wait:
     }
 
     len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
-    if (SendRecv(true, buf, len, videoSocket) <= 0){
+    if (Send(buf, len, videoSocket) <= 0){
         MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
         goto early_out;
     }
 
     memset(buf, 0, sizeof(buf));
-    if (SendRecv(false, buf, 9, videoSocket) <= 0) {
+    if (RecvAll(buf, 9, videoSocket) <= 0) {
         MSG_ERROR("Connection reset!\nIs the app running?");
         goto early_out;
     }
@@ -73,17 +142,17 @@ server_wait:
                 len = snprintf(buf, sizeof(buf), OTHER_REQ, thread_cmd);
             }
             if (len) {
-                SendRecv(true, buf, len, videoSocket);
+                Send(buf, len, videoSocket);
             }
             thread_cmd = 0;
         }
 
         JPGFrame *f = pull_empty_jpg_frame();
-        if (SendRecv(false, buf, 4, videoSocket) <= 0)
+        if (RecvAll(buf, 4, videoSocket) <= 0)
             break;
 
         f->length = le32toh(*(uint32_t*) buf);
-        if (SendRecv(false, (char*)f->data, f->length, videoSocket) <= 0)
+        if (RecvAll((const char*)f->data, f->length, videoSocket) <= 0)
             break;
 
         push_jpg_frame(f, false);
@@ -151,25 +220,20 @@ void *AudioThreadProc(void *arg) {
 TCP_ONLY:
     dbgprint("UDP didnt work, trying TCP\n");
     mode = TCP_STREAM;
-    if (g_settings.connection == CB_RADIO_IOS) {
-        socket = CheckiOSDevices(g_settings.port);
-        if (socket <= 0) socket = INVALID_SOCKET;
-    } else {
-        socket = Connect(g_settings.ip, g_settings.port);
-    }
+    socket = GetConnection();
 
     if (socket == INVALID_SOCKET) {
-        errprint("Audio: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);
+        errprint("Audio Connection failed\n");
         return 0;
     }
 
-    if (SendRecv(true, (char*) AUDIO_REQ, CSTR_LEN(AUDIO_REQ), socket) <= 0) {
+    if (Send(AUDIO_REQ, CSTR_LEN(AUDIO_REQ), socket) <= 0) {
         MSG_ERROR("Error sending audio request");
         goto early_out;
     }
 
     memset(stream_buf, 0, 6);
-    if (SendRecv(false, stream_buf, 6, socket) <= 0) {
+    if (RecvAll(stream_buf, 6, socket) <= 0) {
         MSG_ERROR("Audio connection reset!");
         goto early_out;
     }

@@ -46,6 +46,10 @@ void ShowError(const char * title, const char * msg) {
     errprint("%s: %s\n", title, msg);
 }
 
+void UpdateBatteryLabel(char *battery_value) {
+    (void) battery_value;
+}
+
 static inline void usage(__attribute__((__unused__)) int argc, char *argv[]) {
     fprintf(stderr, "Usage: \n"
     " %s -l <port>\n"
@@ -269,7 +273,7 @@ int main(int argc, char *argv[]) {
     if (athread.rc == 0) pthread_join(athread.t, NULL);
     if (vthread.rc == 0) pthread_join(vthread.t, NULL);
     if (dthread.rc == 0) pthread_join(dthread.t, NULL);
-    
+
     decoder_fini();
     dbgprint("exit\n");
     return 0;

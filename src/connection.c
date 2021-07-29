@@ -76,23 +76,26 @@ _error_out:
     return sock;
 }
 
-int SendRecv(int doSend, const char * buffer, int bytes, SOCKET s) {
-    int retCode;
-    char * ptr = (char *)buffer;
-
+int Send(const char * buffer, int bytes, SOCKET s) {
+    ssize_t w = 0;
+    char *ptr = (char*) buffer;
     while (bytes > 0) {
-        retCode = (doSend) ? send(s, ptr, bytes, 0) : recv(s, ptr, bytes, 0);
-        if (retCode <= 0 ){ // closed or error
-            goto _error_out;
+        w = send(s, ptr, bytes, 0);
+        if (w <= 0) {
+            return -1;
         }
-        ptr += retCode;
-        bytes -= retCode;
+        bytes -= w;
+        ptr += w;
     }
+    return 1;
+}
 
-    retCode = 1;
+int Recv(const char* buffer, int bytes, SOCKET s) {
+    return recv(s, (char*)buffer, bytes, 0);
+}
 
-_error_out:
-    return retCode;
+int RecvAll(const char* buffer, int bytes, SOCKET s) {
+    return recv(s, (char*)buffer, bytes, MSG_WAITALL);
 }
 
 int RecvNonBlock(char * buffer, int bytes, SOCKET s) {
