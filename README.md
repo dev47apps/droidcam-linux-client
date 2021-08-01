@@ -76,6 +76,8 @@ To get the mic to show up in PulseAudio you can either run `pacmd load-module mo
 or by editing /etc/pulse/default.pa [as described here](https://wiki.archlinux.org/index.php/PulseAudio/Troubleshooting#Microphone).
 On some systems you need to do this after launching the droidcam client.
 
+If the Loopback card takes over your line out, you can set the default PulseAudio sink as shown here: https://askubuntu.com/a/14083
+
 To use DroidCam with Pipewire ([Source](https://gitlab.freedesktop.org/pipewire/pipewire/-/issues/713))
 * Open pavucontrol, Configuration tab
 * There's probably multiple devices called "Built-in Audio", one of them is droidcam. Try with the bottom device maybe.
