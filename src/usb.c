@@ -12,6 +12,10 @@
 #include <string.h>
 #include "usbmuxd.h"
 
+#if __FreeBSD__
+#include <sys/wait.h>
+#endif
+
 #include "common.h"
 #include "settings.h"
 

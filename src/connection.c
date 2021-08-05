@@ -16,6 +16,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#if __FreeBSD__
+#include <netinet/in.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#endif
+
 #include "common.h"
 #include "connection.h"
 

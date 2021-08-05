@@ -10,7 +10,7 @@ JPEG_DIR ?= /opt/libjpeg-turbo
 JPEG_INCLUDE ?= $(JPEG_DIR)/include
 JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 
-CC   = gcc
+CC  ?= gcc
 CFLAGS = -Wall -O2
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
 GTK  += `pkg-config --cflags --libs appindicator3-0.1`
@@ -19,6 +19,15 @@ LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
 SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
 USBMUXD = -lusbmuxd
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),FreeBSD)
+	CC   ?= gcc10 # todo: determine GCC version more elegantly
+	JPEG_DIR = /usr/local
+	JPEG_INCLUDE = $(JPEG_DIR)/include
+	JPEG_LIB = $(JPEG_DIR)/lib
+	USBMUXD = -lusbmuxd-2.0
+endif
 
 all: droidcam-cli droidcam
 
