@@ -16,7 +16,7 @@
 
 #if __FreeBSD__
 #include <sys/limits.h>
-#include <sys/syslimits.h>
+#include <sys/param.h>
 #endif
 
 #include "common.h"
