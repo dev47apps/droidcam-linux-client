@@ -73,6 +73,9 @@ static inline void usage(__attribute__((__unused__)) int argc, char *argv[]) {
     " -v          Enable Video\n"
     "             (only -v by default)\n"
     "\n"
+    " -vflip      Apply vertical flip\n"
+    " -hflip      Apply horizontal flip\n"
+    "\n"
     " -nocontrols Disable controls and avoid reading from stdin.\n"
     "             Otherwise, enter '?' for list of commands while streaming.\n"
     "\n"
@@ -91,16 +94,18 @@ static inline void usage(__attribute__((__unused__)) int argc, char *argv[]) {
 }
 
 static void parse_args(int argc, char *argv[]) {
-    if (argc == 3 && argv[1][0] == '-' && argv[1][1] == 'l') {
-        g_settings.port = strtoul(argv[2], NULL, 10);
-        g_settings.connection = CB_WIFI_SRVR;
-        v_running = 1;
-        return;
-    }
-
     if (argc >= 3) {
         int i = 1;
         for (; i < argc; i++) {
+            if (argv[i][0] == '-' && argv[i][1] == 'v' && argv[i][2] == 'f' && argv[i][3] == 'l' && argv[i][5] == 'p') {
+                g_settings.vertical_flip = 1;
+                continue;
+            }
+            if (argv[i][0] == '-' && argv[i][1] == 'h' && argv[i][2] == 'f' && argv[i][3] == 'l' && argv[i][5] == 'p') {
+                g_settings.horizontal_flip = 1;
+                continue;
+            }
+
             if (argv[i][0] == '-' && argv[i][1] == 'a') {
                 a_running = 1;
                 continue;
@@ -109,6 +114,7 @@ static void parse_args(int argc, char *argv[]) {
                 v_running = 1;
                 continue;
             }
+
             if (argv[i][0] == '-' && argv[i][1] == 'd' && argv[i][3] == 'v') {
                 if (argv[i][4] != '=' || argv[i][5] == 0)
                     goto ERROR;
@@ -121,6 +127,7 @@ static void parse_args(int argc, char *argv[]) {
                     goto ERROR;
                 continue;
             }
+
             if (argv[i][0] == '-' && strstr(&argv[i][1], "nocontrols") != NULL) {
                 no_controls = 1;
                 continue;
@@ -129,6 +136,14 @@ static void parse_args(int argc, char *argv[]) {
         }
         if (i > (argc - 2))
             goto ERROR;
+
+        if (argv[i][0] == '-' && argv[i][1] == 'l') {
+            g_settings.port = strtoul(argv[i+1], NULL, 10);
+            g_settings.connection = CB_WIFI_SRVR;
+            a_running = 0;
+            v_running = 1;
+            return;
+        }
 
         strncpy(g_settings.ip, argv[i], sizeof(g_settings.ip) - 1);
         g_settings.ip[sizeof(g_settings.ip) - 1] = '\0';
@@ -145,8 +160,6 @@ static void parse_args(int argc, char *argv[]) {
         else {
             g_settings.connection = CB_RADIO_WIFI;
         }
-
-        if (!v_running && !a_running) v_running = 1;
 
         return;
     }
@@ -219,6 +232,9 @@ void wait_command() {
 int main(int argc, char *argv[]) {
     parse_args(argc, argv);
 
+    if (!v_running && !a_running)
+        v_running = 1;
+
     if (!decoder_init(v4l2_dev, v4l2_width, v4l2_height)) {
         return 2;
     }
@@ -261,9 +277,14 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGHUP, sig_handler);
 
-    if (!no_controls){
+    if (g_settings.vertical_flip)
+        decoder_vertical_flip();
+
+    if (g_settings.horizontal_flip)
+        decoder_horizontal_flip();
+
+    if (!no_controls)
         wait_command();
-    }
 
     while (v_running || a_running)
         usleep(2000);
