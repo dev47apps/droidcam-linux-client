@@ -41,8 +41,11 @@ To install, run `sudo ./install-client`.
 Some distros are removing libappindicator support, which is used for system tray icon.
 
 On Ubuntu 21, use sudo apt install libappindicator3-1.
+
 On Fedora 33, use sudo dnf install libappindicator-gtk3
+
 For Debian Bullseye, get:
+
 https://files.dev47apps.net/linux/libindicator3-7_0.5.0-4_amd64.deb
 https://files.dev47apps.net/linux/libappindicator3-1_0.4.92-7_amd64.deb
 
