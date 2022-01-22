@@ -84,14 +84,20 @@ EXIT:
 	return rc;
 }
 
+int ever_worked = 0;
+int error_shown = 0;
+
 int CheckiOSDevices(int port) {
 	usbmuxd_device_info_t *deviceList = NULL;
 	const int deviceCount = usbmuxd_get_device_list(&deviceList);
 	dbgprint("CheckiOSDevices: found %d devices\n", deviceCount);
 
 	if (deviceCount < 0) {
-		MSG_ERROR("Error loading devices.\n"
-			"Make sure usbmuxd service is installed and running.");
+        if (!error_shown && !ever_worked) {
+	    	MSG_ERROR("Error loading devices.\n"
+    			"Make sure usbmuxd service is installed and running.");
+            error_shown = 0;
+        }
 		return ERROR_LOADING_DEVICES;
 	}
 	if (deviceCount == 0) {
@@ -109,6 +115,7 @@ int CheckiOSDevices(int port) {
 		return ERROR_ADDING_FORWARD;
 	}
 
+    ever_worked = 1;
 	// remove the NONBLOCK flag
 	int flags = fcntl(sfd, F_GETFL, NULL);
 	flags &= ~O_NONBLOCK;
