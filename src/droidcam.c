@@ -149,20 +149,25 @@ static void Start(void) {
 	}
 
 	if (g_settings.connection == CB_RADIO_ADB) {
-		if (CheckAdbDevices(port) < 0) return;
+		int rc = CheckAdbDevices(port);
+		if (rc != NO_ERROR) {
+			AdbErrorPrint(rc);
+			return;
+		}
 		ip = ADB_LOCALHOST_IP;
 	} else if (g_settings.connection == CB_RADIO_IOS) {
 		s = CheckiOSDevices(port);
 		if (s <= 0) {
-			gtk_button_set_label(start_button, "Connect");
+			iOSErrorPrint(s);
 			return;
 		}
 	} else if (g_settings.connection == CB_RADIO_WIFI) {
 		ip = (char*)gtk_entry_get_text(ipEntry);
 	} else {
-		MSG_ERROR("Internal error: Invalid connection mode");
+		MSG_ERROR("Invalid connection mode");
 		return;
 	}
+
 
 	// wifi or USB
 	if (ip != NULL) {
@@ -171,10 +176,12 @@ static void Start(void) {
 			return;
 		}
 
+		char *errmsg = NULL;
 		gtk_button_set_label(start_button, "Please wait");
-		s = Connect(ip, port);
+		s = Connect(ip, port, &errmsg);
 		if (s == INVALID_SOCKET) {
 			gtk_button_set_label(start_button, "Connect");
+			if (errmsg)  MSG_ERROR(errmsg);
 			return;
 		}
 		strncpy(g_settings.ip, ip, sizeof(g_settings.ip) - 1);

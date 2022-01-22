@@ -15,6 +15,30 @@
 #include "common.h"
 #include "settings.h"
 
+void AdbErrorPrint(int rc) {
+	switch (rc) {
+		case ERROR_ADDING_FORWARD:
+			MSG_ERROR("Error adding adb forward: re-attach the device.\n");
+			break;
+		case ERROR_DEVICE_OFFLINE:
+			MSG_ERROR("Device is offline: re-attach the device.");
+			break;
+		case ERROR_DEVICE_NOTAUTH:
+			MSG_ERROR("Device is in unauthorized state:\n"
+				"Re-attach device and make sure to Allow the USB debugging connection when prompted.");
+			break;
+		case ERROR_LOADING_DEVICES:
+			MSG_ERROR("Error loading devices: check if adb is installed.");
+			break;
+		case ERROR_NO_DEVICES:
+		default:
+			MSG_ERROR("No devices detected:\n"
+				"Re-attach device and try running `adb devices` in Terminal.");
+			break;
+	}
+}
+
+
 int CheckAdbDevices(int port) {
 	char buf[256];
 	FILE* pipe;
@@ -40,6 +64,7 @@ int CheckAdbDevices(int port) {
 		}
 		if (strstr(buf, "offline") != NULL){
 			rc = ERROR_DEVICE_OFFLINE;
+			if (system("adb kill-server") < 0){}
 			break;
 		}
 		if (strstr(buf, "unauthorized") != NULL){
@@ -61,27 +86,31 @@ EXIT:
 		rc = system(buf);
 		if (WEXITSTATUS(rc) != 0){
 			rc = ERROR_ADDING_FORWARD;
-			MSG_ERROR("Error adding adb forward!");
 		}
-	}
-	else if (rc == ERROR_NO_DEVICES) {
-		MSG_ERROR("No devices detected.\n"
-			"Reconnect device and try running `adb devices` in Terminal.");
-	}
-	else if (rc == ERROR_DEVICE_OFFLINE) {
-		if (system("adb kill-server") < 0){}
-		MSG_ERROR("Device is offline. Try re-attaching device.");
-	}
-	else if (rc == ERROR_DEVICE_NOTAUTH) {
-		if (system("adb kill-server") < 0){}
-		MSG_ERROR("Device is in unauthorized state.");
-	}
-	else {
-		MSG_ERROR("Error loading devices.\n"
-			"Make sure adb is installed and try running `adb devices` in Terminal.");
 	}
 
 	return rc;
+}
+
+void iOSErrorPrint(int rc) {
+	switch (rc) {
+		case ERROR_LOADING_DEVICES:
+			MSG_ERROR("Error loading devices:\n"
+				"Make sure usbmuxd service is installed and running.");
+			break;
+		case ERROR_NO_DEVICES:
+			MSG_ERROR("No devices detected:\n"
+				"Make sure usbmuxd service running and this computer is trusted.");
+			break;
+		case ERROR_ADDING_FORWARD:
+			MSG_ERROR("Error getting a connection:\n"
+				"Make sure DroidCam app is open.\n"
+				"Try re-attaching device.");
+			break;
+		default:
+			errprint("unexpected rc=%d from CheckiOSDevices()\n", rc);
+			break;
+	}
 }
 
 int CheckiOSDevices(int port) {
@@ -90,21 +119,15 @@ int CheckiOSDevices(int port) {
 	dbgprint("CheckiOSDevices: found %d devices\n", deviceCount);
 
 	if (deviceCount < 0) {
-		MSG_ERROR("Error loading devices.\n"
-			"Make sure usbmuxd service is installed and running.");
 		return ERROR_LOADING_DEVICES;
 	}
 	if (deviceCount == 0) {
-		MSG_ERROR("No devices detected.\n"
-			"Make sure usbmuxd service running and this computer is trusted.");
 		usbmuxd_device_list_free(&deviceList);
 		return ERROR_NO_DEVICES;
 	}
 
 	const int sfd = usbmuxd_connect(deviceList[0].handle, port);
 	if (sfd <= 0) {
-		MSG_ERROR("Error getting a connection.\n"
-			"Make sure DroidCam app is open,\nor try re-attaching device.");
 		usbmuxd_device_list_free(&deviceList);
 		return ERROR_ADDING_FORWARD;
 	}

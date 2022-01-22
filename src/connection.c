@@ -22,14 +22,20 @@
 SOCKET wifiServerSocket = INVALID_SOCKET;
 extern int v_running;
 
-SOCKET Connect(const char* ip, int port) {
+char* DROIDCAM_CONNECT_ERROR = \
+    "Connect failed, please try again.\n"
+    "Check IP and Port.\n"
+    "Check network connection.\n";
+
+SOCKET Connect(const char* ip, int port, char **errormsg) {
     int flags;
     struct sockaddr_in sin;
     SOCKET sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     printf("connecting to %s:%d\n", ip, port);
     if(sock == INVALID_SOCKET) {
-        MSG_LASTERROR("Error");
+        errprint("socket() error %d '%s'\n", errno, strerror(errno));
+        *errormsg = strerror(errno);
         goto _error_out;
     }
     sin.sin_family = AF_INET;
@@ -38,7 +44,8 @@ SOCKET Connect(const char* ip, int port) {
 
     flags = fcntl(sock, F_GETFL, NULL);
     if(flags < 0) {
-        MSG_LASTERROR("Error: fcntl");
+        errprint("fcntl() error %d '%s'\n", errno, strerror(errno));
+        *errormsg = strerror(errno);
         close(sock);
         sock = INVALID_SOCKET;
         goto _error_out;
@@ -56,8 +63,8 @@ SOCKET Connect(const char* ip, int port) {
 
     connect(sock, (struct sockaddr*)&sin, sizeof(sin));
     if (!(errno == EAGAIN || errno == EWOULDBLOCK || errno == EINPROGRESS) || (select(sock+1, NULL, &set, NULL, &timeout) <= 0)) {
-        printf("connect timeout/error %d '%s'\n", errno, strerror(errno));
-        MSG_ERROR("Connect failed, please try again.\nCheck IP and Port.\nCheck network connection.");
+        dbgprint("connect timeout/error=%d '%s'\n", errno, strerror(errno));
+        *errormsg = DROIDCAM_CONNECT_ERROR;
         close(sock);
         sock = INVALID_SOCKET;
         goto _error_out;

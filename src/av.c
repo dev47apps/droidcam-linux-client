@@ -20,19 +20,20 @@ extern struct settings g_settings;
 const char *thread_cmd_val_str;
 
 SOCKET GetConnection(void) {
+    char *err;
     SOCKET socket = INVALID_SOCKET;
 
     if (g_settings.connection == CB_RADIO_IOS) {
         socket = CheckiOSDevices(g_settings.port);
         if (socket <= 0) socket = INVALID_SOCKET;
     } else {
-        socket = Connect(g_settings.ip, g_settings.port);
+        socket = Connect(g_settings.ip, g_settings.port, &err);
     }
 
     return socket;
 }
 
-// Battry Chcek thread
+// Battry Check thread
 void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
     SOCKET socket = INVALID_SOCKET;
     char buf[128];

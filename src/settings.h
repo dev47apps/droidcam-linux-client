@@ -62,6 +62,9 @@ void SaveSettings(struct settings* settings);
 int CheckAdbDevices(int port);
 int CheckiOSDevices(int port);
 
+void AdbErrorPrint(int rc);
+void iOSErrorPrint(int rc);
+
 void UpdateBatteryLabel(char *battery_value);
 
 #endif

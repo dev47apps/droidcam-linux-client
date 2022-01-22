@@ -150,9 +150,9 @@ static void parse_args(int argc, char *argv[]) {
         g_settings.port = strtoul(argv[i+1], NULL, 10);
 
         if (strcmp(g_settings.ip, "adb") == 0) {
-            strncpy(g_settings.ip, ADB_LOCALHOST_IP, sizeof(g_settings.ip) - 1);
-            g_settings.ip[sizeof(g_settings.ip) - 1] = '\0';
             g_settings.connection = CB_RADIO_ADB;
+            memset(g_settings.ip, 0, sizeof(g_settings.ip));
+            strncpy(g_settings.ip, ADB_LOCALHOST_IP, sizeof(g_settings.ip));
         }
         else if (strcmp(g_settings.ip, "ios") == 0) {
             g_settings.connection = CB_RADIO_IOS;
@@ -245,17 +245,28 @@ int main(int argc, char *argv[]) {
         SOCKET videoSocket = INVALID_SOCKET;
         if (g_settings.connection == CB_RADIO_WIFI || g_settings.connection == CB_RADIO_ADB || g_settings.connection == CB_RADIO_IOS) {
 
-            if (g_settings.connection == CB_RADIO_ADB && CheckAdbDevices(g_settings.port) < 0)
-                return 1;
+            if (g_settings.connection == CB_RADIO_ADB) {
+                int rc = CheckAdbDevices(g_settings.port);
+                if (rc != NO_ERROR) {
+                    AdbErrorPrint(rc);
+                    return 1;
+                }
+            }
 
             if (g_settings.connection == CB_RADIO_IOS) {
-                if ((videoSocket = CheckiOSDevices(g_settings.port)) <= 0)
+                int rc = CheckiOSDevices(g_settings.port);
+                if (rc <= 0) {
+                    iOSErrorPrint(rc);
                     return 1;
+                }
+                videoSocket = rc;
             }
             else {
-                videoSocket = Connect(g_settings.ip, g_settings.port);
+                char *errmsg = NULL;
+                videoSocket = Connect(g_settings.ip, g_settings.port, &errmsg);
                 if (videoSocket == INVALID_SOCKET) {
                     errprint("Video: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);
+                    if (errmsg) errprint("%s", errmsg);
                     return 0;
                 }
             }
