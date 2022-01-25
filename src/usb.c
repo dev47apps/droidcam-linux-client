@@ -96,7 +96,7 @@ int CheckiOSDevices(int port) {
         if (!error_shown && !ever_worked) {
 	    	MSG_ERROR("Error loading devices.\n"
     			"Make sure usbmuxd service is installed and running.");
-            error_shown = 0;
+            error_shown = 1;
         }
 		return ERROR_LOADING_DEVICES;
 	}
