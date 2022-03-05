@@ -7,7 +7,12 @@
  */
 
 #include <gtk/gtk.h>
+#ifdef USE_AYATANA_APPINDICATOR
+#include <libayatana-appindicator/app-indicator.h>
+#else
 #include <libappindicator/app-indicator.h>
+#endif
+
 #include <X11/Xlib.h>
 #include <stdint.h>
 
@@ -280,12 +285,10 @@ _up:
 			ipEdit = FALSE;
 		break;
 		case CB_BTN_OTR:
-			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, 0);
-			// TODO drop support for older OSs and use
-			// gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
+			gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
 		break;
 		case CB_BTN_WB:
-			gtk_menu_popup(GTK_MENU(wbMenu), NULL, NULL, NULL, NULL, 0, 0);
+			gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
 		break;
 		case CB_BTN_EL:
 			if (v_running != 1 || thread_cmd != 0) {

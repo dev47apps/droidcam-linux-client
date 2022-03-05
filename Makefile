@@ -6,24 +6,35 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # Use at your own risk. See README file for more details.
 
-JPEG_DIR ?= /opt/libjpeg-turbo
+#
+# Variables with ?= can be changed during invocation
+# Example:
+#  APPINDICATOR=ayatana-appindicator3-0.1 make droidcam
+
+APPINDICATOR ?= appindicator3-0.1
+JPEG_DIR     ?= /opt/libjpeg-turbo
 JPEG_INCLUDE ?= $(JPEG_DIR)/include
-JPEG_LIB ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
+JPEG_LIB     ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
+
 
 CC   = gcc
 CFLAGS = -Wall -O2
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
-GTK  += `pkg-config --cflags --libs appindicator3-0.1`
+GTK  += `pkg-config --libs --cflags $(APPINDICATOR)`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 LIBS  =  -lspeex -lasound -lpthread -lm
 JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
 SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
 USBMUXD = -lusbmuxd
 
+ifneq ($(findstring ayatana,$(APPINDICATOR)),)
+	CFLAGS += -DUSE_AYATANA_APPINDICATOR
+endif
+
+
 all: droidcam-cli droidcam
 
 ifneq "$(RELEASE)" ""
-LIBAV = /usr/lib/x86_64-linux-gnu/libswscale.a /usr/lib/x86_64-linux-gnu/libavutil.a
 SRC  += src/libusbmuxd.a src/libxml2.a src/libplist-2.0.a
 package: clean all
 	zip "droidcam_$(RELEASE).zip" \

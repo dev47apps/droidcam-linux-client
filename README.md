@@ -28,26 +28,20 @@ libusbmuxd-dev
 libplist-dev
 
 gtk+-3.0               # Only needed for GUI client
-libappindicator3-dev   # Only needed for GUI client**
+libappindicator3-dev   # Only needed for GUI client^^
 
 ```
 
 Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
-To install, run `sudo ./install-client`.
+To install, run `sudo ./install-client`
 
-#### **libappindicator
+^^ Some distros are removing libappindicator in their latest versions (Ubuntu 21+, Fedora 33+, Debian Bullseye+), which is used for system tray icon.
+The new dependency is `libayatana-appindicator3-dev`
 
-Some distros are removing libappindicator support, which is used for system tray icon.
+Building:
 
-On Ubuntu 21, use sudo apt install libappindicator3-1.
-
-On Fedora 33, use sudo dnf install libappindicator-gtk3
-
-For Debian Bullseye, get:
-
-https://files.dev47apps.net/linux/libindicator3-7_0.5.0-4_amd64.deb
-https://files.dev47apps.net/linux/libappindicator3-1_0.4.92-7_amd64.deb
+`APPINDICATOR=ayatana-appindicator3-0.1 make droidcam`
 
 
 ## V4L2 Loopback (Webcam driver)
@@ -70,6 +64,8 @@ Debian/Ubuntu and RHEL (Fedora/SUSE) based distros:
 [If your system supports DKMS](./README-DKMS.md), you can instead use `sudo ./install-dkms`.
 
 ## Sound
+
+DroidCam can use the Linux ALSA Loopback sound card for audio. There are many differences and quirks with the audio layers on different Linux systems. It’s recommended you use a regular microphone and keep droidcam for video only.
 
 Run `sudo ./install-sound` to load the Linux ALSA Loopback sound card which the Droidcam client will use for audio input.
 
