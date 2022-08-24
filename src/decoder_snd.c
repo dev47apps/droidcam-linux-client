@@ -278,7 +278,7 @@ snd_pcm_t *find_snd_device(void) {
             if (set_hwparams(handle, hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED) < 0) {
                 errprint("setting audio hwparams failed\n");
                 snd_pcm_close(handle);
-                goto OUT;
+                continue;
             }
 
             if (set_swparams(handle, swparams) < 0) {
