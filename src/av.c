@@ -12,6 +12,8 @@
 #include "decoder.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
+#include <sys/socket.h>
 
 extern int a_active;
 extern int v_active;
@@ -39,56 +41,81 @@ SOCKET GetConnection(void) {
 // Battry Check thread
 void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
     SOCKET socket = INVALID_SOCKET;
-    char buf[128] = {0};
-    char battery_value[32] = {0};
-    int i, j;
+    char buf[96];
+    char battery_value[5];
+    struct timeval tv = {0};
+    tv.tv_sec = 1;
 
     dbgprint("Battery Thread Start\n");
 
     while (v_running || a_running) {
-	if (!v_active && !a_active) {
+        if (!v_active && !a_active) {
             usleep(50000);
             continue;
         }
+
+        uint8_t battery_value_pos = 0;
+        size_t percent_len = 0;
 
         socket = GetConnection();
         if (socket == INVALID_SOCKET) {
             goto LOOP;
         }
 
-        if (Send(BATTERY_REQ, CSTR_LEN(BATTERY_REQ), socket) <= 0) {
-            errprint("error sending battery status request: (%d) '%s'\n",
-                                        errno, strerror(errno));
+        if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv,
+                       sizeof(tv)) == -1) {
+            goto LOOP;
+        };
+
+        if (!Send(BATTERY_REQ, CSTR_LEN(BATTERY_REQ), socket)) {
+            errprint("error sending battery status request: (%d) '%s'\n", errno,
+                     strerror(errno));
             goto LOOP;
         }
 
         memset(buf, 0, sizeof(buf));
+        memset(battery_value, 0, sizeof(battery_value));
         if (RecvAll(buf, sizeof(buf), socket) <= 0) {
             goto LOOP;
         }
 
-        for (i = 0; i < (sizeof(buf)-4); i++) {
-            if (buf[i] == '\r' && buf[i+1] == '\n' && buf[i+2] == '\r' && buf[i+3] == '\n') {
-                i += 4;
+        for (uint8_t i = 0; i < (sizeof(buf) - 4); i += 4) {
+            char *tmp = memchr(&buf[i], '\r', sizeof(buf));
+            if (!tmp) {
+                goto LOOP;
+            }
+            if (memcmp(tmp + 1, "\n\r\n", 3) == 0) {
+                battery_value_pos = (tmp - buf) + 4;
+                break;
+            }
+        }
+        if (!battery_value_pos || battery_value_pos > (sizeof(buf) - (4 + 1)) ||
+            buf[battery_value_pos] == '0') {
+            goto LOOP;
+        }
+
+        for (uint8_t j = 0; j < 3; j++) {
+            if (buf[battery_value_pos + j] >= '0' &&
+                buf[battery_value_pos + j] <= '9') {
+                battery_value[j] = buf[battery_value_pos + j];
+                percent_len++;
+            } else {
                 break;
             }
         }
 
-        j = 0;
-        while (i < sizeof(buf) && j < (sizeof(battery_value)-2) && buf[i] >= '0' && buf[i] <= '9')
-            battery_value[j++] = buf[i++];
+        if (percent_len == 0) {
+            battery_value[0] = '-';
+            percent_len = 1;
+        }
 
-        if (j == 0)
-            battery_value[j++] = '-';
-
-        battery_value[j++] = '%';
-        battery_value[j++] = 0;
+        battery_value[percent_len] = '%';
         dbgprint("battery_value: %s\n", battery_value);
         UpdateBatteryLabel(battery_value);
 
     LOOP:
         disconnect(socket);
-        for (j = 0; j < 30000 && (v_running || a_running); j++)
+        for (uint16_t i = 0; i < 30000 && (v_running || a_running); i++)
             usleep(1000);
     }
 
@@ -126,8 +153,7 @@ server_wait:
     }
 
     len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
-    if (Send(buf, len, videoSocket) <= 0){
-        errprint("send error (%d) '%s'\n", errno, strerror(errno));
+    if (!Send(buf, len, videoSocket)){
         MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
         goto early_out;
     }
@@ -246,9 +272,8 @@ TCP_ONLY:
         return 0;
     }
 
-    if (Send(AUDIO_REQ, CSTR_LEN(AUDIO_REQ), socket) <= 0) {
+    if (!Send(AUDIO_REQ, CSTR_LEN(AUDIO_REQ), socket)) {
         errprint("send error (audio) (%d) '%s'\n", errno, strerror(errno));
-        MSG_ERROR("Error sending audio request");
         goto early_out;
     }
 
