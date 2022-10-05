@@ -8,6 +8,8 @@
 
 #include <pthread.h>
 #include <signal.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 
 #include "common.h"
 #include "settings.h"
@@ -23,11 +25,11 @@ Thread athread = {0, -1}, vthread = {0, -1}, dthread = {0, -1};
 
 char *v4l2_dev = 0;
 unsigned v4l2_width = 0, v4l2_height = 0;
-volatile int a_active = 0;
-volatile int v_active = 0;
-volatile int v_running = 0;
-volatile int a_running = 0;
-volatile int thread_cmd = 0;
+volatile bool a_active = false;
+volatile bool v_active = false;
+volatile bool v_running = false;
+volatile bool a_running = false;
+volatile char thread_cmd = 0;
 int no_controls = 0;
 struct settings g_settings = {0};
 
@@ -39,8 +41,8 @@ void * VideoThreadProc(void * args);
 void * DecodeThreadProc(void * args);
 
 void sig_handler(__attribute__((__unused__)) int sig) {
-    a_running = 0;
-    v_running = 0;
+    a_running = false;
+    v_running = false;
     return;
 }
 
@@ -113,7 +115,7 @@ static void parse_args(int argc, char *argv[]) {
                 continue;
             }
             if (argv[i][0] == '-' && argv[i][1] == 'v') {
-                v_running = 1;
+                v_running = true;
                 continue;
             }
 
@@ -142,8 +144,8 @@ static void parse_args(int argc, char *argv[]) {
         if (argv[i][0] == '-' && argv[i][1] == 'l') {
             g_settings.port = strtoul(argv[i+1], NULL, 10);
             g_settings.connection = CB_WIFI_SRVR;
-            a_running = 0;
-            v_running = 1;
+            a_running = false;
+            v_running = true;
             return;
         }
 
@@ -235,7 +237,7 @@ int main(int argc, char *argv[]) {
     parse_args(argc, argv);
 
     if (!v_running && !a_running)
-        v_running = 1;
+        v_running = true;
 
     if (!decoder_init(v4l2_dev, v4l2_width, v4l2_height)) {
         return 2;
@@ -264,7 +266,7 @@ int main(int argc, char *argv[]) {
                 videoSocket = rc;
             }
             else {
-                char *errmsg = NULL;
+                const char *errmsg = NULL;
                 videoSocket = Connect(g_settings.ip, g_settings.port, &errmsg);
                 if (videoSocket == INVALID_SOCKET) {
                     errprint("Video: Connect failed to %s:%d\n", g_settings.ip, g_settings.port);

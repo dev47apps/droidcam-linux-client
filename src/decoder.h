@@ -47,7 +47,7 @@ int decoder_horizontal_flip();
 int decoder_vertical_flip();
 void decoder_show_test_image();
 
-/* 20ms 16hkz 16 bit */
+/* 20ms 16khz 16 bit */
 #define DROIDCAM_CHUNK_MS_2           20
 #define DROIDCAM_SPX_CHUNK_BYTES_2    70
 #define DROIDCAM_PCM_CHUNK_BYTES_2    640
@@ -65,7 +65,7 @@ void decoder_show_test_image();
 
 void set_v4l2_device(const char* device);
 int open_v4l2_device(void);
-int find_v4l2_device(const char* bus_info);
+int find_v4l2_device(const char* bus_info, unsigned *in_v4l2_width, unsigned *in_v4l2_height);
 void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBCAM_H);
 
 snd_pcm_t *find_snd_device(void);

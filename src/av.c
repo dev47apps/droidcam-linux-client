@@ -10,19 +10,20 @@
 #include "settings.h"
 #include "connection.h"
 #include "decoder.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 extern int a_active;
 extern int v_active;
-extern int a_running;
-extern int v_running;
-extern int thread_cmd;
+extern bool a_running;
+extern bool v_running;
+extern char thread_cmd;
 extern struct settings g_settings;
 
 const char *thread_cmd_val_str;
 
 SOCKET GetConnection(void) {
-    char *err;
+    const char *err;
     SOCKET socket = INVALID_SOCKET;
 
     if (g_settings.connection == CB_RADIO_IOS) {
@@ -45,7 +46,7 @@ void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
     dbgprint("Battery Thread Start\n");
 
     while (v_running || a_running) {
-	if (v_active == 0 && a_active == 0) {
+	if (!v_active && !a_active) {
             usleep(50000);
             continue;
         }
@@ -97,7 +98,7 @@ void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
 
 void *DecodeThreadProc(__attribute__((__unused__)) void *args) {
     dbgprint("Decode Thread Start\n");
-    while (v_running != 0) {
+    while (v_running) {
         JPGFrame *f = pull_ready_jpg_frame();
         if (!f) {
             usleep(2000);
@@ -143,9 +144,8 @@ server_wait:
     }
 
     v_active = 1;
-    while (v_running != 0){
+    while (v_running) {
         if (thread_cmd != 0) {
-            len = 0;
             if (thread_cmd == CB_CONTROL_WB) {
                 len = snprintf(buf, sizeof(buf), OTHER_REQ_STR, thread_cmd, thread_cmd_val_str);
             }
@@ -276,7 +276,7 @@ TCP_ONLY:
     bytes_per_packet = CHUNKS_PER_PACKET * DROIDCAM_SPX_CHUNK_BYTES_2;
 
 STREAM:
-    a_active = 1;
+    a_active = true;
     while (a_running) {
         int len = (mode == UDP_STREAM)
             ? RecvNonBlockUDP(stream_buf, STREAM_BUF_SIZE, socket)
@@ -339,7 +339,7 @@ STREAM:
     }
 
 early_out:
-    a_active = 0;
+    a_active = false;
     if (mode == UDP_STREAM)
         SendUDPMessage(socket, STOP_REQ, CSTR_LEN(STOP_REQ), g_settings.ip, g_settings.port + 1);
 

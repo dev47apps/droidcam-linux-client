@@ -1,4 +1,5 @@
-droidcam*
+/droidcam
+/droidcam-cli
 
 # vim swap files
 *.swp

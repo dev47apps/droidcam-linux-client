@@ -32,7 +32,7 @@ int open_v4l2_device(void) {
     if (!S_ISCHR(st.st_mode))
         return 0;
 
-    fd = open(v4l2_device, O_RDWR | O_NONBLOCK, 0);
+    fd = open(v4l2_device, O_WRONLY | O_NONBLOCK, 0);
     if (fd <= 0) {
         errprint("Error opening '%s': %d '%s'\n", v4l2_device, errno, strerror(errno));
         return 0;
@@ -42,7 +42,7 @@ int open_v4l2_device(void) {
     return fd;
 }
 
-int find_v4l2_device(const char* bus_info) {
+int find_v4l2_device(const char* bus_info, unsigned *in_v4l2_width, unsigned *in_v4l2_height) {
     int bus_info_len = strlen(bus_info);
     int video_dev_fd;
     int video_dev_nr = 0;
@@ -50,6 +50,9 @@ int find_v4l2_device(const char* bus_info) {
 
     dbgprint("Looking for v4l2 card: %s\n", bus_info);
     for (video_dev_nr = 0; video_dev_nr < 99; video_dev_nr++) {
+        unsigned v4l2_width = *in_v4l2_width;
+        unsigned v4l2_height = *in_v4l2_height;
+
         snprintf(v4l2_device, sizeof(v4l2_device), "/dev/video%d", video_dev_nr);
 
         video_dev_fd = open_v4l2_device();
@@ -61,8 +64,17 @@ int find_v4l2_device(const char* bus_info) {
             continue;
         }
 
+        query_v4l_device(video_dev_fd, &v4l2_width, &v4l2_height)
         dbgprint("Device %s is '%s' @ %s\n", v4l2_device, v4l2cap.card, v4l2cap.bus_info);
+        dbgprint("v4l2_width=%d, v4l2_height=%d\n", v4l2_width, v4l2_height);
+        if (v4l2_width < 2 || v4l2_height < 2 || v4l2_width > 9999 || v4l2_height > 9999){
+            errprint("Unable to query v4l2 device for correct parameters\n");
+            continue;
+        }
+
         if (0 == strncmp(bus_info, (const char*) v4l2cap.bus_info, bus_info_len)) {
+            *in_v4l2_width = v4l2_width;
+            *in_v4l2_height = v4l2_height;
             return video_dev_fd;
         }
 

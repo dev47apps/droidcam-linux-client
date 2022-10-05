@@ -13,7 +13,7 @@
 typedef int SOCKET;
 typedef long int SOCKET_PTR;
 
-SOCKET Connect(const char* ip, int port, char **errormsg);
+SOCKET Connect(const char* ip, int port, const char **errormsg);
 void connection_cleanup();
 void disconnect(SOCKET s);
 

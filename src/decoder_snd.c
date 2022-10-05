@@ -24,14 +24,12 @@ static snd_pcm_sframes_t period_size;
 static unsigned int period_time = PERIOD_TIME;/* period time in us */
 static unsigned int buffer_time = DROIDCAM_SPEEX_BACKBUF_MAX_COUNT * PERIOD_TIME; /* ring buffer length in us */
 
-snd_pcm_hw_params_t *hwparams;
-snd_pcm_sw_params_t *swparams;
-
 static int set_hwparams(snd_pcm_t *handle, snd_pcm_hw_params_t *params, snd_pcm_access_t access) {
     unsigned int rrate;
     snd_pcm_uframes_t size;
-    int err, dir;
-    int resample = 1;
+    int err;
+    int dir = 0;
+    const unsigned int resample = 1;
     /* choose all parameters */
     err = snd_pcm_hw_params_any(handle, params);
     if (err < 0) {
@@ -248,6 +246,9 @@ int snd_transfer_commit(snd_pcm_t *handle, struct snd_transfer_s *transfer) {
 snd_pcm_t *find_snd_device(void) {
     int err, card, i;
     snd_pcm_t *handle = NULL;
+    snd_pcm_hw_params_t *hwparams;
+    snd_pcm_sw_params_t *swparams;
+
     snd_pcm_hw_params_alloca(&hwparams);
     snd_pcm_sw_params_alloca(&swparams);
 

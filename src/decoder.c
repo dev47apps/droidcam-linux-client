@@ -93,10 +93,10 @@ int decoder_init(const char* v4l2_device, unsigned v4l2_width, unsigned v4l2_hei
         set_v4l2_device(v4l2_device);
         droidcam_device_fd = open_v4l2_device();
     } else {
-        droidcam_device_fd = find_v4l2_device("platform:v4l2loopback_dc");
+        droidcam_device_fd = find_v4l2_device("platform:v4l2loopback_dc", &WEBCAM_W, &WEBCAM_H);
         if (droidcam_device_fd < 0) {
             // check for generic v4l2loopback device
-            droidcam_device_fd = find_v4l2_device("platform:v4l2loopback");
+            droidcam_device_fd = find_v4l2_device("platform:v4l2loopback", &WEBCAM_W, &WEBCAM_H);
         }
     }
 
@@ -108,13 +108,6 @@ int decoder_init(const char* v4l2_device, unsigned v4l2_width, unsigned v4l2_hei
         WEBCAM_W = 320;
         WEBCAM_H = 240;
         droidcam_device_fd = 0;
-    } else {
-        query_v4l_device(droidcam_device_fd, &WEBCAM_W, &WEBCAM_H);
-        dbgprint("WEBCAM_W=%d, WEBCAM_H=%d\n", WEBCAM_W, WEBCAM_H);
-        if (WEBCAM_W < 2 || WEBCAM_H < 2 || WEBCAM_W > 9999 || WEBCAM_H > 9999){
-            MSG_ERROR("Unable to query v4l2 device for correct parameters");
-            return 0;
-        }
     }
 
     memset(&jpg_decoder, 0, sizeof(struct jpg_dec_ctx_s));
