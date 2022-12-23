@@ -77,14 +77,17 @@ add_line() {
 	fi
 }
 
+#remove _DC from /etc/moules-load.d/droidcam.conf & /etc/modprobe.d
+#To fix error: Droidcam/v4l2loopback device not found (/dev/video[0-9]).
+#Did it install correctly? If you had a kernel update, you may need to re-install.
 register_video_module_at_boot_time() {
 	if [ -d "/etc/modprobe.d/" ]; then
-		add_line "/etc/modprobe.d/droidcam.conf" "options $V4L2_LOOPBACK_DC width=$WIDTH height=$HEIGHT"
+		add_line "/etc/modprobe.d/droidcam.conf" "options $V4L2_LOOPBACK_DIR width=$WIDTH height=$HEIGHT"
 	fi
 
 	if [ -d "/etc/modules-load.d" ]; then
 		add_line "/etc/modules-load.d/droidcam.conf" "videodev"
-		add_line "/etc/modules-load.d/droidcam.conf" "$V4L2_LOOPBACK_DC"
+		add_line "/etc/modules-load.d/droidcam.conf" "$V4L2_LOOPBACK_DIR"
 	elif [ -e "/etc/modules" ]; then
 		add_line "/etc/modules" "videodev"
 		add_line "/etc/modules" "$V4L2_LOOPBACK_DC"
