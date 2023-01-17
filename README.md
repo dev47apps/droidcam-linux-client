@@ -26,6 +26,7 @@ libasound2-dev
 libspeex-dev
 libusbmuxd-dev
 libplist-dev
+libturbojpeg0-dev
 
 gtk+-3.0               # Only needed for GUI client
 libappindicator3-dev   # Only needed for GUI client^^
