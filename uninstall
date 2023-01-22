@@ -21,9 +21,9 @@ etc_modules() {
 	sudo chmod $prevperm /etc/modules
 }
 
-echo "Cleaning configs"
+echo "Cleaning DroidCam configs"
 [[ -e "/etc/modules" ]] && etc_modules
 rm -f /etc/modprobe.d/droidcam.conf || true
 rm -f /etc/modules-load.d/droidcam.conf || true
-rm -f /opt/droidcam*
-echo "Done"
+rm -rf /opt/droidcam*
+echo "Completed"
