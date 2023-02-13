@@ -56,26 +56,26 @@ void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
         }
 
         memset(buf, 0, sizeof(buf));
-        if (Recv(buf, sizeof(buf), socket) <= 0) {
+        if (RecvAll(buf, sizeof(buf), socket) <= 0) {
             goto LOOP;
         }
 
         for (i = 0; i < (sizeof(buf)-4); i++) {
             if (buf[i] == '\r' && buf[i+1] == '\n' && buf[i+2] == '\r' && buf[i+3] == '\n') {
-                    i += 4;
-                    break;
+                i += 4;
+                break;
             }
         }
 
         j = 0;
         while (i < sizeof(buf) && j < (sizeof(battery_value)-2) && buf[i] >= '0' && buf[i] <= '9')
-                battery_value[j++] = buf[i++];
+            battery_value[j++] = buf[i++];
 
         if (j == 0)
             battery_value[j++] = '-';
 
         battery_value[j++] = '%';
-        battery_value[sizeof(battery_value) - 1] = 0;
+        battery_value[j++] = 0;
         dbgprint("battery_value: %s\n", battery_value);
         UpdateBatteryLabel(battery_value);
 
