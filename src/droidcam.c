@@ -40,6 +40,8 @@ GThread* hDecodeThread;
 GThread* hBatteryThread;
 
 char *v4l2_dev = 0;
+int a_active = 0;
+int v_active = 0;
 int a_running = 0;
 int v_running = 0;
 int thread_cmd = 0;
@@ -124,6 +126,8 @@ static void Stop(void) {
 		hBatteryThread = NULL;
 	}
 
+	a_active = 0;
+	v_active = 0;
 	gtk_widget_set_sensitive(GTK_WIDGET(elButton), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(wbButton), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(menuButton), FALSE);
@@ -194,6 +198,7 @@ static void Start(void) {
 	}
 
 	if (g_settings.video) {
+		v_active = 0;
 		v_running = 1;
 		hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
 		hDecodeThread = g_thread_new(NULL, DecodeThreadProc, NULL);
@@ -202,6 +207,7 @@ static void Start(void) {
 	}
 
 	if (g_settings.audio) {
+                a_active = 0;
 		a_running = 1;
 		hAudioThread = g_thread_new(NULL, AudioThreadProc, NULL);
 	}
