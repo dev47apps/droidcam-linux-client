@@ -30,14 +30,15 @@ char* DROIDCAM_CONNECT_ERROR = \
 SOCKET Connect(const char* ip, int port, char **errormsg) {
     int flags;
     struct sockaddr_in sin;
-    SOCKET sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    printf("connecting to %s:%d\n", ip, port);
+    dbgprint("connect to %s:%d\n", ip, port);
     if(sock == INVALID_SOCKET) {
         errprint("socket() error %d '%s'\n", errno, strerror(errno));
         *errormsg = strerror(errno);
         goto _error_out;
     }
+
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = inet_addr(ip);
     sin.sin_port = htons(port);

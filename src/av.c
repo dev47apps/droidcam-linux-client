@@ -12,6 +12,8 @@
 #include "decoder.h"
 #include <stdint.h>
 
+extern int a_active;
+extern int v_active;
 extern int a_running;
 extern int v_running;
 extern int thread_cmd;
@@ -36,15 +38,18 @@ SOCKET GetConnection(void) {
 // Battry Check thread
 void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
     SOCKET socket = INVALID_SOCKET;
-    char buf[128];
-    char battery_value[32];
+    char buf[128] = {0};
+    char battery_value[32] = {0};
     int i, j;
 
-    memset(battery_value, 0, sizeof(battery_value));
     dbgprint("Battery Thread Start\n");
 
-    usleep(500000);
     while (v_running || a_running) {
+	if (v_active == 0 && a_active == 0) {
+            usleep(50000);
+            continue;
+        }
+
         socket = GetConnection();
         if (socket == INVALID_SOCKET) {
             goto LOOP;
@@ -126,6 +131,7 @@ server_wait:
 
     memset(buf, 0, sizeof(buf));
     if (RecvAll(buf, 9, videoSocket) <= 0) {
+        errprint("recv error (%d) '%s'\n", errno, strerror(errno));
         MSG_ERROR("Connection reset!\nIs the app running?");
         goto early_out;
     }
@@ -134,6 +140,7 @@ server_wait:
         goto early_out;
     }
 
+    v_active = 1;
     while (v_running != 0){
         if (thread_cmd != 0) {
             len = 0;
@@ -161,6 +168,7 @@ server_wait:
     }
 
 early_out:
+    v_active = 0;
     dbgprint("disconnect\n");
     disconnect(videoSocket);
     decoder_cleanup();
@@ -193,6 +201,13 @@ void *AudioThreadProc(void *arg) {
     if (!handle) {
         MSG_ERROR("Missing audio device");
         return 0;
+    }
+
+    // wait for video
+    while (v_running) {
+        usleep(200000);
+        if (v_active) break;
+        if (!a_running) return 0;
     }
 
     if (g_settings.connection == CB_RADIO_IOS)
@@ -257,6 +272,7 @@ TCP_ONLY:
     bytes_per_packet = CHUNKS_PER_PACKET * DROIDCAM_SPX_CHUNK_BYTES_2;
 
 STREAM:
+    a_active = 1;
     while (a_running) {
         int len = (mode == UDP_STREAM)
             ? RecvNonBlockUDP(stream_buf, STREAM_BUF_SIZE, socket)
@@ -316,6 +332,7 @@ STREAM:
     }
 
 early_out:
+    a_active = 0;
     if (mode == UDP_STREAM)
         SendUDPMessage(socket, STOP_REQ, CSTR_LEN(STOP_REQ), g_settings.ip, g_settings.port + 1);
 

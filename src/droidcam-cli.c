@@ -23,9 +23,11 @@ Thread athread = {0, -1}, vthread = {0, -1}, dthread = {0, -1};
 
 char *v4l2_dev = 0;
 unsigned v4l2_width = 0, v4l2_height = 0;
-int v_running = 0;
-int a_running = 0;
-int thread_cmd = 0;
+volatile int a_active = 0;
+volatile int v_active = 0;
+volatile int v_running = 0;
+volatile int a_running = 0;
+volatile int thread_cmd = 0;
 int no_controls = 0;
 struct settings g_settings = {0};
 
