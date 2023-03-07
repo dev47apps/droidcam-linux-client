@@ -17,55 +17,61 @@ https://github.com/libjpeg-turbo/libjpeg-turbo/releases
 The libjpeg-turbo package should go into `/opt/libjpeg-turbo`.
 The official binaries (.deb, .rpm) will automatically install into the correct directory.
 
-Install the following dependencies
-(the package names are for Debian based systems, adjust as needed for other distros)
+Install the dependencies
+
 ```
-libavutil-dev
-libswscale-dev
-libasound2-dev
-libspeex-dev
-libusbmuxd-dev
-libplist-dev
+Debian/ubuntu:
+libavutil-dev libswscale-dev libasound2-dev libspeex-dev libusbmuxd-dev libplist-dev
 
-gtk+-3.0               # Only needed for GUI client
-libappindicator3-dev   # Only needed for GUI client^^
+# Only needed for GUI client
+libgtk-3-dev libappindicator3-dev
 
+
+Fedora:
+libavutil-free-devel libswscale-free-devel alsa-lib-devel speex-devel libusbmuxd-devel libplist-devel
+
+# Only needed for GUI client
+gtk3-devel libappindicator-gtk3-devel
 ```
 
 Run `make`, or `make droidcam-cli` if you skipped installing GTK+, to build the droidcam binaries.
 
 To install, run `sudo ./install-client`
 
-^^ Some distros are removing libappindicator in their latest versions (Ubuntu 21+, Fedora 33+, Debian Bullseye+), which is used for system tray icon.
-The new dependency is `libayatana-appindicator3-dev`
 
-Building:
+Note: Some distros are removing libappindicator in their latest versions (Ubuntu 21+, Fedora 33+, Debian Bullseye+), used for system tray icon.
+The new dependency (Ubuntu) is `libayatana-appindicator3-dev`
 
+You can specify the indicator libary to make like so:
 `APPINDICATOR=ayatana-appindicator3-0.1 make droidcam`
 
 
 ## V4L2 Loopback (Webcam driver)
 
-DroidCam has its own version of v4l2loopback, v4l2loopback-dc, which makes the app a little more user-friendly.
-It also works with the standard v4l2loopback module, so installing v4l2loopback-dc is optional.
+DroidCam has its own version of v4l2loopback, `v4l2loopback-dc`, which makes the app a little more user-friendly.
+DroidCam works with the standard v4l2loopback module, so installing `v4l2loopback-dc` is optional.
 
 The standard v4l2loopback module is already available on most distros as v4l2loopback-dkms. See [v4l2loopback usage examples](https://github.com/dev47apps/droidcam/releases/tag/v1.7).
 
-With v4l2loopback-dc you’ll see "DroidCam" in the list of webcams, it works with Skype+Chrome without needing exclusive_caps=1, and the install scripts will make sure v4l2loopback-dc stays loaded after reboot.
+The main differences with `v4l2loopback-dc` are that:
+* You’ll see "DroidCam" in the list of webcams.
+* It works with Skype+Chrome without the need for `exclusive_caps=1`.
+* The install scripts will configure v4l2loopback-dc to auto-load after reboot.
 
-To install v4l2loopback-dc, make sure you have these dependencies installed
+To use v4l2loopback-dc, make sure you have these dependencies installed
 ```
 linux-headers-`uname -r` gcc make
 ```
-then run `sudo ./install-video`.
+then run `sudo ./install-video` to build the module and install it.
 
 Debian/Ubuntu and RHEL (Fedora/SUSE) based distros:
-
 [If your system supports DKMS](./README-DKMS.md), you can instead use `sudo ./install-dkms`.
 
 ## Sound
 
-DroidCam can use the Linux ALSA Loopback sound card for audio. There are many differences and quirks with the audio layers on different Linux systems. It’s recommended you use a regular microphone and keep droidcam for video only.
+DroidCam can use the Linux ALSA Loopback sound card for audio.
+There are many differences and quirks with audio on different Linux systems.
+It’s recommended you use a regular microphone and keep droidcam for video only.
 
 Run `sudo ./install-sound` to load the Linux ALSA Loopback sound card which the Droidcam client will use for audio input.
 
