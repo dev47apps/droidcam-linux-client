@@ -288,7 +288,7 @@ _up:
 			gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
 		break;
 		case CB_BTN_WB:
-			gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
+			gtk_menu_popup_at_pointer(GTK_MENU(wbMenu), NULL);
 		break;
 		case CB_BTN_EL:
 			if (v_running != 1 || thread_cmd != 0) {
