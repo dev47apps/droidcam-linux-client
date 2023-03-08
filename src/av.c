@@ -56,7 +56,8 @@ void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
         }
 
         if (Send(BATTERY_REQ, CSTR_LEN(BATTERY_REQ), socket) <= 0) {
-            errprint("error sending battery status request\n");
+            errprint("error sending battery status request: (%d) '%s'\n",
+                                        errno, strerror(errno));
             goto LOOP;
         }
 
@@ -125,6 +126,7 @@ server_wait:
 
     len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
     if (Send(buf, len, videoSocket) <= 0){
+        errprint("send error (%d) '%s'\n", errno, strerror(errno));
         MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
         goto early_out;
     }
@@ -245,12 +247,14 @@ TCP_ONLY:
     }
 
     if (Send(AUDIO_REQ, CSTR_LEN(AUDIO_REQ), socket) <= 0) {
+        errprint("send error (audio) (%d) '%s'\n", errno, strerror(errno));
         MSG_ERROR("Error sending audio request");
         goto early_out;
     }
 
     memset(stream_buf, 0, 6);
     if (RecvAll(stream_buf, 6, socket) <= 0) {
+        errprint("recv error (audio) (%d) '%s'\n", errno, strerror(errno));
         MSG_ERROR("Audio connection reset!");
         goto early_out;
     }
@@ -277,7 +281,10 @@ STREAM:
         int len = (mode == UDP_STREAM)
             ? RecvNonBlockUDP(stream_buf, STREAM_BUF_SIZE, socket)
             : RecvNonBlock   (stream_buf, STREAM_BUF_SIZE, socket);
-        if (len < 0) { goto early_out; }
+        if (len < 0) {
+            errprint("recv error (audio) (%d) '%s'\n", errno, strerror(errno));
+            goto early_out;
+        }
 
         if (len > 0) {
             // dbgprint("recv %d frames\n", (len / DROIDCAM_SPX_CHUNK_BYTES_2));

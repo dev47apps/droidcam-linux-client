@@ -75,6 +75,7 @@ SOCKET Connect(const char* ip, int port, char **errormsg) {
     flags &= ~O_NONBLOCK;
     fcntl(sock, F_SETFL, flags);
 
+    timeout.tv_sec = 5;
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0
     || setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
         perror("setsockopt failed");
