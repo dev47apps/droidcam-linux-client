@@ -11,24 +11,18 @@ Raspberry-PI instructions can be found here: https://github.com/dev47apps/droidc
 
 ## Building
 
-Download and install latest libjpeg-turbo release via
-https://github.com/libjpeg-turbo/libjpeg-turbo/releases
-
-The libjpeg-turbo package should go into `/opt/libjpeg-turbo`.
-The official binaries (.deb, .rpm) will automatically install into the correct directory.
-
 Install the dependencies
 
 ```
 Debian/ubuntu:
-libavutil-dev libswscale-dev libasound2-dev libspeex-dev libusbmuxd-dev libplist-dev
+libavutil-dev libswscale-dev libasound2-dev libspeex-dev libusbmuxd-dev libplist-dev libturbojpeg0-dev
 
 # Only needed for GUI client
 libgtk-3-dev libappindicator3-dev
 
 
 Fedora:
-libavutil-free-devel libswscale-free-devel alsa-lib-devel speex-devel libusbmuxd-devel libplist-devel
+libavutil-free-devel libswscale-free-devel alsa-lib-devel speex-devel libusbmuxd-devel libplist-devel turbojpeg-devel
 
 # Only needed for GUI client
 gtk3-devel libappindicator-gtk3-devel

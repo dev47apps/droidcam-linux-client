@@ -11,49 +11,55 @@
 # Example:
 #  APPINDICATOR=ayatana-appindicator3-0.1 make droidcam
 
+
+CC           ?= gcc
+CFLAGS       ?= -Wall -O2
 APPINDICATOR ?= appindicator3-0.1
-JPEG_DIR     ?= /opt/libjpeg-turbo
-JPEG_INCLUDE ?= $(JPEG_DIR)/include
-JPEG_LIB     ?= $(JPEG_DIR)/lib`getconf LONG_BIT`
 
-
-CC   = gcc
-CFLAGS = -Wall -O2
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
 GTK  += `pkg-config --libs --cflags $(APPINDICATOR)`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
-LIBS  =  -lspeex -lasound -lpthread -lm
-JPEG  = -I$(JPEG_INCLUDE) $(JPEG_LIB)/libturbojpeg.a
+JPEG  = `pkg-config --libs --cflags libturbojpeg`
+USBMUXD = `pkg-config --libs --cflags libusbmuxd`
+LIBS  = -lspeex -lasound -lpthread -lm
 SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
-USBMUXD = -lusbmuxd
 
 ifneq ($(findstring ayatana,$(APPINDICATOR)),)
 	CFLAGS += -DUSE_AYATANA_APPINDICATOR
 endif
 
-
 all: droidcam-cli droidcam
 
-ifneq "$(RELEASE)" ""
-SRC  += src/libusbmuxd.a src/libxml2.a src/libplist-2.0.a
+ifeq "$(RELEASE)" ""
+package:
+	@echo "usage: RELEASE=2. make package"
+
+else
+JPEG    =
+LIBAV   = -L/opt/ffmpeg4/lib -lswscale -lavutil
+USBMUXD =
+
+SRC += /opt/libimobiledevice/lib/libusbmuxd.a
+SRC += /opt/libimobiledevice/lib/libplist-2.0.a
+SRC += /opt/libjpeg-turbo/lib64/libturbojpeg.a
+
+.PHONY: package
 package: clean all
 	zip "droidcam_$(RELEASE).zip" \
 		LICENSE README* icon2.png  \
 		droidcam* install* uninstall* \
 		v4l2loopback/*
-
-else
-LIBS += $(USBMUXD)
 endif
 
-gresource: .gresource.xml icon2.png
-	glib-compile-resources .gresource.xml --generate-source --target=src/resources.c
+#src/resources.c: .gresource.xml icon2.png
+#	glib-compile-resources .gresource.xml --generate-source --target=src/resources.c
 
-droidcam-cli: LDLIBS += $(JPEG) $(LIBAV) $(LIBS)
+droidcam-cli: LDLIBS +=        $(LIBAV) $(JPEG) $(USBMUXD) $(LIBS)
+droidcam:     LDLIBS += $(GTK) $(LIBAV) $(JPEG) $(USBMUXD) $(LIBS)
+
 droidcam-cli: src/droidcam-cli.c $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-droidcam: LDLIBS += $(GTK) $(JPEG) $(LIBAV) $(LIBS)
 droidcam: src/droidcam.c src/resources.c $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
