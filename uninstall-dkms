@@ -50,9 +50,9 @@ clean_etc_modules() {
 
 
 echo "Removing droidcam binaries"
-rm -f /usr/bin/droidcam*
-rm -f /usr/local/bin/droidcam*
+rm -rf /usr/bin/droidcam*
+rm -rf /usr/local/bin/droidcam*
 rm -f /usr/share/applications/droidcam.desktop
 xdg-desktop-menu uninstall droidcam.desktop
 
-rm -f /opt/droidcam* || true
+rm -rf /opt/droidcam* || true
