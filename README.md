@@ -61,6 +61,8 @@ then run `sudo ./install-video` to build the module and install it.
 Debian/Ubuntu and RHEL (Fedora/SUSE) based distros:
 [If your system supports DKMS](./README-DKMS.md), you can instead use `sudo ./install-dkms`.
 
+(note: you may need the `deb-helper` package)
+
 ## Sound
 
 DroidCam can use the Linux ALSA Loopback sound card for audio.
