@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/select.h>
@@ -20,14 +21,14 @@
 #include "connection.h"
 
 SOCKET wifiServerSocket = INVALID_SOCKET;
-extern int v_running;
+extern bool v_running;
 
-char* DROIDCAM_CONNECT_ERROR = \
+const char* DROIDCAM_CONNECT_ERROR = \
     "Connect failed, please try again.\n"
     "Check IP and Port.\n"
     "Check network connection.\n";
 
-SOCKET Connect(const char* ip, int port, char **errormsg) {
+SOCKET Connect(const char* ip, int port, const char **errormsg) {
     int flags;
     struct sockaddr_in sin;
     SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -85,41 +86,41 @@ _error_out:
     return sock;
 }
 
-int Send(const char * buffer, int bytes, SOCKET s) {
+bool Send(const char * buffer, int bytes, SOCKET s) {
     ssize_t w = 0;
     char *ptr = (char*) buffer;
     while (bytes > 0) {
         w = send(s, ptr, bytes, 0);
         if (w <= 0) {
-            return -1;
+            return false;
         }
         bytes -= w;
         ptr += w;
     }
-    return 1;
+    return true;
 }
 
-int Recv(const char* buffer, int bytes, SOCKET s) {
+ssize_t Recv(const char* buffer, int bytes, SOCKET s) {
     return recv(s, (char*)buffer, bytes, 0);
 }
 
-int RecvAll(const char* buffer, int bytes, SOCKET s) {
+ssize_t RecvAll(const char* buffer, int bytes, SOCKET s) {
     return recv(s, (char*)buffer, bytes, MSG_WAITALL);
 }
 
-int RecvNonBlock(char * buffer, int bytes, SOCKET s) {
+ssize_t RecvNonBlock(char * buffer, int bytes, SOCKET s) {
     int res = recv(s, buffer, bytes, MSG_DONTWAIT);
     return (res < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) ? 0 : res;
 }
 
-int RecvNonBlockUDP(char * buffer, int bytes, SOCKET s) {
+ssize_t RecvNonBlockUDP(char * buffer, int bytes, SOCKET s) {
     struct sockaddr_in from;
     socklen_t fromLen = sizeof(from);
     int res = recvfrom(s, buffer, bytes, MSG_DONTWAIT, (struct sockaddr *)&from, &fromLen);
     return (res < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) ? 0 : res;
 }
 
-int SendUDPMessage(SOCKET s, const char *message, int length, char *ip, int port) {
+ssize_t SendUDPMessage(SOCKET s, const char *message, int length, char *ip, int port) {
     struct sockaddr_in sin;
     sin.sin_port = htons((uint16_t)port);
     sin.sin_family = AF_INET;

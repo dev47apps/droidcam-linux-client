@@ -112,7 +112,7 @@ int main(int argc, char**argv)
         printf("using output device: %s\n", video_device);
     }
 
-    fdwr = open(video_device, O_RDWR);
+    fdwr = open(video_device, O_WRONLY);
     assert(fdwr >= 0);
 
     ret_code = ioctl(fdwr, VIDIOC_QUERYCAP, &vid_caps);

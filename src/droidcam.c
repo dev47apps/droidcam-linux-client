@@ -14,6 +14,7 @@
 #endif
 
 #include <X11/Xlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "common.h"
@@ -40,11 +41,11 @@ GThread* hDecodeThread;
 GThread* hBatteryThread;
 
 char *v4l2_dev = 0;
-volatile int a_active = 0;
-volatile int v_active = 0;
-volatile int a_running = 0;
-volatile int v_running = 0;
-volatile int thread_cmd = 0;
+volatile bool a_active = false;
+volatile bool v_active = false;
+volatile bool v_running = false;
+volatile bool a_running = false;
+volatile char thread_cmd = 0;
 struct settings g_settings = {0};
 
 extern const char *thread_cmd_val_str;
@@ -105,9 +106,9 @@ void UpdateBatteryLabel(char *battery_value)  {
 	gtk_label_set_text(GTK_LABEL(batteryText), battery_value);
 }
 
-static void Stop(void) {
-	a_running = 0;
-	v_running = 0;
+static void stop_av(void) {
+	a_running = false;
+	v_running = false;
 	dbgprint("join\n");
 	if (hVideoThread) {
 		g_thread_join(hVideoThread);
@@ -125,9 +126,9 @@ static void Stop(void) {
 		g_thread_join(hBatteryThread);
 		hBatteryThread = NULL;
 	}
+}
 
-	a_active = 0;
-	v_active = 0;
+static void reset_ui(void) {
 	gtk_widget_set_sensitive(GTK_WIDGET(elButton), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(wbButton), FALSE);
 	gtk_widget_set_sensitive(GTK_WIDGET(menuButton), FALSE);
@@ -146,7 +147,7 @@ static void Start(void) {
 	g_settings.port = port;
 
 	if (g_settings.connection == CB_WIFI_SRVR) {
-		v_running = 1;
+		v_running = true;
 		hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
 		hDecodeThread = g_thread_new(NULL, DecodeThreadProc, NULL);
 		goto EARLY_OUT;
@@ -185,7 +186,7 @@ static void Start(void) {
 			return;
 		}
 
-		char *errmsg = NULL;
+		const char *errmsg = NULL;
 		gtk_button_set_label(start_button, "Please wait");
 		s = Connect(ip, port, &errmsg);
 		if (s == INVALID_SOCKET) {
@@ -198,8 +199,8 @@ static void Start(void) {
 	}
 
 	if (g_settings.video) {
-		v_active = 0;
-		v_running = 1;
+		v_active = false;
+		v_running = true;
 		hVideoThread = g_thread_new(NULL, VideoThreadProc, (void*) (SOCKET_PTR) s);
 		hDecodeThread = g_thread_new(NULL, DecodeThreadProc, NULL);
 	} else {
@@ -207,8 +208,8 @@ static void Start(void) {
 	}
 
 	if (g_settings.audio) {
-                a_active = 0;
-		a_running = 1;
+        a_active = false;
+		a_running = true;
 		hAudioThread = g_thread_new(NULL, AudioThreadProc, NULL);
 	}
 
@@ -259,7 +260,8 @@ _up:
 	switch (cb) {
 		case CB_BUTTON:
 			if (v_running || a_running) {
-				Stop();
+				reset_ui();
+				stop_av();
 				cb = (int)g_settings.connection;
 				goto _up;
 			}
@@ -668,7 +670,7 @@ int main(int argc, char *argv[])
 	g_signal_connect(window, "delete-event", G_CALLBACK(delete_window_callback), window);
 	gtk_widget_show_all(window);
 
-	Stop(); // reset the UI
+	reset_ui();
 	LoadSettings(&g_settings);
 	if (argc >= 1) {
 		parse_args(argc, argv);
@@ -715,7 +717,7 @@ int main(int argc, char *argv[])
 
 		// main loop
 		gtk_main();
-		Stop();
+		stop_av();
 		decoder_fini();
 		connection_cleanup();
 		SaveSettings(&g_settings);
