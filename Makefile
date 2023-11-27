@@ -27,6 +27,16 @@ SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/qu
 ifneq ($(findstring ayatana,$(APPINDICATOR)),)
 	CFLAGS += -DUSE_AYATANA_APPINDICATOR
 endif
+	
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),FreeBSD)
+	CC   ?= $(shell pkg info | grep -o '^gcc[0-9]*' | head -n 1)
+	JPEG_DIR = /usr/local
+	JPEG_INCLUDE = $(JPEG_DIR)/include
+	JPEG_LIB = $(JPEG_DIR)/lib
+	USBMUXD = -lusbmuxd-2.0
+endif
+
 
 all: droidcam-cli droidcam
 

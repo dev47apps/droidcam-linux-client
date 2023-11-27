@@ -9,7 +9,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if __linux__
 #include <linux/limits.h>
+#endif
+
+#if __FreeBSD__
+#include <sys/limits.h>
+#include <sys/syslimits.h>
+#endif
 
 #include "common.h"
 #include "settings.h"
