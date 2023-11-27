@@ -14,7 +14,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
+#if __linux__
 #include <linux/limits.h>
+#endif
+
+#if __FreeBSD__
+#include <sys/limits.h>
+#endif
 
 #include "common.h"
 #include "decoder.h"

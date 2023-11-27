@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # You should not call this directly.
 # This is supposed to be sourced from install and install-dkms scripts
 

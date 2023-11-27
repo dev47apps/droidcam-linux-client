@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 
 if (lsmod | grep v4l2loopback_dc); then
