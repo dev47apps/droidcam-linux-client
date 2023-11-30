@@ -81,7 +81,7 @@ void * v4l2l_vzalloc (unsigned long size) {
 # define VFL_TYPE_VIDEO VFL_TYPE_GRABBER
 #endif
 
-#define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,3)
+#define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,4)
 
 
 #define DEBUG 0
@@ -2417,8 +2417,7 @@ free_devices        (void)
   }
 }
 
-int __init
-init_module         (void)
+static int __init v4l2loopback_init_module(void)
 {
   int ret;
   int i;
@@ -2459,11 +2458,13 @@ init_module         (void)
   return 0;
 }
 
-void __exit
-cleanup_module      (void)
+static void v4l2loopback_cleanup_module(void)
 {
   MARK();
   /* unregister the device -> it deletes /dev/video* */
   free_devices();
   dprintk("module removed\n");
 }
+
+module_init(v4l2loopback_init_module);
+module_exit(v4l2loopback_cleanup_module);
