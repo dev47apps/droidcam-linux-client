@@ -9,8 +9,8 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#define APP_VER_INT 200
-#define APP_VER_STR "2.0.0"
+#define APP_VER_INT 210
+#define APP_VER_STR "2.1.0"
 
 #define MSG_ERROR(str)     ShowError("Error",str)
 #define MSG_LASTERROR(str) ShowError(str,strerror(errno))
@@ -33,8 +33,11 @@ void ShowError(const char*, const char*);
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
 #define errprint(...) fprintf(stderr, __VA_ARGS__)
-#define voidprint(...) /* */
-#define dbgprint      voidprint
+#ifdef DEBUG
+#define dbgprint      errprint
+#else
+#define dbgprint(...) /* */
+#endif
 
 #define VIDEO_INBUF_SZ 4096
 #define AUDIO_INBUF_SZ 32

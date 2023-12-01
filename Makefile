@@ -35,16 +35,16 @@ package:
 	@echo "usage: RELEASE=2. make package"
 
 else
-JPEG    =
+JPEG    = -I/opt/libjpeg-turbo/include
+USBMUXD = -I/opt/libimobiledevice/include
 LIBAV   = -L/opt/ffmpeg4/lib -lswscale -lavutil
-USBMUXD =
 
 SRC += /opt/libimobiledevice/lib/libusbmuxd.a
 SRC += /opt/libimobiledevice/lib/libplist-2.0.a
 SRC += /opt/libjpeg-turbo/lib64/libturbojpeg.a
 
 .PHONY: package
-package: clean all
+package: all
 	zip "droidcam_$(RELEASE).zip" \
 		LICENSE README* icon2.png  \
 		droidcam* install* uninstall* \

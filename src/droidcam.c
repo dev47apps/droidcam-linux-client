@@ -420,10 +420,6 @@ ERROR:
 	exit(1);
 }
 
-// TODO: this is broken on Debian
-// Seems AppIndicator's deprecated and there is no real alternatives
-// Example discussion: https://github.com/dino/dino/issues/98
-#if 1
 static void add_indicator(GtkWidget *window) {
 	AppIndicator *indicator = app_indicator_new("droidcam", APP_ICON_FILE, APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 	GtkWidget *menu = gtk_menu_new();
@@ -448,7 +444,6 @@ static void add_indicator(GtkWidget *window) {
 	g_signal_connect(G_OBJECT(show_menu_item), "activate", G_CALLBACK(show_window), window);
 	g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_window), window);
 }
-#endif
 
 int main(int argc, char *argv[])
 {
