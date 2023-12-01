@@ -29,6 +29,8 @@ void LoadSettings(struct settings* settings) {
     memset(settings, 0, sizeof(struct settings));
     settings->video = 1;
     settings->port = 4747;
+    settings->v4l2_width = 640;
+    settings->v4l2_height = 480;
     settings->connection = CB_RADIO_WIFI;
     settings->confirm_close = 1;
 

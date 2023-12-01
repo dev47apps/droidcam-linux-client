@@ -22,7 +22,7 @@ typedef struct Thread {
 Thread athread = {0, -1}, vthread = {0, -1}, dthread = {0, -1};
 
 char *v4l2_dev = 0;
-unsigned v4l2_width = 0, v4l2_height = 0;
+unsigned v4l2_width = 640, v4l2_height = 480;
 volatile int a_active = 0;
 volatile int v_active = 0;
 volatile int v_running = 0;
@@ -54,7 +54,7 @@ void UpdateBatteryLabel(char *battery_value) {
 
 static inline void usage(__attribute__((__unused__)) int argc, char *argv[]) {
     fprintf(stderr, "Usage: \n"
-    " %s -l <port>\n"
+    " %s [options] -l <port>\n"
     "   Listen on 'port' for connections (video only)\n"
     "\n"
     " %s [options] <ip> <port>\n"

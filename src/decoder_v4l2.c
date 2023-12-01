@@ -82,34 +82,27 @@ void set_v4l2_device(const char* device) {
 void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBCAM_H) {
     struct v4l2_format vid_format = {0};
     vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    vid_format.fmt.pix.width = 0;
-    vid_format.fmt.pix.height = 0;
 
     int in_width = *WEBCAM_W;
     int in_height = *WEBCAM_H;
     *WEBCAM_W = 0;
     *WEBCAM_H = 0;
 
+    dbgprint("Trying to set format YU12:%dx%d\n", in_width, in_height);
+    vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+    vid_format.fmt.pix.width = in_width;
+    vid_format.fmt.pix.height = in_height;
+    vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+    vid_format.fmt.pix.field = V4L2_FIELD_NONE;
+    xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format);
+
+    vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format);
+
     int ret = xioctl(droidcam_device_fd, VIDIOC_G_FMT, &vid_format);
-    if (ret < 0 && errno == EINVAL) {
-        dbgprint("Got no format, trying to set %dx%d\n", in_width, in_height);
-        vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-        vid_format.fmt.pix.width = in_width;
-        vid_format.fmt.pix.height = in_height;
-        vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
-        vid_format.fmt.pix.field = V4L2_FIELD_ANY;
-
-        ret = xioctl(droidcam_device_fd, VIDIOC_TRY_FMT, &vid_format);
-        if (ret >= 0) {
-            if (xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format) < 0) {
-                errprint("Fatal: Unable to set v4l2loopback device format. errno=%d\n", errno);
-                return;
-            }
-        }
-    }
-
     if (ret < 0) {
-        errprint("Fatal: Unable to query video device. errno=%d\n", errno);
+        errprint("Fatal: Unable to query video device. dev=%s errno=%d\n",
+            v4l2_device, errno);
         return;
     }
 
@@ -121,13 +114,16 @@ void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBC
     dbgprint("  vid_format->fmt.pix.field       =%d\n", vid_format.fmt.pix.field );
     dbgprint("  vid_format->fmt.pix.bytesperline=%d\n", vid_format.fmt.pix.bytesperline );
     dbgprint("  vid_format->fmt.pix.colorspace  =%d\n", vid_format.fmt.pix.colorspace );
+
     if (vid_format.fmt.pix.pixelformat != V4L2_PIX_FMT_YUV420) {
         unsigned pixelfmt = vid_format.fmt.pix.pixelformat;
         BYTE fourcc[5] = { (BYTE)(pixelfmt >> 0), (BYTE)(pixelfmt >> 8),
             (BYTE)(pixelfmt >> 16), (BYTE)(pixelfmt >> 24), '\0' };
-        errprint("Fatal: droidcam video device reported pixel format %x (%s), expected %x (YU12/I420)\n"
-                 "Try 'v4l2loopback-ctl set-caps \"video/x-raw, format=I420, width=640, height=480\" %s'\n",
-            vid_format.fmt.pix.pixelformat, fourcc, V4L2_PIX_FMT_YUV420, "/dev/video<N>");
+
+        errprint("Fatal: video device reported pixel format %x (%s), expected %x (YU12/I420)\n"
+                 "Try `v4l2loopback-ctl set-caps %s \"YU12:%dx%d\"`, or specify a different video device\n",
+            vid_format.fmt.pix.pixelformat, fourcc, V4L2_PIX_FMT_YUV420,
+            v4l2_device, in_width, in_height);
         return;
     }
     if (vid_format.fmt.pix.width <= 0 ||  vid_format.fmt.pix.height <= 0) {
