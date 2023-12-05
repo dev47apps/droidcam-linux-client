@@ -96,8 +96,10 @@ void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBC
     vid_format.fmt.pix.field = V4L2_FIELD_NONE;
     xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format);
 
+#ifdef __linux__
     vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format);
+#endif
 
     int ret = xioctl(droidcam_device_fd, VIDIOC_G_FMT, &vid_format);
     if (ret < 0) {
