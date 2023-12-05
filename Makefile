@@ -41,7 +41,7 @@ all: droidcam-cli droidcam
 
 ifeq "$(RELEASE)" ""
 package:
-	@echo "usage: RELEASE=2. make package"
+	@echo "usage: RELEASE=2. make -B package"
 
 else
 JPEG    = -I/opt/libjpeg-turbo/include

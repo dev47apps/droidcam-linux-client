@@ -1,4 +1,4 @@
-Linux Client
+Linux
 ========
 
 ## Download and Install
