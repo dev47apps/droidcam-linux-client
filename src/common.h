@@ -9,8 +9,8 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#define APP_VER_INT 210
-#define APP_VER_STR "2.1.0"
+#define APP_VER_INT 211
+#define APP_VER_STR "2.1.1"
 
 #define MSG_ERROR(str)     ShowError("Error",str)
 #define MSG_LASTERROR(str) ShowError(str,strerror(errno))
@@ -18,7 +18,7 @@ void ShowError(const char*, const char*);
 
 #define ADB_LOCALHOST_IP "127.0.0.1"
 
-#define VIDEO_REQ      "CMD /v2/video.4?%dx%d"
+#define VIDEO_REQ      "CMD /v3/video/%s/%dx%d"
 #define OTHER_REQ      "CMD /v1/ctl?%d"
 #define OTHER_REQ_INT  "CMD /v1/ctl?%d=%d"
 #define OTHER_REQ_STR  "CMD /v1/ctl?%d=%s"

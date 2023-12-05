@@ -124,7 +124,9 @@ server_wait:
         keep_waiting = 1;
     }
 
-    len = snprintf(buf, sizeof(buf), VIDEO_REQ, decoder_get_video_width(), decoder_get_video_height());
+    len = snprintf(buf, sizeof(buf), VIDEO_REQ, codec_names[g_settings.encoder],
+                            decoder_get_video_width(), decoder_get_video_height());
+
     if (Send(buf, len, videoSocket) <= 0){
         errprint("send error (%d) '%s'\n", errno, strerror(errno));
         MSG_ERROR("Error sending request, DroidCam might be busy with another client.");
