@@ -22,6 +22,60 @@ static int xioctl(int fd, int request, void *arg){
     return r;
 }
 
+static unsigned int _get_control_id(int fd, const char *control){
+	const size_t length = strnlen(control, 1024);
+	const unsigned next = V4L2_CTRL_FLAG_NEXT_CTRL;
+	struct v4l2_queryctrl qctrl;
+	int id;
+
+	memset(&qctrl, 0, sizeof(qctrl));
+	while (ioctl(fd, VIDIOC_QUERYCTRL, &qctrl) == 0) {
+		if (!strncmp((const char*)qctrl.name, control, length))
+			return qctrl.id;
+		qctrl.id |= next;
+	}
+	for (id = V4L2_CID_USER_BASE; id < V4L2_CID_LASTP1; id++) {
+		qctrl.id = id;
+		if (ioctl(fd, VIDIOC_QUERYCTRL, &qctrl) == 0) {
+			if (!strncmp((const char*)qctrl.name, control, length))
+				return qctrl.id;
+		}
+	}
+	for (qctrl.id = V4L2_CID_PRIVATE_BASE;
+	     ioctl(fd, VIDIOC_QUERYCTRL, &qctrl) == 0; qctrl.id++) {
+		if (!strncmp((const char*)qctrl.name, control, length)) {
+			unsigned int id = qctrl.id;
+			return id;
+		}
+	}
+	return 0;
+}
+
+static int set_control_i(int fd, const char *control, int value){
+	struct v4l2_control ctrl;
+	memset(&ctrl, 0, sizeof(ctrl));
+	ctrl.id = _get_control_id(fd, control);
+	ctrl.value = value;
+	if (ctrl.id && ioctl(fd, VIDIOC_S_CTRL, &ctrl) == 0) {
+		int value = ctrl.value;
+		return value;
+	}
+	return 0;
+}
+#if 0
+static int get_control_i(int fd, const char *control){
+	struct v4l2_control ctrl;
+	memset(&ctrl, 0, sizeof(ctrl));
+	ctrl.id = _get_control_id(fd, control);
+
+	if (ctrl.id && ioctl(fd, VIDIOC_G_CTRL, &ctrl) == 0) {
+		int value = ctrl.value;
+		return value;
+	}
+	return 0;
+}
+#endif
+
 int open_v4l2_device(void) {
     int fd;
     struct stat st;
@@ -79,7 +133,8 @@ void set_v4l2_device(const char* device) {
     v4l2_device[sizeof(v4l2_device) - 1] = '\0';
 }
 
-void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBCAM_H) {
+void query_v4l_device(int fd, unsigned *WEBCAM_W, unsigned *WEBCAM_H) {
+    struct v4l2_capability v4l2cap = {0};
     struct v4l2_format vid_format = {0};
     vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -88,22 +143,35 @@ void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBC
     *WEBCAM_W = 0;
     *WEBCAM_H = 0;
 
-    dbgprint("Trying to set format YU12:%dx%d\n", in_width, in_height);
-    vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-    vid_format.fmt.pix.width = in_width;
-    vid_format.fmt.pix.height = in_height;
-    vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
-    vid_format.fmt.pix.field = V4L2_FIELD_NONE;
-    xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format);
+    if (xioctl(fd, VIDIOC_QUERYCAP, &v4l2cap) < 0) {
+        errprint("Error: Unable to query video device. dev=%s errno=%d\n",
+            v4l2_device, errno);
+        return;
+    }
 
-#ifdef __linux__
-    vid_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    xioctl(droidcam_device_fd, VIDIOC_S_FMT, &vid_format);
-#endif
+    dbgprint("using '%s' (%s)\n", v4l2cap.card, v4l2cap.bus_info);
 
-    int ret = xioctl(droidcam_device_fd, VIDIOC_G_FMT, &vid_format);
+    const char* bus_info_dc = V4L2_PLATFORM_DC;
+    if (0 != strncmp(bus_info_dc, (const char*) v4l2cap.bus_info, strlen(bus_info_dc))) {
+        vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+        xioctl(fd, VIDIOC_G_FMT, &vid_format);
+
+        dbgprint("set fmt YU12:%dx%d\n", in_width, in_height);
+        vid_format.fmt.pix.width = in_width;
+        vid_format.fmt.pix.height = in_height;
+        vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+        vid_format.fmt.pix.field = V4L2_FIELD_NONE;
+        if (xioctl(fd, VIDIOC_S_FMT, &vid_format) >= 0) {
+            set_control_i(fd, "keep_format", 1);
+            goto early_out;
+        }
+
+        dbgprint("set fmt failed, trying to query fmt\n");
+    }
+
+    int ret = xioctl(fd, VIDIOC_G_FMT, &vid_format);
     if (ret < 0) {
-        errprint("Fatal: Unable to query video device. dev=%s errno=%d\n",
+        errprint("Error: Unable to determine video device fmt. dev=%s errno=%d\n",
             v4l2_device, errno);
         return;
     }
@@ -134,6 +202,7 @@ void query_v4l_device(int droidcam_device_fd, unsigned *WEBCAM_W, unsigned *WEBC
         return;
     }
 
+early_out:
     *WEBCAM_W = vid_format.fmt.pix.width;
     *WEBCAM_H = vid_format.fmt.pix.height;
 }

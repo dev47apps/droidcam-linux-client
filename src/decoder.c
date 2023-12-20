@@ -100,10 +100,10 @@ int decoder_init(const char* v4l2_device, unsigned v4l2_width, unsigned v4l2_hei
         set_v4l2_device(v4l2_device);
         droidcam_device_fd = open_v4l2_device();
     } else {
-        droidcam_device_fd = find_v4l2_device("platform:v4l2loopback_dc");
+        droidcam_device_fd = find_v4l2_device(V4L2_PLATFORM_DC);
         if (droidcam_device_fd < 0) {
             // check for generic v4l2loopback device
-            droidcam_device_fd = find_v4l2_device("platform:v4l2loopback");
+            droidcam_device_fd = find_v4l2_device(V4L2_PLATFORM);
         }
     }
 

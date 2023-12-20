@@ -89,7 +89,7 @@ void LoadSettings(struct settings* settings) {
             if (1 == sscanf(buf, "audio=%d\n", &settings->audio)) continue;
             if (1 == sscanf(buf, "video=%d\n", &settings->video)) continue;
 
-            if (2 == sscanf(buf, "size=%dx%d\n", &arg1, &arg2)) {
+            if (2 == sscanf(buf, "size=%dx%d\n", &arg1, &arg2) && arg1 > 0 && arg2 > 0) {
                 settings->v4l2_width = arg1;
                 settings->v4l2_height = arg2;
                 continue;

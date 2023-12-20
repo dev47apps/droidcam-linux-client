@@ -63,6 +63,9 @@ void decoder_show_test_image();
 #define VIDEO_FMT_DROIDCAM 3
 #define VIDEO_FMT_DROIDCAMX 18
 
+#define V4L2_PLATFORM    "platform:v4l2loopback"
+#define V4L2_PLATFORM_DC "platform:v4l2loopback_dc"
+
 void set_v4l2_device(const char* device);
 int open_v4l2_device(void);
 int find_v4l2_device(const char* bus_info);
