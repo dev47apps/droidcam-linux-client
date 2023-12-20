@@ -36,15 +36,6 @@ enum control_codes {
     CB_V_FLIP,
 };
 
-enum {
-    CODEC_JPG = 0,
-    CODEC_AVC,
-};
-
-static const char* codec_names[] = {
-    "jpg", "avc",
-};
-
 struct settings {
     char ip[16];
     int port;

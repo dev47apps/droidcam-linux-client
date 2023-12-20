@@ -13,7 +13,7 @@
 
 
 CC           ?= gcc
-CFLAGS       ?= -Wall -O2
+CFLAGS       ?=
 APPINDICATOR ?= appindicator3-0.1
 
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
@@ -44,6 +44,8 @@ package:
 	@echo "usage: RELEASE=2. make -B package"
 
 else
+CFLAGS += -Wall -O2
+
 JPEG    = -I/opt/libjpeg-turbo/include
 USBMUXD = -I/opt/libimobiledevice/include
 LIBAV   = -L/opt/ffmpeg4/lib -lswscale -lavutil

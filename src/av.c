@@ -110,6 +110,10 @@ void *DecodeThreadProc(__attribute__((__unused__)) void *args) {
     return 0;
 }
 
+const char* codec_names[] = {
+    "jpg", "avc",
+};
+
 void *VideoThreadProc(void *args) {
     char buf[32];
     SOCKET videoSocket = (SOCKET_PTR) args;
