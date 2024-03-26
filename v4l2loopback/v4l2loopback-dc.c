@@ -73,6 +73,10 @@ void * v4l2l_vzalloc (unsigned long size) {
 #include <linux/sched.h>
 #include <linux/slab.h>
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 3, 0)
+#define strscpy strlcpy
+#endif
+
 #if defined(timer_setup) && defined(from_timer)
 #define HAVE_TIMER_SETUP
 #endif
@@ -619,8 +623,8 @@ vidioc_querycap     (struct file *file,
   struct v4l2_loopback_device *dev = v4l2loopback_getdevice(file);
   int devnr = ((struct v4l2loopback_private *)video_get_drvdata(dev->vdev))->devicenr;
 
-  strlcpy(cap->driver, "Droidcam", sizeof(cap->driver));
-  strlcpy(cap->card  , "Droidcam", sizeof(cap->card));
+  strscpy(cap->driver, "Droidcam", sizeof(cap->driver));
+  strscpy(cap->card  , "Droidcam", sizeof(cap->card));
   snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:v4l2loopback_dc-%03d", devnr);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0)
@@ -740,7 +744,7 @@ vidioc_enum_fmt_cap (struct file *file,
     return -EINVAL;
   if (dev->ready_for_capture) {
     const __u32 format = dev->pix_format.pixelformat;
-    //  strlcpy(f->description, "current format", sizeof(f->description));
+    //  strscpy(f->description, "current format", sizeof(f->description));
 
     snprintf(f->description, sizeof(f->description),
              "[%c%c%c%c]",
@@ -868,7 +872,7 @@ vidioc_enum_fmt_out (struct file *file,
     f->pixelformat=fmt->fourcc;
     format = f->pixelformat;
 
-    //    strlcpy(f->description, "dummy OUT format", sizeof(f->description));
+    //    strscpy(f->description, "dummy OUT format", sizeof(f->description));
     snprintf(f->description, sizeof(f->description),
              fmt->name);
 
@@ -1281,7 +1285,7 @@ vidioc_enum_output  (struct file *file,
   memset(outp, 0, sizeof(*outp));
 
   outp->index = index;
-  strlcpy(outp->name, "loopback in", sizeof(outp->name));
+  strscpy(outp->name, "loopback in", sizeof(outp->name));
   outp->type = V4L2_OUTPUT_TYPE_ANALOG;
   outp->audioset = 0;
   outp->modulator = 0;
@@ -1350,7 +1354,7 @@ vidioc_enum_input   (struct file *file,
   memset(inp, 0, sizeof(*inp));
 
   inp->index = index;
-  strlcpy(inp->name, "loopback", sizeof(inp->name));
+  strscpy(inp->name, "loopback", sizeof(inp->name));
   inp->type = V4L2_INPUT_TYPE_CAMERA;
   inp->audioset = 0;
   inp->tuner = 0;
@@ -2130,7 +2134,7 @@ static void
 init_vdev           (struct video_device *vdev)
 {
   MARK();
-  strlcpy(vdev->name, "Loopback video device", sizeof(vdev->name));
+  strscpy(vdev->name, "Loopback video device", sizeof(vdev->name));
 
 #if 0
   //todo: remove V4L2_STD stuff
