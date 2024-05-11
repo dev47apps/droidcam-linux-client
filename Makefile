@@ -20,7 +20,7 @@ GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
 GTK  += `pkg-config --libs --cflags $(APPINDICATOR)`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 JPEG  = `pkg-config --libs --cflags libturbojpeg`
-USBMUXD = `pkg-config --libs --cflags libusbmuxd`
+USBMUXD ?= `pkg-config --libs --cflags libusbmuxd`
 LIBS  = -lspeex -lasound -lpthread -lm
 SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
 
