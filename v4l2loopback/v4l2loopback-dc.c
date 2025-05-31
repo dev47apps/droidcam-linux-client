@@ -1145,11 +1145,11 @@ vidioc_querystd     (struct file *file,
 
 
 /* get ctrls info
- * called on VIDIOC_QUERYCTRL
+ * called on VIDIOC_QUERY_EXT_CTRL
  */
 static int
-vidioc_queryctrl(struct file *file, void *fh,
-                 struct v4l2_queryctrl *q)
+vidioc_query_ext_ctrl(struct file *file, void *fh,
+                 struct v4l2_query_ext_ctrl *q)
 {
   switch (q->id) {
   case CID_KEEP_FORMAT:
@@ -1170,22 +1170,23 @@ vidioc_queryctrl(struct file *file, void *fh,
     return -EINVAL;
   }
 
+  q->default_value = 0;
+  q->nr_of_dims = 0;
+  q->elems = 1;
+  q->elem_size = 4;
+
   switch (q->id) {
   case CID_KEEP_FORMAT:
     strcpy(q->name, "keep_format");
-    q->default_value = 0;
     break;
   case CID_SUSTAIN_FRAMERATE:
     strcpy(q->name, "sustain_framerate");
-    q->default_value = 0;
     break;
   case CID_TIMEOUT:
     strcpy(q->name, "timeout");
-    q->default_value = 0;
     break;
   case CID_TIMEOUT_IMAGE_IO:
     strcpy(q->name, "timeout_image_io");
-    q->default_value = 0;
     break;
   default:
     BUG();
@@ -2344,7 +2345,7 @@ static const struct v4l2_ioctl_ops v4l2_loopback_ioctl_ops = {
   .vidioc_enum_frameintervals = &vidioc_enum_frameintervals,
 #endif
 
-  .vidioc_queryctrl         = &vidioc_queryctrl,
+  .vidioc_query_ext_ctrl    = &vidioc_query_ext_ctrl,
   .vidioc_g_ctrl            = &vidioc_g_ctrl,
   .vidioc_s_ctrl            = &vidioc_s_ctrl,
 
