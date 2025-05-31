@@ -1235,6 +1235,45 @@ vidioc_s_ctrl(struct file *file, void *fh,
   return 0;
 }
 
+static int
+vidioc_g_ext_ctrls(struct file *file, void *fh,
+                   struct v4l2_ext_controls *ctls)
+{
+  struct v4l2_control ctrl;
+  int i, ret = 0;
+
+  for (i = 0; i < ctls->count; i++) {
+    ctrl.id = ctls->controls[i].id;
+    ctrl.value = ctls->controls[i].value;
+    ret = vidioc_g_ctrl(file, fh, &ctrl);
+    ctls->controls[i].value = ctrl.value;
+    if (ret) {
+      ctls->error_idx = i;
+      break;
+    }
+  }
+  return ret;
+}
+
+static int
+vidioc_s_ext_ctrls(struct file *file, void *fh,
+                   struct v4l2_ext_controls *ctls)
+{
+  struct v4l2_control ctrl;
+  int i, ret = 0;
+
+  for (i = 0; i < ctls->count; i++) {
+    ctrl.id = ctls->controls[i].id;
+    ctrl.value = ctls->controls[i].value;
+    ret = vidioc_s_ctrl(file, fh, &ctrl);
+    ctls->controls[i].value = ctrl.value;
+    if (ret) {
+      ctls->error_idx = i;
+      break;
+    }
+  }
+  return ret;
+}
 
 /* returns set of device outputs, in our case there is only one
  * called on VIDIOC_ENUMOUTPUT
@@ -2315,8 +2354,8 @@ static const struct v4l2_ioctl_ops v4l2_loopback_ioctl_ops = {
 #endif
 
   .vidioc_query_ext_ctrl    = &vidioc_query_ext_ctrl,
-  .vidioc_g_ctrl            = &vidioc_g_ctrl,
-  .vidioc_s_ctrl            = &vidioc_s_ctrl,
+  .vidioc_s_ext_ctrls       = &vidioc_s_ext_ctrls,
+  .vidioc_g_ext_ctrls       = &vidioc_g_ext_ctrls,
 
   .vidioc_enum_output       = &vidioc_enum_output,
   .vidioc_g_output          = &vidioc_g_output,
