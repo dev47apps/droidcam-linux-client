@@ -1511,8 +1511,8 @@ vidioc_querybuf     (struct file *file,
 static void
 buffer_written(struct v4l2_loopback_device *dev, struct v4l2l_buffer *buf)
 {
-  del_timer_sync(&dev->sustain_timer);
-  del_timer_sync(&dev->timeout_timer);
+  timer_delete_sync(&dev->sustain_timer);
+  timer_delete_sync(&dev->timeout_timer);
   spin_lock_bh(&dev->lock);
 
   dev->bufpos2index[dev->write_position % dev->used_buffers] = buf->buffer.index;
@@ -1933,8 +1933,8 @@ v4l2_loopback_close  (struct file *file)
 
   atomic_dec(&dev->open_count);
   if (dev->open_count.counter == 0) {
-    del_timer_sync(&dev->sustain_timer);
-    del_timer_sync(&dev->timeout_timer);
+    timer_delete_sync(&dev->sustain_timer);
+    timer_delete_sync(&dev->timeout_timer);
   }
   try_free_buffers(dev);
   kfree(opener);
