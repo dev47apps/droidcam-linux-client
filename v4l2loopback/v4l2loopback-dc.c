@@ -1,23 +1,16 @@
 /*
- * Original source:
- * https://github.com/umlaeute/v4l2loopback
+ * v4l2loopback-dc.c
+ *
  * Copyright (C) 2005-2009 Vasily Levin (vasaka@gmail.com)
- * Copyright (C) 2010-2012 IOhannes m zmoelnig (zmoelnig@iem.at)
+ * Copyright (C) 2010-2023 IOhannes m zmoelnig (zmoelnig@iem.at)
  * Copyright (C) 2011 Stefan Diewald (stefan.diewald@mytum.de)
  * Copyright (C) 2012 Anton Novikov (random.plant@gmail.com)
- *
- * https://github.com/aramg/droidcam
- * Copyright (C) 2013 @dev47apps
+ * Copyright (C) 2013 Dev47Apps (https://github.com/dev47apps)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * Use at your own risk.
  *
  */
 #include <linux/version.h>
@@ -26,52 +19,23 @@
 #include <linux/time.h>
 #include <linux/module.h>
 #include <linux/videodev2.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-common.h>
+#include <media/v4l2-device.h>
 
 static inline void get_timestamp(struct v4l2_buffer *b) {
-  /* ktime_get_ts is considered deprecated, so use ktime_get_ts64 if possible */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0)
-  struct timespec ts;
-  ktime_get_ts(&ts);
-#else
   struct timespec64 ts;
   ktime_get_ts64(&ts);
-#endif
 
   b->timestamp.tv_sec = ts.tv_sec;
   b->timestamp.tv_usec = (ts.tv_nsec / NSEC_PER_USEC);
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29)
-# define v4l2_file_operations file_operations
-  /* dummy v4l2_device struct/functions */
-  # define V4L2_DEVICE_NAME_SIZE (20 + 16)
-  struct v4l2_device {
-    char name[V4L2_DEVICE_NAME_SIZE];
-  };
-  static inline int  v4l2_device_register  (void *dev, void *v4l2_dev) { return 0; }
-  static inline void v4l2_device_unregister(struct v4l2_device *v4l2_dev) { return; }
-#else
-# include <media/v4l2-device.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
+#error This module is not supported on kernels before 4.0.0.
 #endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,6,1)
- # define kstrtoul strict_strtoul
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,37)
-void * v4l2l_vzalloc (unsigned long size) {
- void*data=vmalloc(size);
- memset(data, 0, size);
- return data;
-}
-#else
-# define v4l2l_vzalloc vzalloc
-#endif
-
-#include <linux/sched.h>
-#include <linux/slab.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 3, 0)
 #define strscpy strlcpy
@@ -2122,7 +2086,7 @@ allocate_timeout_image(struct v4l2_loopback_device *dev)
     return -EINVAL;
 
   if (dev->timeout_image == NULL) {
-    dev->timeout_image = v4l2l_vzalloc(dev->buffer_size);
+    dev->timeout_image = vzalloc(dev->buffer_size);
     if (dev->timeout_image == NULL)
       return -ENOMEM;
   }
