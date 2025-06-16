@@ -41,13 +41,18 @@ static inline void get_timestamp(struct v4l2_buffer *b) {
 #define strscpy strlcpy
 #endif
 
-#if defined(timer_setup) && defined(from_timer)
+#if defined(timer_setup)
 #define HAVE_TIMER_SETUP
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 7, 0)
 # define VFL_TYPE_VIDEO VFL_TYPE_GRABBER
 #endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+# define timer_delete_sync del_timer_sync
+#endif
+
 
 #define V4L2LOOPBACK_VERSION_CODE KERNEL_VERSION(0,6,4)
 
@@ -1475,8 +1480,8 @@ vidioc_querybuf     (struct file *file,
 static void
 buffer_written(struct v4l2_loopback_device *dev, struct v4l2l_buffer *buf)
 {
-  del_timer_sync(&dev->sustain_timer);
-  del_timer_sync(&dev->timeout_timer);
+  timer_delete_sync(&dev->sustain_timer);
+  timer_delete_sync(&dev->timeout_timer);
   spin_lock_bh(&dev->lock);
 
   dev->bufpos2index[dev->write_position % dev->used_buffers] = buf->buffer.index;
@@ -1897,8 +1902,8 @@ v4l2_loopback_close  (struct file *file)
 
   atomic_dec(&dev->open_count);
   if (dev->open_count.counter == 0) {
-    del_timer_sync(&dev->sustain_timer);
-    del_timer_sync(&dev->timeout_timer);
+    timer_delete_sync(&dev->sustain_timer);
+    timer_delete_sync(&dev->timeout_timer);
   }
   try_free_buffers(dev);
   kfree(opener);
@@ -2164,7 +2169,7 @@ check_timers(struct v4l2_loopback_device *dev)
 
 static void sustain_timer_clb(struct timer_list *t)
 {
-   struct v4l2_loopback_device *dev = from_timer(dev,t,sustain_timer);
+   struct v4l2_loopback_device *dev = container_of(t, struct v4l2_loopback_device, sustain_timer);
 #else
 
 static void sustain_timer_clb(unsigned long nr)
@@ -2189,7 +2194,7 @@ static void sustain_timer_clb(unsigned long nr)
 #ifdef HAVE_TIMER_SETUP
 static void timeout_timer_clb(struct timer_list *t)
 {
- struct v4l2_loopback_device *dev = from_timer(dev,t,timeout_timer);
+ struct v4l2_loopback_device *dev = container_of(t, struct v4l2_loopback_device, timeout_timer);
 #else
 
 static void timeout_timer_clb(unsigned long nr)
