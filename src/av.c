@@ -56,7 +56,7 @@ void *BatteryThreadProc(__attribute__((__unused__)) void *args) {
         }
 
         if (Send(BATTERY_REQ, CSTR_LEN(BATTERY_REQ), socket) <= 0) {
-            errprint("error sending battery status request: (%d) '%s'\n",
+            dbgprint("error sending battery status request: (%d) '%s'\n",
                                         errno, strerror(errno));
             goto LOOP;
         }
