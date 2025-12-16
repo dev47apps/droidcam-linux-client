@@ -675,7 +675,7 @@ vidioc_enum_frameintervals(struct file *file,
 			   struct v4l2_frmivalenum *argp)
 {
   struct v4l2_loopback_device *dev = v4l2loopback_getdevice(file);
-  struct v4l2_loopback_opener *opener = file->private_data;
+  struct v4l2_loopback_opener *opener = file_to_v4l2_fh(file);
 
   if (dev->ready_for_capture) {
     if (opener->vidioc_enum_frameintervals_calls > 0)
@@ -1423,7 +1423,7 @@ vidioc_reqbufs      (struct file *file,
   MARK();
 
   dev=v4l2loopback_getdevice(file);
-  opener = file->private_data;
+  opener = file_to_v4l2_fh(file);
 
   dprintk("reqbufs: %d\t%d=%d", b->memory, b->count, dev->buffers_number);
   if (opener->timeout_image_io) {
@@ -1497,7 +1497,7 @@ vidioc_querybuf     (struct file *file,
   type = b->type;
   index = b->index;
   dev=v4l2loopback_getdevice(file);
-  opener = file->private_data;
+  opener = file_to_v4l2_fh(file);
 
   if ((b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE) &&
       (b->type != V4L2_BUF_TYPE_VIDEO_OUTPUT)) {
@@ -1547,7 +1547,7 @@ vidioc_qbuf         (struct file *file,
   int index;
 
   dev=v4l2loopback_getdevice(file);
-  opener = file->private_data;
+  opener = file_to_v4l2_fh(file);
 
   if (buf->index > MAX_BUFFERS)
     return -EINVAL;
@@ -1591,7 +1591,7 @@ static int
 get_capture_buffer(struct file *file)
 {
   struct v4l2_loopback_device *dev = v4l2loopback_getdevice(file);
-  struct v4l2_loopback_opener *opener = file->private_data;
+  struct v4l2_loopback_opener *opener = file_to_v4l2_fh(file);
   int pos, ret;
   int timeout_happened;
 
@@ -1641,7 +1641,7 @@ vidioc_dqbuf        (struct file *file,
   struct v4l2l_buffer *b;
 
   dev=v4l2loopback_getdevice(file);
-  opener = file->private_data;
+  opener = file_to_v4l2_fh(file);
   if (opener->timeout_image_io) {
     *buf = dev->timeout_image_buffer.buffer;
     return 0;
@@ -1689,7 +1689,7 @@ vidioc_streamon     (struct file *file,
   MARK();
 
   dev=v4l2loopback_getdevice(file);
-  opener = file->private_data;
+  opener = file_to_v4l2_fh(file);
 
   switch (type) {
   case V4L2_BUF_TYPE_VIDEO_OUTPUT:
@@ -1785,7 +1785,7 @@ v4l2_loopback_mmap  (struct file *file,
   size = (unsigned long) (vma->vm_end - vma->vm_start);
 
   dev=v4l2loopback_getdevice(file);
-  opener=file->private_data;
+  opener=file_to_v4l2_fh(file);
 
   if (size > dev->buffer_size) {
     dprintk("userspace tries to mmap too much, fail\n");
@@ -1859,7 +1859,7 @@ v4l2_loopback_poll  (struct file *file,
   int ret_mask = 0;
   MARK();
 
-  opener = file->private_data;
+  opener = file_to_v4l2_fh(file);
   dev    = v4l2loopback_getdevice(file);
 
   switch (opener->type) {
@@ -1888,6 +1888,8 @@ v4l2_loopback_open   (struct file *file)
   struct v4l2_loopback_opener *opener;
   MARK();
 
+  // TODO: long term, this driver should be rewritten to v4l2_fh, similar to dw100.c
+  v4l2_fh_init(file, video_devdata(file));
   dev=v4l2loopback_getdevice(file);
 
   if (dev->open_count.counter >= dev->max_openers)
@@ -1896,7 +1898,7 @@ v4l2_loopback_open   (struct file *file)
   opener = kzalloc(sizeof(*opener), GFP_KERNEL);
   if (opener == NULL)
     return -ENOMEM;
-  file->private_data = opener;
+  file_to_v4l2_fh(file) = opener;
   atomic_inc(&dev->open_count);
 
   opener->timeout_image_io = dev->timeout_image_io;
@@ -1937,7 +1939,7 @@ v4l2_loopback_close  (struct file *file)
   struct v4l2_loopback_device *dev;
   MARK();
 
-  opener = file->private_data;
+  opener = file_to_v4l2_fh(file);
   dev    = v4l2loopback_getdevice(file);
 
   atomic_dec(&dev->open_count);
@@ -1962,7 +1964,7 @@ v4l2_loopback_read   (struct file *file,
   struct v4l2_loopback_device *dev;
   MARK();
 
-  opener = file->private_data;
+  opener = file_to_v4l2_fh(file);
   dev    = v4l2loopback_getdevice(file);
 
   read_index = get_capture_buffer(file);
