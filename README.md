@@ -56,9 +56,11 @@ The main differences with `v4l2loopback-dc` are that:
 
 If you wish to use v4l2loopback-dc, first install these dependencies
 ```
-linux-headers-`uname -r`
-gcc
-make
+Debian/ubuntu:
+sudo apt install build-essential linux-headers-$(uname -r)
+
+Fedora:
+sudo dnf install kernel-devel
 ```
 
 then run `sudo ./install-video` to build the module and install it.

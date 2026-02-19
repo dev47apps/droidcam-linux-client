@@ -269,26 +269,27 @@ snd_pcm_t *find_snd_device(void) {
             dbgprint("Trying to open audio device: %s\n", snd_device);
             err = snd_pcm_open(&handle, snd_device, SND_PCM_STREAM_PLAYBACK, 0);
             if (err < 0 || !handle) {
-                errprint("snd_pcm_open failed: %s\n", snd_strerror(err));
+                errprint("warn: snd_pcm_open(%s) failed: %s\n", snd_device, snd_strerror(err));
                 continue;
             }
 
             // got a handle
 
             if (set_hwparams(handle, hwparams, SND_PCM_ACCESS_MMAP_INTERLEAVED) < 0) {
-                errprint("setting audio hwparams failed\n");
+                errprint("setting audio hwparams failed for %s\n", snd_device);
                 snd_pcm_close(handle);
                 continue;
             }
 
             if (set_swparams(handle, swparams) < 0) {
-                errprint("Setting audio swparams failed\n");
+                errprint("setting audio swparams failed for %s\n", snd_device);
                 snd_pcm_close(handle);
-                goto OUT;
+                continue;
             }
 
             if (buffer_size != DROIDCAM_PCM_CHUNK_BYTES_2) {
-                errprint("Unexpected audio device buffer size: %ld\n", buffer_size);
+                errprint("Unexpected audio device buffer size: %ld expected %ld\n",
+                    buffer_size, DROIDCAM_PCM_CHUNK_BYTES_2);
                 snd_pcm_close(handle);
                 goto OUT;
             }
