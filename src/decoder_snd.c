@@ -288,7 +288,7 @@ snd_pcm_t *find_snd_device(void) {
             }
 
             if (buffer_size != DROIDCAM_PCM_CHUNK_BYTES_2) {
-                errprint("Unexpected audio device buffer size: %ld expected %ld\n",
+                errprint("Unexpected audio device buffer size: %ld expected %d\n",
                     buffer_size, DROIDCAM_PCM_CHUNK_BYTES_2);
                 snd_pcm_close(handle);
                 goto OUT;
