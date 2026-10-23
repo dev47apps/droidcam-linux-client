@@ -83,7 +83,7 @@ void LoadSettings(struct settings* settings) {
     else if (version == 4) {
         int arg1, arg2;
         while (fgets(buf, sizeof(buf), fp)) {
-            if (1 == sscanf(buf, "ip=%16s\n", settings->ip))    continue;
+            if (1 == sscanf(buf, "ip=%15s\n", settings->ip))    continue;
             if (1 == sscanf(buf, "port=%d\n", &settings->port)) continue;
 
             if (1 == sscanf(buf, "audio=%d\n", &settings->audio)) continue;
