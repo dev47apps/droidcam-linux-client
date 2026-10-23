@@ -31,14 +31,6 @@ setup_dkms_module() {
 
     dkms build -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
     dkms install -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
-    if [ -f /etc/redhat-release ]; then
-        dkms mkrpm -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
-    elif [ -f /etc/debian_version ]; then
-        dkms mkdeb -m ${V4L2_LOOPBACK_DC} -v ${V4L2_LOOPBACK_VERSION}
-    else
-        echo "unsupported distro"
-        exit 1
-    fi
 }
 
 copy_uninstall_script() {
