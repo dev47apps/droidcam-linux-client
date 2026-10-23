@@ -9,8 +9,8 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#define APP_VER_INT 215
-#define APP_VER_STR "2.1.5"
+#define APP_VER_INT 216
+#define APP_VER_STR "2.1.6"
 
 #define MSG_ERROR(str)     ShowError("Error",str)
 #define MSG_LASTERROR(str) ShowError(str,strerror(errno))

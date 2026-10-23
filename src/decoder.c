@@ -54,10 +54,12 @@ struct jpg_dec_ctx_s {
  int m_Yuv420Size, m_ySize, m_uvSize;
  int m_webcamYuvSize, m_webcam_ySize, m_webcam_uvSize;;
  size_t m_BufferLimit;
+ size_t m_xformBufSize;
 
  BYTE *m_inBuf;         /* incoming stream */
  BYTE *m_decodeBuf;     /* decoded individual frames */
  BYTE *m_webcamBuf;     /* optional, scale incoming stream for the webcam */
+ BYTE *m_xformBuf;      /* output of tjTransform (flip/rotate) */
 
  struct SwsContext *swc;
  tjhandle tj;
@@ -201,6 +203,13 @@ int decoder_prepare_video(char * header) {
         return 0;
     }
 
+    jpg_decoder.m_xformBufSize = tjBufSize(jpg_decoder.m_width, jpg_decoder.m_height, TJSAMP_420);
+    jpg_decoder.m_xformBuf = tjAlloc(jpg_decoder.m_xformBufSize);
+    if (!jpg_decoder.m_xformBuf) {
+        MSG_ERROR("Error allocating transform buffer!");
+        return 0;
+    }
+
     if (jpg_decoder.invert) {
         jpg_decoder.d_width = jpg_decoder.m_height;
         jpg_decoder.d_height = jpg_decoder.m_width;
@@ -286,6 +295,7 @@ void decoder_cleanup() {
     FREE_OBJECT(jpg_decoder.m_inBuf, free);
     FREE_OBJECT(jpg_decoder.m_decodeBuf, free);
     FREE_OBJECT(jpg_decoder.m_webcamBuf, free);
+    FREE_OBJECT(jpg_decoder.m_xformBuf, tjFree);
     FREE_OBJECT(jpg_decoder.swc, sws_freeContext);
     FREE_OBJECT(jpg_decoder.tjXform, tjDestroy);
     FREE_OBJECT(jpg_decoder.tj, tjDestroy);
@@ -321,10 +331,14 @@ void process_frame(JPGFrame *frame) {
     }
 
     if (jpg_decoder.transform.op) {
-        if (tjTransform(jpg_decoder.tjXform, p, len, 1, &p, &len, &jpg_decoder.transform, 0)) {
+        unsigned long xlen = jpg_decoder.m_xformBufSize;
+        if (tjTransform(jpg_decoder.tjXform, p, len, 1, &jpg_decoder.m_xformBuf, &xlen,
+                &jpg_decoder.transform, TJFLAG_NOREALLOC)) {
             errprint("tjTransform failure: %s\n", tjGetErrorStr());
             return;
         }
+        p = jpg_decoder.m_xformBuf;
+        len = xlen;
     }
 
     if (tjDecompressToYUVPlanes(jpg_decoder.tj, p, len,
