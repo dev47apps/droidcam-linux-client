@@ -148,6 +148,10 @@ static int video_nr = V4L2LOOPBACK_VIDEO_NR_DEFAULT;
 module_param(video_nr, int, S_IRUGO);
 MODULE_PARM_DESC(video_nr, "video device numbers (-1=auto, 0=/dev/video0, etc.)");
 
+static char *card_label = NULL;
+module_param(card_label, charp, S_IRUGO);
+MODULE_PARM_DESC(card_label, "card label, shown in the list of webcams");
+
 
 /* control IDs */
 #define CID_KEEP_FORMAT        (V4L2_CID_PRIVATE_BASE+0)
@@ -608,7 +612,7 @@ vidioc_querycap     (struct file *file,
   int devnr = ((struct v4l2loopback_private *)video_get_drvdata(dev->vdev))->devicenr;
 
   strscpy(cap->driver, "Droidcam", sizeof(cap->driver));
-  strscpy(cap->card  , "Droidcam", sizeof(cap->card));
+  strscpy(cap->card  , card_label ? card_label : "Droidcam", sizeof(cap->card));
   snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:v4l2loopback_dc-%03d", devnr);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0)
@@ -2162,7 +2166,7 @@ static void
 init_vdev           (struct video_device *vdev)
 {
   MARK();
-  strscpy(vdev->name, "Loopback video device", sizeof(vdev->name));
+  strscpy(vdev->name, card_label ? card_label : "Loopback video device", sizeof(vdev->name));
 
 #if 0
   //todo: remove V4L2_STD stuff
